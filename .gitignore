@@ -1,0 +1,150 @@
+# ==================================================
+# AI Content Factory — .gitignore
+# ==================================================
+
+# --------------------------------------------------
+# Secrets e Credenciais (NUNCA commitar)
+# --------------------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+
+# --------------------------------------------------
+# Python
+# --------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+pip-wheel-metadata/
+
+# --------------------------------------------------
+# Ambiente Virtual
+# --------------------------------------------------
+.venv/
+venv/
+ENV/
+env/
+
+# --------------------------------------------------
+# Testes e Cobertura
+# --------------------------------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# --------------------------------------------------
+# Type Checking
+# --------------------------------------------------
+.mypy_cache/
+.pytype/
+
+# --------------------------------------------------
+# Linting
+# --------------------------------------------------
+.ruff_cache/
+
+# --------------------------------------------------
+# IDEs e Editores
+# --------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# --------------------------------------------------
+# Sistema Operacional
+# --------------------------------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# --------------------------------------------------
+# Output e Temporários
+# --------------------------------------------------
+output/*
+!output/.gitkeep
+temp/*
+!temp/.gitkeep
+
+# --------------------------------------------------
+# Logs
+# --------------------------------------------------
+logs/
+*.log
+
+# --------------------------------------------------
+# Docker
+# --------------------------------------------------
+docker-compose.override.yml
+
+# --------------------------------------------------
+# Jupyter (se usado para protótipos)
+# --------------------------------------------------
+.ipynb_checkpoints/
+
+# --------------------------------------------------
+# Assets grandes (gerenciados separadamente)
+# --------------------------------------------------
+assets/videos/
+assets/audio/
+*.mp4
+*.mp3
+*.wav
+*.avi
+*.mov
+*.mkv
+*.flac
+*.aac
+
+# Auto-generated entries
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Sensitive files (auto-detected)
+.env.example
+

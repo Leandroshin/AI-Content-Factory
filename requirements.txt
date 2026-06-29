@@ -1,0 +1,35 @@
+# ==================================================
+# AI Content Factory — Dependências
+# ==================================================
+# Adicionar dependências conforme os módulos forem implementados.
+# Cada engine define suas dependências na missão correspondente.
+# ==================================================
+
+# --------------------------------------------------
+# Ferramentas de Desenvolvimento
+# --------------------------------------------------
+black>=24.0
+ruff>=0.5.0
+mypy>=1.10
+pytest>=8.0
+pytest-cov>=5.0
+
+# --------------------------------------------------
+# Core (será expandido na Missão 001)
+# --------------------------------------------------
+pydantic>=2.7
+pyyaml>=6.0
+python-dotenv>=1.0
+
+# --------------------------------------------------
+# Engines (adicionados conforme implementação)
+# --------------------------------------------------
+# [Script Engine]     — litellm, tiktoken
+# [Narration Engine]  — elevenlabs, openai
+# [Video Engine]      — moviepy, pillow
+# [Subtitle Engine]   — faster-whisper
+# [Trend Engine]      — (a definir)
+# [Research Engine]   — (a definir)
+# [Publishing Engine] — google-api-python-client, tiktok-api
+# [Analytics Engine]  — (a definir)
+# [Thumbnail Engine]  — pillow
