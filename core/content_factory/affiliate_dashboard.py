@@ -427,67 +427,14 @@ class AffiliateApprovalDashboardRenderer:
       font-size: 13px;
       color: var(--muted);
     }}
-    .a4 {{
-      margin-top: 18px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #f5f7fb;
-      color: #111827;
-      padding: 22px;
-    }}
-    .a4 h2 {{
-      color: #111827;
-      margin: 0 0 14px;
-    }}
-    .frames {{
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 12px;
-    }}
-    .frame {{
-      border: 2px solid #1f2937;
-      border-radius: 8px;
-      min-height: 168px;
-      padding: 12px;
-      background: white;
-    }}
-    .frame-number {{
-      display: inline-grid;
-      place-items: center;
-      width: 26px;
-      height: 26px;
-      border-radius: 999px;
-      background: #111827;
-      color: white;
-      font-weight: 800;
-      margin-bottom: 8px;
-    }}
-    .frame strong {{
-      display: block;
-      margin-bottom: 8px;
-    }}
-    .frame p {{
-      margin: 0;
-      color: #4b5563;
-      font-size: 13px;
-      line-height: 1.4;
-    }}
     @media (max-width: 1120px) {{
       .app {{ grid-template-columns: 1fr; }}
       aside.nav {{ display: none; }}
       main {{ padding: 18px; }}
-      .summary, .layout, .cards, .frames {{ grid-template-columns: 1fr; }}
+      .summary, .layout, .cards {{ grid-template-columns: 1fr; }}
       .detail-grid {{ grid-template-columns: 1fr; }}
       header {{ flex-direction: column; }}
       table {{ display: block; overflow-x: auto; }}
-    }}
-    @media print {{
-      body {{ background: white; color: #111827; }}
-      .app {{ display: block; }}
-      aside.nav, header, .summary, .layout {{ display: none; }}
-      main {{ padding: 0; }}
-      .a4 {{ border: 0; min-height: 100vh; }}
-      .frames {{ grid-template-columns: repeat(2, 1fr); }}
     }}
   </style>
 </head>
@@ -511,7 +458,7 @@ class AffiliateApprovalDashboardRenderer:
           <p class="sub">Curadoria, revisao criativa, aprovacao humana e envio Telegram em uma tela.</p>
         </div>
         <div class="actions">
-          <button type="button" id="print-guide">Guia A4</button>
+          <button type="button" id="open-guide">Guia rapido</button>
           <button type="button" class="primary" id="new-offer">Nova oferta</button>
         </div>
       </header>
@@ -582,16 +529,6 @@ class AffiliateApprovalDashboardRenderer:
         </div>
         <div class="activity" id="activity-log">
           {activity}
-        </div>
-      </section>
-
-      <section class="a4" id="operator-guide">
-        <h2>Guia rapido de uso - Fila de Ofertas</h2>
-        <div class="frames">
-          <div class="frame"><span class="frame-number">1</span><strong>Escolha a oferta</strong><p>Abra a fila e selecione o produto com melhor score e criativo pronto.</p></div>
-          <div class="frame"><span class="frame-number">2</span><strong>Confira a mensagem</strong><p>Leia preco, cupom, link de afiliado e disclosure antes de aprovar.</p></div>
-          <div class="frame"><span class="frame-number">3</span><strong>Aprove ou rejeite</strong><p>Use aprovar quando tudo estiver correto; rejeite se preco, imagem ou link estiverem ruins.</p></div>
-          <div class="frame"><span class="frame-number">4</span><strong>Publique</strong><p>Depois de aprovado, envie para o Telegram e acompanhe o status de publicacao.</p></div>
         </div>
       </section>
     </main>
@@ -714,6 +651,7 @@ window.__affiliateDashboard = __PAYLOAD__;
   const search = document.getElementById("offer-search");
   const detail = document.getElementById("offer-detail");
   const log = document.getElementById("activity-log");
+  const serverBacked = state.mode === "server";
   let selectedId = state.offers[0] ? state.offers[0].id : "";
   let filter = "all";
   let scoreDesc = true;
@@ -777,7 +715,44 @@ window.__affiliateDashboard = __PAYLOAD__;
     }
   }
 
+  function mergeOffer(updated) {
+    const index = (state.offers || []).findIndex((item) => item.id === updated.id);
+    if (index >= 0) {
+      state.offers[index] = Object.assign({}, state.offers[index], updated);
+    }
+    return offerById(updated.id);
+  }
+
+  async function serverAction(action, body) {
+    const offer = offerById(selectedId);
+    if (!offer) return;
+    try {
+      const response = await fetch(`/api/offers/${encodeURIComponent(selectedId)}/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body || {})
+      });
+      const data = await response.json();
+      if (!response.ok || data.ok === false) {
+        addLog(data.error || "Acao recusada pelo servidor local.");
+        return;
+      }
+      const updated = data.offer ? mergeOffer(data.offer) : offerById(selectedId);
+      if (updated) updateOfferDom(updated);
+      if (data.summary) state.summary = data.summary;
+      recomputeSummary();
+      renderDetail();
+      addLog(data.message || "Acao executada no servidor local.");
+    } catch (error) {
+      addLog("Servidor local indisponivel para executar esta acao.");
+    }
+  }
+
   function approveOffer() {
+    if (serverBacked) {
+      serverAction("approve", { decided_by: "owner" });
+      return;
+    }
     const offer = offerById(selectedId);
     if (!offer || offer.status === "published") return;
     offer.approval_status = "approved";
@@ -789,6 +764,10 @@ window.__affiliateDashboard = __PAYLOAD__;
   }
 
   function rejectOffer() {
+    if (serverBacked) {
+      serverAction("reject", { reason: "Rejected in local dashboard." });
+      return;
+    }
     const offer = offerById(selectedId);
     if (!offer || offer.status === "published") return;
     offer.approval_status = "rejected";
@@ -800,6 +779,10 @@ window.__affiliateDashboard = __PAYLOAD__;
   }
 
   function publishOffer() {
+    if (serverBacked) {
+      serverAction("publish", {});
+      return;
+    }
     const offer = offerById(selectedId);
     if (!offer || offer.approval_status !== "approved") {
       addLog("Publicacao bloqueada: aprove a oferta primeiro.");
@@ -907,8 +890,12 @@ window.__affiliateDashboard = __PAYLOAD__;
       addLog("Ordenacao local por score atualizada.");
     });
   }
-  const printGuide = document.getElementById("print-guide");
-  if (printGuide) printGuide.addEventListener("click", () => window.print());
+  const openGuide = document.getElementById("open-guide");
+  if (openGuide) {
+    openGuide.addEventListener("click", () => {
+      addLog("Guia externo: docs/affiliate_factory_workflow/visual_operator_guide.md");
+    });
+  }
   const newOffer = document.getElementById("new-offer");
   if (newOffer) newOffer.addEventListener("click", () => addLog("Nova oferta entra pela esteira Product Research."));
 

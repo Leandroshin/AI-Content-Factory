@@ -2,7 +2,7 @@
 
 Generates a local HTML preview for daily offer review:
 pending offers, approved offers, publication state, message preview,
-and printable A4 operator guide.
+and a separate operator walkthrough.
 """
 
 from __future__ import annotations
@@ -235,7 +235,9 @@ def main() -> None:
     _check("Aprovar" in html, "HTML includes approve button")
     _check("Rejeitar" in html, "HTML includes reject button")
     _check("Publicar" in html, "HTML includes publish button")
-    _check("Guia rapido de uso" in html, "HTML includes visual A4 guide")
+    _check("Guia rapido" in html, "HTML points to external quick guide")
+    _check("window.print" not in html, "HTML does not use print-style guide")
+    _check("operator-guide" not in html, "HTML keeps walkthrough outside the panel")
     _check("window.__affiliateDashboard" in html, "HTML embeds dashboard state")
     _check("data-offer-row" in html, "HTML has selectable offer rows")
     _check("data-offer-card" in html, "HTML has offer cards")
@@ -247,6 +249,10 @@ def main() -> None:
     _check(_TOKEN not in html, "HTML does not expose Telegram token")
     _check(output_path.exists(), "HTML preview file was written")
     _check(output_path.stat().st_size > 10000, "HTML preview has substantial UI content")
+    guide_path = Path("docs/affiliate_factory_workflow/visual_operator_guide.md")
+    guide_text = guide_path.read_text(encoding="utf-8")
+    _check("Clique em uma oferta" in guide_text, "External guide explains first click")
+    _check("O que digitar" in guide_text, "External guide explains future input fields")
 
     print(f"\nPreview written to: {output_path.resolve()}")
     print(f"\n{'=' * 70}")

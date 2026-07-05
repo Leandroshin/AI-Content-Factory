@@ -36,5 +36,11 @@ The package records:
 `output/affiliate_approval_dashboard/index.html`.
 
 The panel shows the offer queue, selected offer details, Telegram message,
-workflow steps, local approve/reject/publish interactions, and a printable A4
-operator guide.
+workflow steps, local approve/reject/publish interactions, and a separate
+operator walkthrough in `docs/affiliate_factory_workflow/visual_operator_guide.md`.
+
+`python -m core.content_factory.affiliate_dashboard_server --seed-demo` starts a
+local backend at `http://127.0.0.1:8787`. In server mode, the dashboard buttons
+call HTTP endpoints, persist the queue in `.ai_company/affiliate_dashboard/`,
+and publish through `TelegramAdapter` in MOCK mode unless a future controlled
+workflow explicitly opts into REAL.
