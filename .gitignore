@@ -62,6 +62,8 @@ output/*
 !output/.gitkeep
 temp/*
 !temp/.gitkeep
+research_inputs/raw_transcripts/
+research_inputs/manual_candidates/
 logs/
 *.log
 .cache/

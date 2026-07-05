@@ -344,6 +344,35 @@ class DealMetricsSnapshot:
 
 
 @dataclass(slots=True)
+class ProductResearchDepartmentSnapshot:
+    employees_count: int = 0
+    active_productions: int = 0
+    pipeline_stages: dict[str, str] = field(default_factory=dict)
+    total_productions: int = 0
+    successful_productions: int = 0
+    failed_productions: int = 0
+
+
+@dataclass(slots=True)
+class ProductResearchProductionSnapshot(ProductionSnapshot):
+    """Product-research-specific production snapshot."""
+
+    research_type: str = ""
+
+
+@dataclass(slots=True)
+class ProductResearchMetricsSnapshot:
+    total_candidates_analyzed: int = 0
+    shortlisted_count: int = 0
+    rejected_count: int = 0
+    average_score: float = 0.0
+    top_score: float = 0.0
+    top_marketplace: str = ""
+    top_niche: str = ""
+    last_error: str = ""
+
+
+@dataclass(slots=True)
 class ObservabilitySnapshot:
     company: CompanySnapshot = field(default_factory=CompanySnapshot)
     departments: DepartmentsSnapshot = field(default_factory=DepartmentsSnapshot)
@@ -376,6 +405,9 @@ class ObservabilitySnapshot:
     affiliate_deals_department: AffiliateDealsDepartmentSnapshot = field(default_factory=AffiliateDealsDepartmentSnapshot)
     affiliate_deals_production: AffiliateDealsProductionSnapshot = field(default_factory=AffiliateDealsProductionSnapshot)
     deal_metrics: DealMetricsSnapshot = field(default_factory=DealMetricsSnapshot)
+    product_research_department: ProductResearchDepartmentSnapshot = field(default_factory=ProductResearchDepartmentSnapshot)
+    product_research_production: ProductResearchProductionSnapshot = field(default_factory=ProductResearchProductionSnapshot)
+    product_research_metrics: ProductResearchMetricsSnapshot = field(default_factory=ProductResearchMetricsSnapshot)
     production: ProductionSnapshot = field(default_factory=ProductionSnapshot)
     events: list[str] = field(default_factory=list)
     task_records: dict[str, TaskRecord] = field(default_factory=dict)
@@ -807,6 +839,8 @@ class ObservabilityProjector(BaseProjector):
             return self.snapshot.script_department, self.snapshot.script_production, None
         elif dept == "affiliate_deals":
             return self.snapshot.affiliate_deals_department, self.snapshot.affiliate_deals_production, self.snapshot.deal_metrics
+        elif dept == "product_research":
+            return self.snapshot.product_research_department, self.snapshot.product_research_production, self.snapshot.product_research_metrics
         return None, None, None
 
     def _set_production_type(self, dept: str, prod_snapshot, prod_type: str) -> None:
@@ -820,6 +854,8 @@ class ObservabilityProjector(BaseProjector):
             prod_snapshot.script_type = prod_type
         elif dept == "affiliate_deals":
             prod_snapshot.campaign_type = prod_type
+        elif dept == "product_research":
+            prod_snapshot.research_type = prod_type
 
     def handle_production_started(self, event: ProductionStarted) -> None:
         sid = str(event.task_id)[:8]
@@ -945,6 +981,19 @@ class ObservabilityProjector(BaseProjector):
                 if plan:
                     detail_snap.last_publishing_channel = plan.get("channel", {}).get("name", "")
                 detail_snap.primary_funnel = event.output.get("primary_funnel", "")
+                if not event.success:
+                    detail_snap.last_error = event.output.get("error", "")
+            elif dept == "product_research":
+                detail_snap.total_candidates_analyzed += event.output.get("total_candidates", 0)
+                detail_snap.shortlisted_count += len(event.output.get("shortlisted", []))
+                detail_snap.rejected_count += event.output.get("rejected_count", 0)
+                detail_snap.average_score = event.output.get("average_score", 0.0)
+                shortlisted = event.output.get("shortlisted", [])
+                if shortlisted:
+                    top = shortlisted[0]
+                    detail_snap.top_score = top.get("score_total", 0.0)
+                    detail_snap.top_marketplace = top.get("marketplace", "")
+                    detail_snap.top_niche = top.get("niche", "")
                 if not event.success:
                     detail_snap.last_error = event.output.get("error", "")
 
