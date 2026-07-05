@@ -75,7 +75,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **HTTP Layer (FASE 1):** `core/tools/http/` — HttpMethod, HttpRequest/HttpResponse, RetryPolicy/TimeoutPolicy/RateLimitConfig, HttpClient(ABC) + MockHttpClient
 - **HTTP Errors (FASE 5):** 7 tipos de erro tipados (TimeoutError, RetryExhaustedError, RateLimitError, AuthExpiredError, QuotaExceededError, NetworkUnavailableError)
 - **Secrets (FASE 2):** `core/tools/secrets/` — SecretKey, SecretValue (repr/str mascarado), SecretProvider(ABC) + MockSecretProvider
-- **Providers (FASE 3):** 5 providers (Google, GitHub, OpenAI, ElevenLabs, Playwright)
+- **Providers (FASE 3):** 6 providers (Google, GitHub, OpenAI, ElevenLabs, Playwright, Telegram)
 - **ExecutionMode (FASE 4):** MOCK (default) / REAL — injetável via setters, compatibilidade reversa
 - **Observability:** HttpSnapshot (total_requests, retries, failures, auth, quota, rate_limit, timeouts, latency_ms, success_rate)
 - **Execution Persistence:** `core/company/persistence.py` — PersistenceRuntime, ExecutionRecord, SessionState, CompanySnapshot, ExecutionEvidence (todos frozen+slots), persistência JSON em `.ai_company/{sessions,evidence,snapshots,logs}/`
@@ -85,7 +85,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Session Continuity:** carregar CompanySnapshot, reconstruir estado, reativar components, continuar do ponto parado
 - **EventBus Integration:** 11 novos eventos (SessionCreated/Loaded/Saved, SnapshotCreated/Loaded, ExecutionPersisted/Restored, MemoryDocumentCreated/Updated/Archived, QualityValidationStarted/Finished)
 - **Observability Snapshots:** 4 novos (PersistenceSnapshot, OrganizationalMemorySnapshot, QualitySnapshot, SessionSnapshot)
-- **REAL Execution Adapters (FASE 1-3):** YouTubeAdapter, GitHubAdapter, ElevenLabsAdapter, PlaywrightAdapter — `execute()` bifurca em MOCK (dados deterministicos) / REAL (chamadas HTTP reais via HttpClient + Provider + SecretProvider); SecretProvider injetado via `set_secret_provider()` (aditivo)
+- **REAL Execution Adapters (FASE 1-3):** YouTubeAdapter, GitHubAdapter, ElevenLabsAdapter, PlaywrightAdapter, TelegramAdapter — `execute()` bifurca em MOCK (dados deterministicos) / REAL (chamadas HTTP reais via HttpClient + Provider + SecretProvider); SecretProvider injetado via `set_secret_provider()` (aditivo)
 - **HTTP Events (FASE 4):** `core/tools/http/events.py` — 7 eventos (HttpRequestStarted, Completed, Failed, HttpRetry, HttpRateLimited, HttpAuthenticationFailed, HttpQuotaExceeded); ObservabilityProjector handlers auto-projetam HttpSnapshot
 - **RateLimiter (FASE 5):** `core/tools/http/rate_limiter.py` — token-bucket com `acquire()`, `release()`, `retry_delay()` (exponential backoff + jitter), `with_retry()`, `available/remaining` properties
 - **RealHttpClient:** `core/tools/http/real_client.py` — urllib-based, publica todos os 7 eventos HTTP, suporta retry automático e rate limiting
@@ -105,12 +105,14 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Provider Control Center:** `core/tools/provider_settings.py` — estado de painel para providers: secret slots mascarados, modo MOCK/REAL, budgets, approval, snapshots e dashboard_state
 - **Provider Panel UI:** `core/tools/provider_panel.py` — renderer HTML interativo alimentado por `ProviderControlCenter.dashboard_state()`, com chaves mascaradas, MOCK/REAL, busca, filtros, seleção de provider, budgets, aprovação e usage/custo
 - **ElevenLabs REAL controlado:** `ElevenLabsAdapter` aceita `set_budget_guard()`; em REAL, `synthesize` só chama HTTP se owner approval + limites de requests/unidades/custo permitirem; erros HTTP reais viram `AdapterExecutionResult(success=False)` em vez de traceback
+- **Telegram Publishing Adapter:** `core/tools/adapters/telegram_adapter.py` + `TelegramProvider` — `get_me` e `send_message` em MOCK/REAL; envio REAL exige `bot_token`, `chat_id`, `approved=True` e budget guard; teste REAL enviou mensagem técnica para `@achadosbaratosBrasil` com `message_id=2`
+- **HTTP secret redaction:** `RealHttpClient` mascara URLs do Telegram no formato `/bot<TOKEN>/...` antes de publicar eventos HTTP
 - **Observability Snapshots:** ProductionSnapshot (genérico) + Video/Audio/Image/Script/AffiliateDeals production + department/detail snapshots — todos declarados em `core/observability.py`
 - **Stage Counts in Snapshots:** `ProductionStageAdvanced` carrega `stages_completed`/`stages_failed`; handlers no ObservabilityProjector propagam para production snapshots genérico + departamental
 - **Quality→Department Propagation:** `_task_department_map` no ObservabilityProjector mapeia task_id→departamento; `handle_quality_finished` atualiza snapshots específicos (video/audio/image_production.quality_passed)
 - **Demo de Falha + Correção:** Pipeline failure (invalid video_type→stage fail) + Quality correction (strict rule→completeness fail→corrections) — ambos refletidos na observability
 - **Primeiro short fisico:** `demo_short_video_factory.py` gera WAV mockado, PNG fisico e MP4 final de 60s; com FFmpeg local, o render consome os arquivos reais
-- **Regressão:** `python -m compileall -q core` OK; **83 demos, 3335 assertions, 0 falhas** em 2026-07-05
+- **Regressão:** `python -m compileall -q core` OK; **84 demos, 3375 assertions, 0 falhas** em 2026-07-05
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -127,11 +129,12 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Stage counts via event fields**: `stages_completed`/`stages_failed` adicionados a `ProductionStageAdvanced` — propagam para snapshots sem criar estado extra no projector
 - **Snapshots populados por evento, não manualmente**: Handlers no ObservabilityProjector usam department do evento e `_task_department_map` para bifurcar em Video/Audio/Image
 - **Assets fisicos opcionais**: departamentos continuam deterministicos e retrocompativeis; quando `output_dir`/`write_file` existem, Audio/Image materializam arquivos e Video/FFmpeg consomem por path
-- **Affiliate Deals sem spam**: a vertical prepara curadoria, score, compliance, criativo e plano de publicacao; Telegram e canal preferencial futuro, WhatsApp fica manual/semi-automatico e sem envio real nesta fase
+- **Affiliate Deals sem spam**: a vertical prepara curadoria, score, compliance, criativo e plano de publicacao; Telegram é o primeiro canal real controlado, e WhatsApp fica manual/semi-automatico nesta fase
+- **Telegram REAL só com freios**: o adapter só publica em REAL com `approved=True`, `chat_id` explícito e budget configurado; token fica em SecretProvider/local ignored path, nunca em Git
 - 0 dependências circulares, 0 violações core→engines
 
 ## Next Steps
-1. **Telegram Publishing Adapter** — primeiro canal real para Affiliate Deals, com aprovacao humana, rate limit, budget/seguranca e sem spam
+1. **Telegram approval queue no workflow** — conectar Affiliate Deals -> TelegramAdapter com fila de aprovação humana, `chat_id` configurável, histórico de posts e retry seguro
 2. **Affiliate Growth Dashboard / 2.5D** — visualizar ofertas, scores, compliance, aprovacoes, funil Facebook warmup -> Telegram e ROI
 3. **Meta Ads Analytics read-only** — modelar leitura/relatorio de campanhas antes de qualquer automacao de criacao/edicao de anuncio
 4. **Atualizar chave ElevenLabs** — smoke REAL encontrou `AuthExpiredError`/401 com a chave local atual; substituir a chave e repetir `AI_COMPANY_RUN_REAL_ELEVENLABS=1 python demo_elevenlabs_real_smoke.py`
@@ -139,7 +142,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **83 demos, 3335 assertions, 0 falhas**
+- **Regressão atual**: **84 demos, 3375 assertions, 0 falhas**
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando
@@ -154,6 +157,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Prova visual do painel provider**: `demo_provider_panel_ui.py` gera `output/provider_control_panel/index.html` com três providers, chave mascarada, modo MOCK/REAL, busca, filtros, seleção, budget, aprovação e usage/custo; sem chamada externa
 - **Prova REAL opt-in ElevenLabs**: `demo_elevenlabs_real_smoke.py` roda seco na regressão; com `AI_COMPANY_RUN_REAL_ELEVENLABS=1`, tentou 1 chamada real com 14 caracteres, budget máximo US$0.002, recebeu `AuthExpiredError`/401 e escreveu relatório redigido sem chave em `output/elevenlabs_real_smoke/report.json`
 - **Prova Affiliate Deals**: `demo_affiliate_deals_department.py` valida 79 assertions: oferta forte `post_now` pendente de aprovacao, oferta fraca `skip`/rejeitada, oferta sem affiliate URL bloqueada por compliance, funil Facebook warmup -> Telegram e observability `deal_metrics`
+- **Prova Telegram REAL controlado**: `demo_telegram_publishing_adapter.py` valida 40 assertions em MOCK/MockHttpClient; smoke REAL local validou `@achados_baratos_br_bot` via `getMe` e enviou mensagem técnica para `@achadosbaratosBrasil` (`message_id=2`) com token fora do Git
 - **Correção Conversation/Memory**: `demo_conversation_memory_integration.py` valida timestamp preservado sem depender de igualdade acidental de `time.time()`
 - 0 dependências circulares; nenhuma classe existente foi modificada (exceto adições aditivas em domain_events.py, base/employee.py, observability.py)
 
@@ -191,6 +195,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `core/observability.py`: ProductionSnapshot + Video/Audio/Image production/department/detail snapshots + task_department_map + qualité→dept propagation
 - `core/tools/http/events.py`, `rate_limiter.py`, `real_client.py`
 - `core/tools/adapters/elevenlabs_adapter.py`: MOCK/REAL de TTS + escrita opcional de audio fisico
+- `core/tools/adapters/telegram_adapter.py`: Telegram Bot API MOCK/REAL com aprovação, `chat_id`, budget guard e limite de 4096 caracteres
+- `core/tools/providers/telegram.py`: Provider contract da Telegram Bot API
 - `core/tools/provider_control.py`: budget guard e usage summary para providers externos
 - `core/tools/provider_settings.py`: estado de painel para providers, secrets mascarados, budgets, approval, snapshots e ligação com adapters
 - `core/tools/provider_panel.py`: renderer HTML interativo para preview do painel de APIs/custos
@@ -223,3 +229,4 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `demo_provider_panel_ui.py`: 30 assertions, gera preview HTML interativo local do painel de APIs/custos
 - `demo_elevenlabs_real_smoke.py`: 3 assertions em dry-run; opt-in REAL com teto de gasto e relatório redigido
 - `demo_affiliate_deals_department.py`: 79 assertions, prova Affiliate Deals + funil de crescimento + compliance + observability
+- `demo_telegram_publishing_adapter.py`: 40 assertions, prova Telegram Bot API seguro + mensagem Affiliate Deals pronta para publicação

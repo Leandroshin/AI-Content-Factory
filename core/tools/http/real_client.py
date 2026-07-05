@@ -9,6 +9,7 @@ No external dependencies — uses only Python standard library.
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.error
 import urllib.request
@@ -44,6 +45,14 @@ from core.tools.http.models import (
     TimeoutPolicy,
 )
 from core.tools.http.rate_limiter import RateLimiter
+
+
+_TELEGRAM_BOT_TOKEN_RE = re.compile(r"/bot\d{6,12}:[A-Za-z0-9_-]{20,}")
+
+
+def _sanitize_http_text(value: str) -> str:
+    """Mask provider secrets that may appear in provider-specific URLs."""
+    return _TELEGRAM_BOT_TOKEN_RE.sub("/bot<redacted>", value)
 
 
 class RealHttpClient(HttpClient):
@@ -239,7 +248,7 @@ class RealHttpClient(HttpClient):
         self._publish(HttpRequestStarted(
             request_id=rid if isinstance(rid, uuid4.__class__) else uuid4(),
             method=req.method.value,
-            url=req.url,
+            url=_sanitize_http_text(req.url),
             timestamp=time.time(),
         ))
 
@@ -255,7 +264,7 @@ class RealHttpClient(HttpClient):
         self._publish(HttpRequestFailed(
             request_id=rid if isinstance(rid, uuid4.__class__) else uuid4(),
             error_type=err_type,
-            error_message=msg,
+            error_message=_sanitize_http_text(msg),
             timestamp=time.time(),
         ))
 
@@ -280,7 +289,7 @@ class RealHttpClient(HttpClient):
     def _publish_auth_failed(self, rid: Any, err: AuthExpiredError) -> None:
         self._publish(HttpAuthenticationFailed(
             request_id=rid if isinstance(rid, uuid4.__class__) else uuid4(),
-            reason=err.reason,
+            reason=_sanitize_http_text(err.reason),
             timestamp=time.time(),
         ))
 

@@ -38,7 +38,7 @@ The project now has a concrete production layer:
 - Base department layer with `ProductionEmployee` and `ProductionPipeline`
 - Video, Audio, Image, Script, and Affiliate Deals departments
 - Content workflow: Brief -> Script -> Audio -> Image -> Video -> Quality -> Observability
-- Provider control, budget guard, masked API settings, and interactive provider-panel preview
+- Provider control, budget guard, masked API settings, Telegram publishing, and interactive provider-panel preview
 - Deterministic demos for regression and architecture proof
 
 See `AGENTS.md` for the latest architectural state and next steps.

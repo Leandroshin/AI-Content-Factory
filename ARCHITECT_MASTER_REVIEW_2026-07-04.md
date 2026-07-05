@@ -104,13 +104,23 @@ Resultado:
 - `demo_affiliate_deals_department.py` validou 79 assertions: oferta forte
   `post_now` pendente de aprovacao, oferta fraca `skip`/rejeitada, oferta sem
   affiliate URL bloqueada por compliance e observability `deal_metrics`;
+- `TelegramAdapter` e `TelegramProvider` foram criados como primeiro canal real
+  controlado da Affiliate Deals Factory: `get_me` valida o bot, `send_message`
+  exige `bot_token`, `chat_id`, `approved=True` e budget guard;
+- o token do Telegram fica fora do Git em `.ai_company/local_secrets/`, e o
+  `RealHttpClient` mascara URLs `/bot<TOKEN>/...` nos eventos HTTP;
+- o smoke REAL validou `@achados_baratos_br_bot` e enviou uma mensagem técnica
+  para `@achadosbaratosBrasil` com `message_id=2`;
+- `demo_telegram_publishing_adapter.py` validou 40 assertions, incluindo gates
+  de aprovação, limite de 4096 caracteres, bloqueio por budget e ponte com
+  mensagem gerada pelo Affiliate Deals pipeline;
 - prompt visual para o GPT da Web salvo em
   `00_CENTRAL_CONTEXT/05_PROMPT_VISUAL_AI_CONTENT_FACTORY.md`;
 - imagens conceituais do GPT da Web revisadas: as telas de dashboard,
   tarefas/pipeline, APIs/custos, funcionário, aprovação e mobile estão boas
   como direção; as 4 imagens novas do ambiente 2.5D ficaram boas como blueprint
   estático, mas o movimento dos funcionários precisa ser implementado no app;
-- regressao completa: 83 demos, 3335 assertions, 0 falhas.
+- regressao completa: 84 demos, 3375 assertions, 0 falhas.
 
 ## Nao fazer agora
 
@@ -129,7 +139,8 @@ Resultado:
 2. usar Graphify com escopo pequeno;
 3. manter Obsidian como mapa humano;
 4. escolher adapters reais por capacidade, nao por hype;
-5. criar `TelegramPublishingAdapter` como primeiro canal real da Affiliate Deals Factory;
+5. conectar Affiliate Deals -> TelegramAdapter via fila de aprovacao humana,
+   historico de posts e `chat_id` configuravel;
 6. atualizar a chave ElevenLabs e repetir o smoke REAL com teto pequeno.
 7. usar as imagens 2.5D como blueprint para a interface animada dos
    funcionários.

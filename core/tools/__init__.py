@@ -22,6 +22,7 @@ from .adapters import (
     GitHubAdapter,
     OwnerGuidance,
     PlaywrightAdapter,
+    TelegramAdapter,
     ToolRequest,
     ToolResponse,
     YouTubeAdapter,
@@ -76,6 +77,7 @@ from .providers import (
     OpenAIProvider,
     PlaywrightProvider,
     Provider,
+    TelegramProvider,
 )
 from .secrets import (
     MockSecretProvider,
@@ -143,6 +145,8 @@ __all__ = [
     "PlaywrightAdapter",
     "PlaywrightProvider",
     "Provider",
+    "TelegramAdapter",
+    "TelegramProvider",
     "ProviderBudget",
     "ProviderBudgetDecision",
     "ProviderBudgetGuard",

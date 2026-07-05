@@ -13,6 +13,7 @@ from .github_provider import GitHubProvider
 from .google import GoogleProvider
 from .openai import OpenAIProvider
 from .playwright import PlaywrightProvider
+from .telegram import TelegramProvider
 
 __all__ = [
     "ElevenLabsProvider",
@@ -21,4 +22,5 @@ __all__ = [
     "OpenAIProvider",
     "PlaywrightProvider",
     "Provider",
+    "TelegramProvider",
 ]

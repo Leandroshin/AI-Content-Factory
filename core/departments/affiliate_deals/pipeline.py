@@ -478,7 +478,7 @@ def _build_publishing_plan(
 
 def _channel_notes(channel: str) -> str:
     if channel == "telegram":
-        return "Preferred first automation channel; real send is a later adapter."
+        return "Preferred first automation channel; TelegramAdapter can publish after approval."
     if "whatsapp" in channel:
         return "WhatsApp stays manual/semi-automatic in this phase."
     if channel in ("facebook", "facebook_page", "instagram"):

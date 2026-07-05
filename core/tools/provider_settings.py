@@ -207,6 +207,55 @@ class ProviderControlCenter:
         )
         return self.register_profile(profile)
 
+    def register_telegram(
+        self,
+        *,
+        max_messages: int = 0,
+        max_requests: int = 0,
+        execution_mode: ExecutionMode = ExecutionMode.MOCK,
+    ) -> ProviderControlProfile:
+        """Register the default Telegram Bot API control profile."""
+        provider = "telegram"
+        budget = ProviderBudget(
+            provider=provider,
+            owner_approved=False,
+            max_cost_usd=0.0,
+            max_units=max(0, int(max_messages)),
+            max_requests=max(0, int(max_requests)),
+            notes="Owner approval required before REAL Telegram publishing.",
+        )
+        pricing = (
+            ProviderPricing(
+                provider=provider,
+                operation="send_message",
+                unit_name="messages",
+                unit_cost_usd=0.0,
+                pricing_note="Telegram Bot API is treated as zero-cost; limits prevent spam.",
+            ),
+            ProviderPricing(
+                provider=provider,
+                operation="get_me",
+                unit_name="requests",
+                unit_cost_usd=0.0,
+                pricing_note="Bot validation request.",
+            ),
+        )
+        profile = ProviderControlProfile(
+            provider=provider,
+            display_name="Telegram Bot API",
+            category="publishing",
+            execution_mode=execution_mode,
+            budget=budget,
+            pricing=pricing,
+            secret_slots=(ProviderSecretSlot(
+                key="bot_token",
+                label="Telegram Bot Token",
+                required=True,
+            ),),
+            metadata={"capabilities": ("social_media", "telegram_publishing")},
+        )
+        return self.register_profile(profile)
+
     def set_execution_mode(self, provider: str, mode: ExecutionMode) -> ProviderControlProfile:
         """Switch provider mode for the future settings panel."""
         profile = self._require_profile(provider)
@@ -280,6 +329,14 @@ class ProviderControlCenter:
     def apply_to_elevenlabs(self, adapter: Any) -> None:
         """Apply provider control settings to an ElevenLabs adapter instance."""
         profile = self._require_profile("elevenlabs")
+        adapter.set_execution_mode(profile.execution_mode)
+        adapter.set_budget_guard(self._budget_guard)
+        if self._secret_provider is not None:
+            adapter.set_secret_provider(self._secret_provider)
+
+    def apply_to_telegram(self, adapter: Any) -> None:
+        """Apply provider control settings to a Telegram adapter instance."""
+        profile = self._require_profile("telegram")
         adapter.set_execution_mode(profile.execution_mode)
         adapter.set_budget_guard(self._budget_guard)
         if self._secret_provider is not None:

@@ -22,6 +22,7 @@ from .models import (
     ToolResponse,
 )
 from .playwright_adapter import PlaywrightAdapter
+from .telegram_adapter import TelegramAdapter
 from .youtube_adapter import YouTubeAdapter
 
 __all__ = [
@@ -36,6 +37,7 @@ __all__ = [
     "GitHubAdapter",
     "OwnerGuidance",
     "PlaywrightAdapter",
+    "TelegramAdapter",
     "ToolRequest",
     "ToolResponse",
     "YouTubeAdapter",

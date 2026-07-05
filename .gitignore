@@ -57,6 +57,7 @@ Desktop.ini
 ehthumbs.db
 
 # Project outputs
+.ai_company/
 output/*
 !output/.gitkeep
 temp/*

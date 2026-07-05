@@ -343,7 +343,7 @@ def main() -> None:
         tool_runtime, registry, github_id, "GitHub", "code",
         {Capability.REPOSITORY_MANAGEMENT, Capability.CODE_SEARCH},
         gh5,
-        config={"token": "ghp_demo_token_1234567890abcdef"},
+        config={"token": "test_github_token_demo_1234567890abcdef"},
         priority=5,
     )
 
