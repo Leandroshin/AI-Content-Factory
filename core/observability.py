@@ -373,6 +373,63 @@ class ProductResearchMetricsSnapshot:
 
 
 @dataclass(slots=True)
+class StrategyIntelligenceDepartmentSnapshot:
+    employees_count: int = 0
+    active_productions: int = 0
+    pipeline_stages: dict[str, str] = field(default_factory=dict)
+    total_productions: int = 0
+    successful_productions: int = 0
+    failed_productions: int = 0
+
+
+@dataclass(slots=True)
+class StrategyIntelligenceProductionSnapshot(ProductionSnapshot):
+    """Strategy-intelligence-specific production snapshot."""
+
+    intelligence_type: str = ""
+
+
+@dataclass(slots=True)
+class StrategyIntelligenceMetricsSnapshot:
+    sources_analyzed: int = 0
+    tools_detected: int = 0
+    metrics_detected: int = 0
+    patterns_extracted: int = 0
+    warnings_count: int = 0
+    top_pattern: str = ""
+    last_error: str = ""
+
+
+@dataclass(slots=True)
+class CreativeReviewDepartmentSnapshot:
+    employees_count: int = 0
+    active_productions: int = 0
+    pipeline_stages: dict[str, str] = field(default_factory=dict)
+    total_productions: int = 0
+    successful_productions: int = 0
+    failed_productions: int = 0
+
+
+@dataclass(slots=True)
+class CreativeReviewProductionSnapshot(ProductionSnapshot):
+    """Creative-review-specific production snapshot."""
+
+    review_type: str = ""
+
+
+@dataclass(slots=True)
+class CreativeReviewMetricsSnapshot:
+    assets_reviewed: int = 0
+    ready_count: int = 0
+    improve_count: int = 0
+    rebuild_count: int = 0
+    human_review_count: int = 0
+    average_score: float = 0.0
+    top_action: str = ""
+    last_error: str = ""
+
+
+@dataclass(slots=True)
 class ObservabilitySnapshot:
     company: CompanySnapshot = field(default_factory=CompanySnapshot)
     departments: DepartmentsSnapshot = field(default_factory=DepartmentsSnapshot)
@@ -408,6 +465,12 @@ class ObservabilitySnapshot:
     product_research_department: ProductResearchDepartmentSnapshot = field(default_factory=ProductResearchDepartmentSnapshot)
     product_research_production: ProductResearchProductionSnapshot = field(default_factory=ProductResearchProductionSnapshot)
     product_research_metrics: ProductResearchMetricsSnapshot = field(default_factory=ProductResearchMetricsSnapshot)
+    strategy_intelligence_department: StrategyIntelligenceDepartmentSnapshot = field(default_factory=StrategyIntelligenceDepartmentSnapshot)
+    strategy_intelligence_production: StrategyIntelligenceProductionSnapshot = field(default_factory=StrategyIntelligenceProductionSnapshot)
+    strategy_intelligence_metrics: StrategyIntelligenceMetricsSnapshot = field(default_factory=StrategyIntelligenceMetricsSnapshot)
+    creative_review_department: CreativeReviewDepartmentSnapshot = field(default_factory=CreativeReviewDepartmentSnapshot)
+    creative_review_production: CreativeReviewProductionSnapshot = field(default_factory=CreativeReviewProductionSnapshot)
+    creative_review_metrics: CreativeReviewMetricsSnapshot = field(default_factory=CreativeReviewMetricsSnapshot)
     production: ProductionSnapshot = field(default_factory=ProductionSnapshot)
     events: list[str] = field(default_factory=list)
     task_records: dict[str, TaskRecord] = field(default_factory=dict)
@@ -841,6 +904,10 @@ class ObservabilityProjector(BaseProjector):
             return self.snapshot.affiliate_deals_department, self.snapshot.affiliate_deals_production, self.snapshot.deal_metrics
         elif dept == "product_research":
             return self.snapshot.product_research_department, self.snapshot.product_research_production, self.snapshot.product_research_metrics
+        elif dept == "strategy_intelligence":
+            return self.snapshot.strategy_intelligence_department, self.snapshot.strategy_intelligence_production, self.snapshot.strategy_intelligence_metrics
+        elif dept == "creative_review":
+            return self.snapshot.creative_review_department, self.snapshot.creative_review_production, self.snapshot.creative_review_metrics
         return None, None, None
 
     def _set_production_type(self, dept: str, prod_snapshot, prod_type: str) -> None:
@@ -856,6 +923,10 @@ class ObservabilityProjector(BaseProjector):
             prod_snapshot.campaign_type = prod_type
         elif dept == "product_research":
             prod_snapshot.research_type = prod_type
+        elif dept == "strategy_intelligence":
+            prod_snapshot.intelligence_type = prod_type
+        elif dept == "creative_review":
+            prod_snapshot.review_type = prod_type
 
     def handle_production_started(self, event: ProductionStarted) -> None:
         sid = str(event.task_id)[:8]
@@ -994,6 +1065,33 @@ class ObservabilityProjector(BaseProjector):
                     detail_snap.top_score = top.get("score_total", 0.0)
                     detail_snap.top_marketplace = top.get("marketplace", "")
                     detail_snap.top_niche = top.get("niche", "")
+                if not event.success:
+                    detail_snap.last_error = event.output.get("error", "")
+            elif dept == "strategy_intelligence":
+                detail_snap.sources_analyzed += event.output.get("sources_analyzed", 0)
+                detail_snap.tools_detected += len(event.output.get("tools_detected", []))
+                detail_snap.metrics_detected += len(event.output.get("metrics_detected", []))
+                patterns = event.output.get("patterns", [])
+                detail_snap.patterns_extracted += len(patterns)
+                detail_snap.warnings_count += len(event.output.get("warnings", []))
+                if patterns:
+                    detail_snap.top_pattern = patterns[0].get("pattern_id", "")
+                if not event.success:
+                    detail_snap.last_error = event.output.get("error", "")
+            elif dept == "creative_review":
+                detail_snap.assets_reviewed += event.output.get("total_assets", 0)
+                detail_snap.ready_count += event.output.get("ready_count", 0)
+                detail_snap.improve_count += event.output.get("improve_count", 0)
+                detail_snap.rebuild_count += event.output.get("rebuild_count", 0)
+                detail_snap.human_review_count += event.output.get("human_review_count", 0)
+                detail_snap.average_score = event.output.get("average_score", 0.0)
+                findings = event.output.get("findings", [])
+                action_counts: dict[str, int] = {}
+                for finding in findings:
+                    action = finding.get("recommended_action", "") if isinstance(finding, dict) else ""
+                    action_counts[action] = action_counts.get(action, 0) + 1
+                if action_counts:
+                    detail_snap.top_action = max(action_counts.items(), key=lambda item: item[1])[0]
                 if not event.success:
                     detail_snap.last_error = event.output.get("error", "")
 

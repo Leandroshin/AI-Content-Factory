@@ -213,7 +213,7 @@ class ProductResearchPipeline(ProductionPipeline):
         if self._shortlisted:
             actions.append("Send shortlisted products to AffiliateDealsEmployee for offer scoring and copy.")
             actions.append("Check affiliate URL/tracking ID for every shortlisted product before publishing.")
-            actions.append("Review image quality before creative production.")
+            actions.append("Send images and offer cards to CreativeReviewEmployee before creative production.")
         if any(not f.candidate.has_affiliate_target for f in self._shortlisted):
             actions.append("Owner must create affiliate links for shortlisted products missing affiliate_url.")
         if any(f.candidate.risk_flags for f in self._shortlisted):

@@ -329,7 +329,7 @@ def main() -> None:
     next_actions = output["next_actions"]
     _check(any("AffiliateDealsEmployee" in action for action in next_actions), "Handoff points to AffiliateDealsEmployee")
     _check(any("affiliate links" in action for action in next_actions), "Next actions mention affiliate links")
-    _check(any("image quality" in action for action in next_actions), "Next actions mention image review")
+    _check(any("CreativeReviewEmployee" in action for action in next_actions), "Next actions mention creative review")
     _check(employee.production_metrics.candidates_analyzed == 10, "Metrics count candidates")
     _check(employee.production_metrics.shortlisted_count == 4, "Metrics count shortlist")
     _check(employee.production_metrics.top_score == shortlisted[0]["score_total"], "Metrics keep top score")
