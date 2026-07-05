@@ -19,11 +19,13 @@ from core.content_factory.affiliate_workflow import (
     AffiliateFactoryWorkflowResult,
     AffiliatePublicationPackage,
 )
+from core.content_factory.affiliate_dashboard import AffiliateApprovalDashboardRenderer
 from core.content_factory.managed_workflow import ManagedContentProductionWorkflow
 from core.content_factory.workflow import ContentProductionWorkflow
 
 __all__ = [
     "AffiliateCommerceWorkflow",
+    "AffiliateApprovalDashboardRenderer",
     "AffiliateFactoryEmployees",
     "AffiliateFactoryWorkflowResult",
     "AffiliatePublicationPackage",

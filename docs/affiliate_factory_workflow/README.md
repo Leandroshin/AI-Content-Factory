@@ -29,3 +29,12 @@ The package records:
 - recommendation and publishing status
 - approval id/status
 - Telegram status/message id
+
+## Daily Panel
+
+`demo_affiliate_approval_dashboard.py` renders a local preview at
+`output/affiliate_approval_dashboard/index.html`.
+
+The panel shows the offer queue, selected offer details, Telegram message,
+workflow steps, local approve/reject/publish interactions, and a printable A4
+operator guide.
