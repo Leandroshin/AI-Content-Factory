@@ -82,6 +82,7 @@ assets/audio/
 
 # Misc
 conversa inteira.txt
+RespostaLLMS/
 .ipynb_checkpoints/
 node_modules/
 npm-debug.log*

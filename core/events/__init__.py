@@ -13,6 +13,8 @@ from .contracts import (
 )
 from .dispatcher import EventDispatcher
 from .domain_events import (
+    ApprovalDecided,
+    ApprovalRequested,
     CollaborationCompleted,
     CollaborationStarted,
     CompanyTaskCompleted,
@@ -82,6 +84,8 @@ __all__ = [
     "BaseEventRegistry",
     "BaseEventSubscriber",
     "BaseEventValidator",
+    "ApprovalDecided",
+    "ApprovalRequested",
     "CollaborationCompleted",
     "CollaborationStarted",
     "CompanyTaskCompleted",

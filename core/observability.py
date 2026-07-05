@@ -18,6 +18,8 @@ from core.departments.runtime import DepartmentStateChangedEvent
 from core.employees.runtime import EmployeeStateChangedEvent
 from core.events.bus import EventBus
 from core.events.domain_events import (
+    ApprovalDecided,
+    ApprovalRequested,
     ExecutionPersisted,
     ExecutionRestored,
     MemoryDocumentArchived,
@@ -190,6 +192,18 @@ class SessionSnapshot:
 
 
 @dataclass(slots=True)
+class ApprovalSnapshot:
+    total_requests: int = 0
+    pending: int = 0
+    approved: int = 0
+    rejected: int = 0
+    expired: int = 0
+    cancelled: int = 0
+    latest_approval_id: str = ""
+    latest_status: str = ""
+
+
+@dataclass(slots=True)
 class ProductionSnapshot:
     """Generic production snapshot — reutilizado por todos os departamentos."""
     task_id: str | None = None
@@ -347,6 +361,7 @@ class ObservabilitySnapshot:
     organizational_memory: OrganizationalMemorySnapshot = field(default_factory=OrganizationalMemorySnapshot)
     quality: QualitySnapshot = field(default_factory=QualitySnapshot)
     session: SessionSnapshot = field(default_factory=SessionSnapshot)
+    approvals: ApprovalSnapshot = field(default_factory=ApprovalSnapshot)
     video_department: VideoDepartmentSnapshot = field(default_factory=VideoDepartmentSnapshot)
     video_production: VideoProductionSnapshot = field(default_factory=VideoProductionSnapshot)
     render: RenderSnapshot = field(default_factory=RenderSnapshot)
@@ -437,6 +452,8 @@ class ObservabilityProjector(BaseProjector):
             MemoryDocumentArchived: self.handle_memory_document_archived,
             QualityValidationStarted: self.handle_quality_started,
             QualityValidationFinished: self.handle_quality_finished,
+            ApprovalRequested: self.handle_approval_requested,
+            ApprovalDecided: self.handle_approval_decided,
             # HTTP events
             HttpRequestStarted: self.handle_http_request_started,
             HttpRequestCompleted: self.handle_http_request_completed,
@@ -967,6 +984,39 @@ class ObservabilityProjector(BaseProjector):
             f"passed={event.passed}:"
             f"passed_rules={event.passed_rules}/"
             f"{event.total_rules}"
+        )
+
+    # ------------------------------------------------------------------
+    # Approval event handlers
+    # ------------------------------------------------------------------
+
+    def handle_approval_requested(self, event: ApprovalRequested) -> None:
+        snap = self.snapshot.approvals
+        snap.total_requests += 1
+        snap.pending += 1
+        snap.latest_approval_id = str(event.approval_id)[:8]
+        snap.latest_status = "pending"
+        self.snapshot.events.append(
+            f"approval:requested:{snap.latest_approval_id}:source={event.source}:risk={event.risk_level}"
+        )
+
+    def handle_approval_decided(self, event: ApprovalDecided) -> None:
+        snap = self.snapshot.approvals
+        status = event.status
+        if snap.pending > 0:
+            snap.pending -= 1
+        if status == "approved":
+            snap.approved += 1
+        elif status == "rejected":
+            snap.rejected += 1
+        elif status == "expired":
+            snap.expired += 1
+        elif status == "cancelled":
+            snap.cancelled += 1
+        snap.latest_approval_id = str(event.approval_id)[:8]
+        snap.latest_status = status
+        self.snapshot.events.append(
+            f"approval:decided:{snap.latest_approval_id}:status={status}:by={event.decided_by}"
         )
 
     # ------------------------------------------------------------------

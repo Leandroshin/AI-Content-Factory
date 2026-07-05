@@ -348,6 +348,35 @@ class ExecutionRestored:
 
 
 # ==================================================================
+# Human Approval events
+# ==================================================================
+
+
+@dataclass(frozen=True, slots=True)
+class ApprovalRequested:
+    approval_id: UUID
+    source: str = ""
+    subject_type: str = ""
+    subject_id: str = ""
+    risk_level: str = ""
+    timestamp: float = 0.0
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class ApprovalDecided:
+    approval_id: UUID
+    status: str = ""
+    decided_by: str = ""
+    reason: str = ""
+    source: str = ""
+    subject_type: str = ""
+    subject_id: str = ""
+    timestamp: float = 0.0
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
+# ==================================================================
 # Organizational Memory events
 # ==================================================================
 

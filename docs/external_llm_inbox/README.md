@@ -40,6 +40,8 @@ Use this structure:
 
 ```text
 docs/external_llm_inbox/
+  synthesis/
+    YYYY-MM-DD_topic_synthesis.md
   qwen/
     YYYY-MM-DD_short-topic.md
 ```
@@ -49,6 +51,7 @@ Examples:
 ```text
 docs/external_llm_inbox/qwen/2026-07-05_affiliate_growth_extensions.md
 docs/external_llm_inbox/qwen/2026-07-05_market_research_department.md
+docs/external_llm_inbox/synthesis/2026-07-05_external_llm_synthesis.md
 ```
 
 Start from one of the templates in this folder:
@@ -56,5 +59,6 @@ Start from one of the templates in this folder:
 - `IDEA_TEMPLATE.md`
 - `EMPLOYEE_SPEC_TEMPLATE.md`
 - `DEPARTMENT_SPEC_TEMPLATE.md`
+- `PROMPT_FOR_EXTERNAL_IDEA_LLMS.md` for LLMs that cannot access GitHub
 
 Codex will treat files in this inbox as proposals, not accepted source of truth.
