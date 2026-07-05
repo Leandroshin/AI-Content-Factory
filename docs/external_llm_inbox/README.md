@@ -42,6 +42,8 @@ Use this structure:
 docs/external_llm_inbox/
   synthesis/
     YYYY-MM-DD_topic_synthesis.md
+  claude/
+    YYYY-MM-DD_short-topic.md
   qwen/
     YYYY-MM-DD_short-topic.md
 ```
@@ -50,6 +52,7 @@ Examples:
 
 ```text
 docs/external_llm_inbox/qwen/2026-07-05_affiliate_growth_extensions.md
+docs/external_llm_inbox/claude/2026-07-05_infoproducts_client_services.md
 docs/external_llm_inbox/qwen/2026-07-05_market_research_department.md
 docs/external_llm_inbox/synthesis/2026-07-05_external_llm_synthesis.md
 ```

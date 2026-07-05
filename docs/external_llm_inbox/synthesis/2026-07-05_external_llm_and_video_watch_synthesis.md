@@ -10,6 +10,8 @@ Status: reviewed input, accepted sequence updated
 - `RespostaLLMS/Gemini 3.5.txt`
 - `RespostaLLMS/GLM5.2.txt`
 - `RespostaLLMS/METAAI.txt`
+- Claude pasted response archived at
+  `docs/external_llm_inbox/claude/2026-07-05_infoproducts_client_services.md`
 - Qwen proposal archived at `docs/external_llm_inbox/qwen/2026-07-05_hook_hitl_repurposing.md`
 - `bradautomates/claude-video` local audit in `temp/external/claude-video`
 
@@ -66,3 +68,17 @@ Constraints:
 
 Proceed with HITL Approval Gateway now. It protects Telegram publishing, future
 video repurposing, paid providers, and automated content distribution.
+
+## 2026-07-05 Claude Addendum
+
+Claude's repo snapshot predated the local Telegram work, so its warning about a
+missing `TelegramAdapter` is obsolete in the current repository. Its strongest
+new idea is an Affiliate Deals extension for manually reviewed digital
+infoproducts. Accepted implementation path:
+
+1. Keep the existing `AffiliateDealsEmployee`.
+2. Add conservative digital-product compliance checks.
+3. Require manual source review for Hotmart/Kiwify-style offers.
+4. Block cure claims, second-person diagnosis, explicit/adult positioning, and
+   sexual-performance promises.
+5. Keep publication behind the HITL approval gateway.

@@ -500,6 +500,8 @@ def _coerce_funnel_metrics(raw: Any) -> FunnelMetrics:
 def _trust_for(marketplace: str) -> float:
     return {
         "amazon": 0.92,
+        "hotmart": 0.78,
+        "kiwify": 0.74,
         "mercado livre": 0.86,
         "mercado_livre": 0.86,
         "shopee": 0.78,

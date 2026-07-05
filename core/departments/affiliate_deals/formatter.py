@@ -102,6 +102,8 @@ def _category_icon(category: str) -> str:
         return "🎧"
     if any(part in key for part in ("casa", "cozinha")):
         return "🏠"
+    if any(part in key for part in ("curso", "infoproduto", "digital", "saude", "saúde", "bem_estar")):
+        return "📘"
     return "🛒"
 
 
@@ -113,6 +115,8 @@ def _theme_for_category(category: str) -> str:
         return "home_green"
     if "beleza" in key:
         return "beauty_magenta"
+    if any(part in key for part in ("curso", "infoproduto", "digital", "saude", "saúde", "bem_estar")):
+        return "education_green"
     return "marketplace_neutral"
 
 
