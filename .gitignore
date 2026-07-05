@@ -7,6 +7,8 @@
 .env.*
 !.env.example
 secrets/
+!core/tools/secrets/
+!core/tools/secrets/**
 *.key
 *.pem
 *.p12
@@ -78,6 +80,7 @@ assets/audio/
 *.aac
 
 # Misc
+conversa inteira.txt
 .ipynb_checkpoints/
 node_modules/
 npm-debug.log*

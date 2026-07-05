@@ -5,6 +5,7 @@ from .exceptions import DepartmentError, DepartmentRegistryError, DepartmentVali
 from .models import Department, DepartmentCapability, DepartmentContext, DepartmentMetadata, DepartmentResult, DepartmentStatus, DepartmentType
 from .registry import DepartmentRegistry
 from .validators import DepartmentValidator
+from .runtime import DepartmentEmployeeLink, DepartmentRuntime, DepartmentRuntimeSnapshot, DepartmentRuntimeState, DepartmentStateChangedEvent
 
 __all__ = [
     "BaseDepartmentRegistry",
@@ -12,6 +13,11 @@ __all__ = [
     "Department",
     "DepartmentCapability",
     "DepartmentContext",
+    "DepartmentEmployeeLink",
+    "DepartmentRuntime",
+    "DepartmentRuntimeSnapshot",
+    "DepartmentRuntimeState",
+    "DepartmentStateChangedEvent",
     "DepartmentError",
     "DepartmentMetadata",
     "DepartmentRegistry",

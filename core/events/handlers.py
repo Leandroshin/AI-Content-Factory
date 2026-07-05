@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from .models import Event
+from .models import BaseEvent as Event
 from .result import EventResult
 
 

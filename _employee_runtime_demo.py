@@ -1,0 +1,1 @@
+﻿from core.employees import Employee, EmployeeRuntime; runtime = EmployeeRuntime(); runtime.initialize_company(); employee = Employee(); snapshot = runtime.create_employee(employee); runtime.assign_task(snapshot.employee_id, 'task-test-001'); runtime.complete_task(snapshot.employee_id); print(snapshot.state.value); print([event.new_state.value for event in runtime.events()])

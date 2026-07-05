@@ -9,6 +9,7 @@ from .contracts import (
     KnowledgeValidatorContract,
 )
 from .exceptions import KnowledgeError, KnowledgeRegistryError, KnowledgeRepositoryError, KnowledgeValidationError
+from .foundation import KnowledgeRecord, KnowledgeResult as FoundationKnowledgeResult, KnowledgeRuntime as FoundationKnowledgeRuntime, KnowledgeSnapshot, KnowledgeTrace
 from .models import (
     KnowledgeCategory,
     KnowledgeContext,
@@ -18,6 +19,7 @@ from .models import (
     KnowledgeSource,
     KnowledgeStatus,
 )
+from .runtime import KnowledgeRuntime, KnowledgeRuntimeState, KnowledgeStateChangedEvent, KnowledgeRuntimeSnapshot, KnowledgeType
 from .registry import KnowledgeRegistry
 from .repository import KnowledgeRepository
 from .validators import KnowledgeValidator
@@ -26,11 +28,14 @@ __all__ = [
     "BaseKnowledgeRegistry",
     "BaseKnowledgeRepository",
     "BaseKnowledgeValidator",
+    "FoundationKnowledgeResult",
+    "FoundationKnowledgeRuntime",
     "KnowledgeCategory",
     "KnowledgeContext",
     "KnowledgeEntry",
     "KnowledgeError",
     "KnowledgeMetadata",
+    "KnowledgeRecord",
     "KnowledgeRegistry",
     "KnowledgeRegistryContract",
     "KnowledgeRegistryError",
@@ -38,8 +43,13 @@ __all__ = [
     "KnowledgeRepositoryContract",
     "KnowledgeRepositoryError",
     "KnowledgeResult",
-    "KnowledgeSource",
-    "KnowledgeStatus",
+    "KnowledgeRuntime",
+    "KnowledgeRuntimeSnapshot",
+    "KnowledgeRuntimeState",
+    "KnowledgeSnapshot",
+    "KnowledgeStateChangedEvent",
+    "KnowledgeTrace",
+    "KnowledgeType",
     "KnowledgeValidationError",
     "KnowledgeValidator",
     "KnowledgeValidatorContract",

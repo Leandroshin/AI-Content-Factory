@@ -574,7 +574,7 @@ config = ProjectConfig.from_yaml("projects/gta6.yaml")
 provider = ElevenLabsProvider(api_key=config.narration.api_key)
 
 # Incorreto — hardcoded
-API_KEY = "sk-abc123..."
+API_KEY = "example-api-key"
 VOICE_ID = "xyz789"
 ```
 
@@ -1094,8 +1094,8 @@ Seguir Semantic Versioning quando o projeto atingir estabilidade.
 **Desenvolvimento local**: Arquivo `.env` na raiz do projeto (listado no `.gitignore`).
 
 ```env
-ELEVENLABS_API_KEY=sk-...
-OPENAI_API_KEY=sk-...
+ELEVENLABS_API_KEY=example-elevenlabs-key
+OPENAI_API_KEY=example-openai-key
 YOUTUBE_CLIENT_SECRET=...
 ```
 

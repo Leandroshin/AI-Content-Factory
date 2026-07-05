@@ -33,7 +33,27 @@ The repository follows a layered architecture centered on a shared `core/` found
 
 ## Current Stage
 
-The project is currently in the architectural foundation phase. Most modules expose contracts, models, and documentation only; functional behavior is intentionally deferred to later missions.
+The project now has a concrete production layer:
+
+- Base department layer with `ProductionEmployee` and `ProductionPipeline`
+- Video, Audio, Image, Script, and Affiliate Deals departments
+- Content workflow: Brief -> Script -> Audio -> Image -> Video -> Quality -> Observability
+- Provider control, budget guard, masked API settings, and interactive provider-panel preview
+- Deterministic demos for regression and architecture proof
+
+See `AGENTS.md` for the latest architectural state and next steps.
+
+## External LLM Inbox
+
+External LLMs that can read GitHub but cannot run the local project should not
+modify production code directly. They should write Markdown proposals in:
+
+```text
+docs/external_llm_inbox/qwen/
+```
+
+Use the templates in `docs/external_llm_inbox/`. Codex will later review,
+validate, and implement accepted proposals with tests.
 
 ## Architectural Principles
 
@@ -46,4 +66,5 @@ The project is currently in the architectural foundation phase. Most modules exp
 
 ## Notes
 
-Operational features, integrations, and AI behavior are not implemented yet.
+Generated artifacts in `output/` and local secrets are intentionally ignored by
+Git. Real external-provider calls must remain opt-in and budget-limited.
