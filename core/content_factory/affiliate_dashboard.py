@@ -253,6 +253,64 @@ class AffiliateApprovalDashboardRenderer:
       padding: 11px 12px;
       font: inherit;
     }}
+    input[type="text"], input[type="url"], input[type="number"], select, textarea {{
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #090d13;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 10px 11px;
+      font: inherit;
+    }}
+    textarea {{
+      min-height: 76px;
+      resize: vertical;
+    }}
+    label {{
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }}
+    .modal-backdrop {{
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(4, 7, 11, 0.74);
+    }}
+    .modal-backdrop[hidden] {{
+      display: none;
+    }}
+    .manual-form {{
+      width: min(760px, 100%);
+      max-height: min(820px, 92vh);
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+      padding: 18px;
+    }}
+    .form-grid {{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }}
+    .full-span {{
+      grid-column: 1 / -1;
+    }}
+    .form-actions {{
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }}
     table {{
       width: 100%;
       border-collapse: collapse;
@@ -432,6 +490,7 @@ class AffiliateApprovalDashboardRenderer:
       aside.nav {{ display: none; }}
       main {{ padding: 18px; }}
       .summary, .layout, .cards {{ grid-template-columns: 1fr; }}
+      .form-grid {{ grid-template-columns: 1fr; }}
       .detail-grid {{ grid-template-columns: 1fr; }}
       header {{ flex-direction: column; }}
       table {{ display: block; overflow-x: auto; }}
@@ -531,6 +590,62 @@ class AffiliateApprovalDashboardRenderer:
           {activity}
         </div>
       </section>
+
+      <div class="modal-backdrop" id="new-offer-modal" hidden>
+        <section class="manual-form" role="dialog" aria-modal="true" aria-labelledby="manual-offer-title">
+          <div class="panel-head" style="padding:0">
+            <div>
+              <h2 id="manual-offer-title">Nova oferta manual</h2>
+              <p class="sub">Cole o produto agora; a pesquisa automatica entra na proxima etapa.</p>
+            </div>
+            <button type="button" id="close-new-offer" aria-label="Fechar">Fechar</button>
+          </div>
+          <form id="new-offer-form">
+            <div class="form-grid">
+              <label class="full-span">Nome do produto
+                <input name="product_name" type="text" placeholder="PlayStation DualSense Controle sem fio" required>
+              </label>
+              <label>Marketplace
+                <select name="marketplace">
+                  <option value="Amazon">Amazon</option>
+                  <option value="Mercado Livre">Mercado Livre</option>
+                  <option value="Shopee">Shopee</option>
+                  <option value="TikTok Shop">TikTok Shop</option>
+                  <option value="Manual">Manual</option>
+                </select>
+              </label>
+              <label>Categoria
+                <input name="category" type="text" placeholder="games, casa, beleza">
+              </label>
+              <label class="full-span">URL do produto
+                <input name="product_url" type="url" placeholder="https://www.amazon.com.br/...">
+              </label>
+              <label class="full-span">Link afiliado
+                <input name="affiliate_url" type="url" placeholder="https://amzn.to/..." required>
+              </label>
+              <label>Preco atual
+                <input name="current_price" type="number" min="0" step="0.01" placeholder="327.22">
+              </label>
+              <label>Preco antigo
+                <input name="old_price" type="number" min="0" step="0.01" placeholder="499.90">
+              </label>
+              <label>Cupom
+                <input name="coupon_code" type="text" placeholder="TUDOPRIME">
+              </label>
+              <label>Imagem
+                <input name="image_url" type="url" placeholder="https://.../imagem.jpg">
+              </label>
+              <label class="full-span">Observacao
+                <textarea name="notes" placeholder="Oferta Prime, estoque baixo, publico gamer..."></textarea>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="button" id="cancel-new-offer">Cancelar</button>
+              <button type="submit" class="primary">Adicionar na fila</button>
+            </div>
+          </form>
+        </section>
+      </div>
     </main>
   </div>
   {script}
@@ -651,6 +766,8 @@ window.__affiliateDashboard = __PAYLOAD__;
   const search = document.getElementById("offer-search");
   const detail = document.getElementById("offer-detail");
   const log = document.getElementById("activity-log");
+  const newOfferModal = document.getElementById("new-offer-modal");
+  const newOfferForm = document.getElementById("new-offer-form");
   const serverBacked = state.mode === "server";
   let selectedId = state.offers[0] ? state.offers[0].id : "";
   let filter = "all";
@@ -695,6 +812,45 @@ window.__affiliateDashboard = __PAYLOAD__;
     item.className = "activity-item";
     item.textContent = new Date().toLocaleTimeString("pt-BR") + " | " + text;
     log.prepend(item);
+  }
+
+  function openNewOfferModal() {
+    if (!newOfferModal) return;
+    newOfferModal.hidden = false;
+    const firstInput = newOfferModal.querySelector("input[name='product_name']");
+    if (firstInput) firstInput.focus();
+  }
+
+  function closeNewOfferModal() {
+    if (!newOfferModal) return;
+    newOfferModal.hidden = true;
+  }
+
+  async function createManualOffer(event) {
+    event.preventDefault();
+    if (!newOfferForm) return;
+    if (!serverBacked) {
+      addLog("Entrada manual salva de verdade apenas no modo servidor local.");
+      closeNewOfferModal();
+      return;
+    }
+    const body = Object.fromEntries(new FormData(newOfferForm).entries());
+    try {
+      const response = await fetch("/api/offers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json();
+      if (!response.ok || data.ok === false) {
+        addLog(data.error || "Nao foi possivel criar a oferta manual.");
+        return;
+      }
+      addLog(data.message || "Oferta manual criada.");
+      window.location.reload();
+    } catch (error) {
+      addLog("Servidor local indisponivel para criar a oferta.");
+    }
   }
 
   function updateOfferDom(offer) {
@@ -897,7 +1053,17 @@ window.__affiliateDashboard = __PAYLOAD__;
     });
   }
   const newOffer = document.getElementById("new-offer");
-  if (newOffer) newOffer.addEventListener("click", () => addLog("Nova oferta entra pela esteira Product Research."));
+  if (newOffer) newOffer.addEventListener("click", openNewOfferModal);
+  if (newOfferForm) newOfferForm.addEventListener("submit", createManualOffer);
+  const closeNewOffer = document.getElementById("close-new-offer");
+  if (closeNewOffer) closeNewOffer.addEventListener("click", closeNewOfferModal);
+  const cancelNewOffer = document.getElementById("cancel-new-offer");
+  if (cancelNewOffer) cancelNewOffer.addEventListener("click", closeNewOfferModal);
+  if (newOfferModal) {
+    newOfferModal.addEventListener("click", (event) => {
+      if (event.target === newOfferModal) closeNewOfferModal();
+    });
+  }
 
   if (selectedId) selectOffer(selectedId);
   applyFilters();

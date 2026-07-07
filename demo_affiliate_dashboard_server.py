@@ -99,17 +99,40 @@ def main() -> None:
         _check("Affiliate Approval Dashboard" in html, "GET / renders dashboard HTML")
         _check("serverAction" in html, "HTML includes server-backed actions")
         _check("/api/offers/" in html, "HTML calls offer action endpoints")
+        _check("Nova oferta manual" in html, "HTML includes manual intake form")
         _check("window.print" not in html, "HTML has no print/A4 workflow")
 
         print("\n" + "-" * 70)
-        print("Step 2: Enforce approval gate before publishing")
+        print("Step 2: Create a manual offer")
+        print("-" * 70)
+        missing_link = _post_json_error(base_url, "/api/offers", {"product_name": "Oferta sem link"})
+        _check(missing_link["ok"] is False, "Manual intake requires affiliate link")
+        created = _post_json(base_url, "/api/offers", {
+            "product_name": "Headset Gamer Sem Fio HyperX Cloud Jet",
+            "marketplace": "Amazon",
+            "category": "games",
+            "product_url": "https://amazon.example/headset",
+            "affiliate_url": "https://amzn.example/headset-afiliado",
+            "current_price": "296.10",
+            "old_price": "419.00",
+            "coupon_code": "TUDOPRIME",
+            "image_url": "https://img.example/headset.jpg",
+            "notes": "Produto visto em grupo de ofertas.",
+        })
+        _check(created["ok"] is True, "Manual intake creates offer")
+        _check(created["offer"]["approval_status"] == "pending", "Manual offer starts pending")
+        _check(created["offer"]["message_body"], "Manual offer has Telegram draft")
+        _check(created["summary"]["total"] == 3, "Summary includes manual offer")
+
+        print("\n" + "-" * 70)
+        print("Step 3: Enforce approval gate before publishing")
         print("-" * 70)
         blocked = _post_json_error(base_url, f"/api/offers/{first_id}/publish")
         _check(blocked["ok"] is False, "Publish before approval is rejected")
         _check("Aprove" in blocked["error"], "Publish rejection explains approval requirement")
 
         print("\n" + "-" * 70)
-        print("Step 3: Approve and publish one offer")
+        print("Step 4: Approve and publish one offer")
         print("-" * 70)
         approved = _post_json(base_url, f"/api/offers/{first_id}/approve", {"decided_by": "Shin"})
         _check(approved["ok"] is True, "Approve endpoint succeeds")
@@ -123,7 +146,7 @@ def main() -> None:
         _check(published["summary"]["published"] == 1, "Summary counts published offer")
 
         print("\n" + "-" * 70)
-        print("Step 4: Reject another offer and confirm persistence")
+        print("Step 5: Reject another offer and confirm persistence")
         print("-" * 70)
         rejected = _post_json(base_url, f"/api/offers/{second_id}/reject", {"reason": "Imagem precisa melhorar."})
         _check(rejected["ok"] is True, "Reject endpoint succeeds")
@@ -131,10 +154,13 @@ def main() -> None:
         _check(rejected["summary"]["blocked"] == 1, "Summary counts blocked offer")
 
         saved = json.loads(store_path.read_text(encoding="utf-8"))
+        _check(saved["summary"]["total"] == 3, "Manual offer persisted in total count")
+        _check(saved["summary"]["pending"] == 1, "Manual offer remains pending")
         _check(saved["summary"]["published"] == 1, "Published state persisted to disk")
         _check(saved["summary"]["blocked"] == 1, "Rejected state persisted to disk")
-        _check(saved["offers"][0]["telegram_status"] == "sent_mock", "Persisted first offer has Telegram status")
-        _check(saved["offers"][1]["status"] == "blocked", "Persisted second offer is blocked")
+        _check(saved["offers"][0]["title"] == "Headset Gamer Sem Fio HyperX Cloud Jet", "Manual offer is stored at top")
+        _check(saved["offers"][1]["telegram_status"] == "sent_mock", "Persisted first seed offer has Telegram status")
+        _check(saved["offers"][2]["status"] == "blocked", "Persisted second seed offer is blocked")
     finally:
         server.shutdown()
         server.server_close()

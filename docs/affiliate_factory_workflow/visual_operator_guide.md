@@ -69,10 +69,9 @@ Resultado esperado:
 - A oferta sai da fila de pendentes.
 - O historico registra a decisao.
 
-## O que digitar quando houver entrada manual
+## O que digitar na entrada manual
 
-A tela de entrada manual ainda vai ser ligada ao backend. Quando ela existir, o
-preenchimento esperado sera:
+No modo servidor local, clique em `Nova oferta` e preencha:
 
 | Campo | Exemplo | Observacao |
 |---|---|---|

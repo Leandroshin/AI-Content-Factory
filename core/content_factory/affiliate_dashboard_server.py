@@ -63,6 +63,21 @@ class AffiliateDashboardStore:
         """Return the current normalized state."""
         return self.load()
 
+    def create_manual_offer(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Create a pending offer from manual owner input."""
+        title = str(payload.get("product_name") or payload.get("title") or "").strip()
+        if not title:
+            raise ValueError("Informe o nome do produto.")
+        affiliate_url = str(payload.get("affiliate_url") or "").strip()
+        if not affiliate_url:
+            raise ValueError("Informe o link afiliado antes de criar a oferta.")
+
+        state = self.load()
+        offer = self._manual_offer(payload, title=title, affiliate_url=affiliate_url)
+        state.setdefault("offers", []).insert(0, offer)
+        saved = self.save(state)
+        return saved["offers"][0]
+
     def approve(self, offer_id: str, *, decided_by: str = "owner", reason: str = "") -> dict[str, Any]:
         """Mark an offer as approved for publication."""
         state = self.load()
@@ -144,6 +159,70 @@ class AffiliateDashboardStore:
             "offers": [],
         }
 
+    def _manual_offer(self, payload: dict[str, Any], *, title: str, affiliate_url: str) -> dict[str, Any]:
+        marketplace = str(payload.get("marketplace") or "manual").strip() or "manual"
+        product_url = str(payload.get("product_url") or "").strip()
+        image_url = str(payload.get("image_url") or "").strip()
+        coupon = str(payload.get("coupon_code") or "").strip()
+        notes = str(payload.get("notes") or "").strip()
+        current_price = _float_or_zero(payload.get("current_price"))
+        old_price = _float_or_zero(payload.get("old_price"))
+        discount = _discount_percent(old_price, current_price)
+        deal_score = min(95.0, 55.0 + (discount * 0.9) + (12.0 if coupon else 0.0) + (8.0 if image_url else 0.0))
+        message = self._manual_message(
+            title=title,
+            current_price=current_price,
+            old_price=old_price,
+            coupon=coupon,
+            affiliate_url=affiliate_url,
+        )
+        return {
+            "id": str(uuid4()),
+            "title": title,
+            "marketplace": marketplace,
+            "category": str(payload.get("category") or "manual").strip() or "manual",
+            "product_url": product_url,
+            "affiliate_url": affiliate_url,
+            "image_url": image_url,
+            "product_research_score": round(deal_score, 1),
+            "creative_action": "manual_review",
+            "creative_score": 70.0 if image_url else 45.0,
+            "deal_score": round(deal_score, 1),
+            "recommendation": "manual_review",
+            "approval_status": "pending",
+            "telegram_status": "",
+            "publishing_status": "pending_approval",
+            "status": "pending",
+            "message_body": message,
+            "notes": notes,
+            "created_at": _now(),
+            "steps": (
+                {"department": "Manual Intake", "success": True, "summary": "Owner entered product offer."},
+                {"department": "Product Research", "success": True, "summary": "Basic price and affiliate data captured."},
+                {"department": "Creative Review", "success": bool(image_url), "summary": "Image provided." if image_url else "Image missing; review before publishing."},
+                {"department": "Affiliate Deals", "success": True, "summary": "Draft Telegram message generated."},
+            ),
+        }
+
+    def _manual_message(
+        self,
+        *,
+        title: str,
+        current_price: float,
+        old_price: float,
+        coupon: str,
+        affiliate_url: str,
+    ) -> str:
+        lines = [title, ""]
+        if current_price > 0 and old_price > current_price:
+            lines.append(f"DE R${old_price:.2f} | POR R${current_price:.2f}")
+        elif current_price > 0:
+            lines.append(f"POR R${current_price:.2f}")
+        if coupon:
+            lines.append(f"Cupom: {coupon}")
+        lines.extend(["", f"Link: {affiliate_url}", "", "Alguns links podem ser afiliados."])
+        return "\n".join(lines)
+
     def _normalize_state(self, state: dict[str, Any]) -> dict[str, Any]:
         normalized = dict(state)
         offers = [dict(offer) for offer in normalized.get("offers", []) if isinstance(offer, dict)]
@@ -215,6 +294,9 @@ def create_affiliate_dashboard_server(
         def do_POST(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler API
             parsed = urlparse(self.path)
             parts = [unquote(part) for part in parsed.path.strip("/").split("/") if part]
+            if len(parts) == 2 and parts[0] == "api" and parts[1] == "offers":
+                self._handle_create_offer()
+                return
             if len(parts) == 4 and parts[0] == "api" and parts[1] == "offers":
                 self._handle_offer_action(parts[2], parts[3])
                 return
@@ -222,6 +304,19 @@ def create_affiliate_dashboard_server(
 
         def log_message(self, _format: str, *args: object) -> None:
             return
+
+        def _handle_create_offer(self) -> None:
+            try:
+                offer = store.create_manual_offer(self._read_json())
+            except ValueError as exc:
+                self._send_json({"ok": False, "error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                return
+            self._send_json({
+                "ok": True,
+                "offer": offer,
+                "summary": store.state()["summary"],
+                "message": "Oferta manual criada na fila.",
+            }, HTTPStatus.CREATED)
 
         def _handle_offer_action(self, offer_id: str, action: str) -> None:
             try:
@@ -361,6 +456,19 @@ def main() -> None:
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _float_or_zero(value: Any) -> float:
+    try:
+        return float(str(value).replace(",", "."))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _discount_percent(old_price: float, current_price: float) -> float:
+    if old_price <= 0 or current_price <= 0 or current_price >= old_price:
+        return 0.0
+    return ((old_price - current_price) / old_price) * 100.0
 
 
 if __name__ == "__main__":
