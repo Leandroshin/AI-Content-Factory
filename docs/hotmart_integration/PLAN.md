@@ -34,7 +34,7 @@ variables. The health endpoint returns HTTP 200 with `configured: true` and
 - [x] Dedicated Neon project and redacted PostgreSQL schema created.
 - [x] Postgres store exercised against Neon and smoke rows removed.
 - [x] Vercel preview and production deployments built successfully.
-- [x] Full regression: 93/93 demos, 0 failures, 1342 explicit assertions.
+- [x] Full regression: 94/94 demos, 0 failures, 1366 explicit assertions.
 - [x] Sign in to Hotmart and obtain the account HOTTOK without exposing it in
   chat or Git.
 - [x] Sign in to Vercel and save HOTTOK plus the pooled Neon URL as encrypted

@@ -69,9 +69,9 @@ Concrete pieces:
 
 ## Verification baseline
 
-- 93 demo files are present.
-- Standardized run on 2026-07-11: 93/93 demos, 0 failures.
-- 37 demos explicitly printed 1342 assertions; 56 passed without a numeric
+- 94 demo files are present.
+- Standardized run on 2026-07-11: 94/94 demos, 0 failures.
+- 38 demos explicitly printed 1366 assertions; 56 passed without a numeric
   assertion summary.
 - Core compilation was successful at that baseline.
 

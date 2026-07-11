@@ -82,3 +82,10 @@ the Creator Affiliate route, not a Seller account for inventory owned by Shin.
 No automatic posting, identity submission, terms acceptance, payment setup or
 API-scope assumption. The next technical milestone is a read-only connector
 with redacted logs after each platform exposes official credentials.
+
+## Account-growth bridge
+
+TikTok growth now uses `AudienceGrowthPlanner` in
+`core/content_factory/audience_growth.py`. It scores sourced opportunities,
+blocks unsafe claims and creates production briefs only after owner approval.
+The initial operating plan is in `docs/tiktok_growth/PILOT_PLAN_2026-07.md`.

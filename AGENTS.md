@@ -120,7 +120,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Demo de Falha + Correção:** Pipeline failure (invalid video_type→stage fail) + Quality correction (strict rule→completeness fail→corrections) — ambos refletidos na observability
 - **Primeiro short fisico:** `demo_short_video_factory.py` gera WAV mockado, PNG fisico e MP4 final de 60s; com FFmpeg local, o render consome os arquivos reais
 - **Hotmart Webhook:** pacote `core/integrations/hotmart/` com autenticacao HOTTOK em tempo constante, payload v2, idempotencia por event ID, redacao de PII, fila local/Neon, retry/dead-letter e endpoint Vercel; configuracao oficial ativa e quatro testes Hotmart confirmados como `202 - Processado`
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **93/93 demos, 0 falhas** em 2026-07-11; 37 demos reportaram numericamente 1342 assertions, 56 nao emitem total comparavel
+- **Audience Growth Planner:** `core/content_factory/audience_growth.py` conecta evidencias de tendencias a shortlist auditavel e `ContentBrief`; bloqueia riscos e exige aprovacao do owner antes da producao/publicacao TikTok
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **94/94 demos, 0 falhas** em 2026-07-11; 38 demos reportaram numericamente 1366 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -155,7 +156,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **93/93 demos, 0 falhas**; 1342 assertions explicitamente reportadas por 37 demos
+- **Regressão atual**: **94/94 demos, 0 falhas**; 1366 assertions explicitamente reportadas por 38 demos
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando
