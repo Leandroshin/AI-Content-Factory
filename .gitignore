@@ -74,6 +74,8 @@ logs/
 
 # Large media / generated assets
 assets/videos/
+productions/**/assets/
+productions/**/audio/
 assets/audio/
 *.mp4
 *.mp3

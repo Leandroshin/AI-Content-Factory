@@ -124,6 +124,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Hotmart Webhook:** pacote `core/integrations/hotmart/` com autenticacao HOTTOK em tempo constante, payload v2, idempotencia por event ID, redacao de PII, fila local/Neon, retry/dead-letter e endpoint Vercel; configuracao oficial ativa e quatro testes Hotmart confirmados como `202 - Processado`
 - **Audience Growth Planner:** `core/content_factory/audience_growth.py` conecta evidencias de tendencias a shortlist auditavel e `ContentBrief`; bloqueia riscos e exige aprovacao do owner antes da producao/publicacao TikTok
 - **Gaming News Desk:** `core/content_factory/gaming_news_desk.py` deduplica o radar diario, rejeita rumor/fonte fraca/noticia antiga, retorna `no_news` quando nada merece pauta e conecta aprovados ao Audience Growth Planner; automacao Codex roda diariamente as 09:00
+- **Primeiro corte Fase Nova Games:** pauta oficial Meccha Chameleon 2.6.0 virou composição HyperFrames de 40,79s, 1080x1920, seis cenas, mídia oficial Steam, áudio temporário pt-BR e pacote reproduzível em `productions/fase_nova_games/meccha_chameleon_2_6/`
 - **Regressão padronizada:** `python scripts/run_all_demos.py`; **96/96 demos, 0 falhas** em 2026-07-11; 40 demos reportaram numericamente 1416 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
@@ -155,7 +156,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 5. **Dashboard hospedado + banco** — persistencia multi-sessao, autenticacao e fila HITL utilizavel diariamente
 6. **Metricas de negocio** — cliques, vendas, comissao, custo e ROI alimentando aprendizado aprovado
 7. **Landing page e compliance** — dominio, privacidade, termos, disclosure e eventos de conversao
-8. **Atualizar chave ElevenLabs** — repetir smoke REAL controlado depois da troca
+8. **Regularizar fatura ElevenLabs** — chave nova valida e escopos corretos; TTS bloqueado por `payment_issue`, depois selecionar voz fixa e substituir a faixa temporaria
 9. **Imagem provider real** — escolher por custo, qualidade e licenca antes de texto-para-video
 10. **2.5D operacional** — visualizar uma operacao real ja funcional, sem substituir o dashboard
 
@@ -171,6 +172,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Failure + Correction na demo**: Cenário de falha de pipeline (invalid video_type) + falha de qualidade (missing required field) + correção via QualityRuntime
 - **Prova fisica atual**: `output/short_video_factory/` contem MP4s gerados; o demo mais recente validou WAV + PNG + MP4 final com FFmpeg consumindo ambos
 - **Prova HyperFrames REAL**: `examples/hyperframes/editorial_smoke/index.html` passou lint e check estrito e gerou MP4 vertical fisico via `HyperFramesRenderAdapter` (603697 bytes)
+- **Prova editorial Fase Nova Games**: primeiro corte Meccha Chameleon passou lint/check estrito/contraste/frame QA, gerou H.264+AAC de 40,79s e contact sheet com seis cenas sem texto cortado
 - **Prova gerencial atual**: `demo_managed_content_factory_workflow.py` valida plano executivo + DM + CompanyTaskRuntime + produção real de departamentos; 18/18 tarefas gerenciais concluídas e progresso 100%
 - **Prova de provider controlado**: `demo_provider_budget_guard.py` valida aprovação obrigatória, budget de caracteres/custo/requests, bloqueio antes de HTTP e usage summary; sem chamada externa
 - **Prova de config/painel provider**: `demo_provider_control_center.py` valida ProviderControlCenter, chave mascarada, modo REAL, aprovação com budget explícito, wiring no ElevenLabs e dashboard_state

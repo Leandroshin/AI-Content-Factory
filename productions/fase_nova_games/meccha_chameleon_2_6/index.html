@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Fase Nova Games - Meccha Chameleon 2.6.0</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    :root {
+      --bg: #070a0f;
+      --ink: #f7f9fc;
+      --muted: #b8c2cf;
+      --green: #9cff00;
+      --cyan: #00e5ef;
+      --red: #ff3b30;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+    body { color: var(--ink); font-family: Arial, Helvetica, sans-serif; }
+    #stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+    .scene { position: absolute; inset: 0; overflow: hidden; visibility: hidden; }
+    .scene:first-of-type { visibility: visible; }
+    .media { position: absolute; inset: -45px; width: calc(100% + 90px); height: calc(100% + 90px); object-fit: cover; }
+    .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(2,5,8,.15) 0%, rgba(2,5,8,.2) 42%, rgba(2,5,8,.92) 78%, #05080c 100%); }
+    .brand { position: absolute; top: 74px; left: 64px; right: 64px; display: flex; align-items: center; gap: 18px; z-index: 20; }
+    .brand img { width: 76px; height: 76px; object-fit: cover; border-radius: 12px; }
+    .brand-name { font-size: 30px; font-weight: 800; letter-spacing: 0; }
+    .brand-tag { margin-left: auto; padding: 12px 16px; border: 2px solid rgba(255,255,255,.28); font-size: 21px; font-weight: 700; background: rgba(5,8,12,.62); }
+    .headline { position: absolute; left: 64px; right: 64px; top: 210px; z-index: 4; font-size: 92px; line-height: .96; font-weight: 900; letter-spacing: 0; text-transform: uppercase; text-shadow: 0 6px 28px rgba(0,0,0,.7); }
+    .headline.small { font-size: 76px; line-height: 1; }
+    .kicker { display: inline-block; margin-bottom: 20px; padding: 12px 17px; background: var(--green); color: #071006; font-size: 24px; font-weight: 900; text-shadow: none; }
+    .cyan { color: var(--cyan); }
+    .green { color: var(--green); }
+    .caption { position: absolute; z-index: 6; left: 64px; right: 150px; bottom: 330px; padding: 28px 30px; border-left: 9px solid var(--green); background: rgba(5,8,12,.9); box-shadow: 0 18px 60px rgba(0,0,0,.45); font-size: 42px; line-height: 1.14; font-weight: 800; }
+    .caption strong { color: var(--green); }
+    .source { position: absolute; z-index: 7; left: 64px; bottom: 236px; padding: 11px 15px; background: rgba(5,8,12,.85); color: var(--muted); font-size: 20px; font-weight: 700; }
+    .progress-track { position: absolute; z-index: 9; left: 64px; right: 64px; bottom: 180px; height: 8px; background: rgba(255,255,255,.2); }
+    .progress { width: 100%; height: 100%; background: linear-gradient(90deg, var(--green), var(--cyan)); transform-origin: left center; }
+    .update-card { position: absolute; z-index: 4; left: 64px; right: 64px; top: 460px; padding: 42px; background: rgba(8,12,18,.94); border: 2px solid rgba(255,255,255,.18); box-shadow: 0 22px 80px rgba(0,0,0,.55); }
+    .update-card .label { color: var(--green); font-size: 22px; font-weight: 900; }
+    .update-card h2 { margin: 18px 0 26px; font-size: 64px; line-height: 1; }
+    .update-card p { margin: 0; color: #d9e0e9; font-size: 34px; line-height: 1.3; }
+    .alpha { display: inline-block; padding: 9px 15px; background: var(--red); color: #fff; font-size: 24px; font-weight: 900; vertical-align: middle; }
+    .checklist { position: absolute; z-index: 4; left: 64px; right: 64px; top: 480px; display: grid; gap: 18px; }
+    .check { padding: 24px 28px; display: flex; gap: 20px; align-items: center; background: rgba(6,10,15,.9); border: 1px solid rgba(255,255,255,.2); font-size: 34px; font-weight: 800; }
+    .check span { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; background: var(--green); color: #071006; font-weight: 900; }
+    .question { position: absolute; z-index: 5; left: 64px; right: 64px; top: 430px; padding: 42px; background: rgba(5,8,12,.88); border-top: 8px solid var(--cyan); font-size: 72px; line-height: 1.02; font-weight: 900; }
+    .follow { margin-top: 28px; color: var(--green); font-size: 32px; }
+  </style>
+</head>
+<body>
+  <main id="stage" class="clip" data-composition-id="fase-nova-meccha-2-6" data-start="0" data-width="1080" data-height="1920" data-duration="40.75" data-fps="30">
+    <section id="scene-1" class="scene clip" data-start="0" data-duration="5.50" data-track-index="0">
+      <img class="media" src="assets/shot-01.jpg" alt="Meccha Chameleon official Steam screenshot">
+      <div class="shade"></div>
+      <div class="headline"><span class="kicker">VIROU FENÔMENO</span><br>O CAMALEÃO<br><span class="green">ATUALIZOU</span></div>
+      <div class="caption">O jogo de esconde-esconde recebeu uma atualização <strong>bem curiosa</strong>.</div>
+      <div class="source">IMAGENS OFICIAIS • STEAM APP 4704690</div>
+      <div class="progress-track"><div class="progress"></div></div>
+    </section>
+
+    <section id="scene-2" class="scene clip" data-start="5.50" data-duration="6.56" data-track-index="1">
+      <img class="media" src="assets/shot-02.jpg" alt="Meccha Chameleon official Steam screenshot">
+      <div class="shade"></div>
+      <div class="update-card"><div class="label">FONTE OFICIAL • UPDATE 2.6.0</div><h2>HIKAKIN<br><span class="cyan">MUSEUM</span></h2><p>Novo mapa de colaboração com mecânicas exclusivas.</p></div>
+      <div class="caption">A versão 2.6 adicionou o mapa colaborativo <strong>HIKAKIN Museum</strong>.</div>
+      <div class="source">STEAM NEWS ID 1837955055357316</div>
+      <div class="progress-track"><div class="progress"></div></div>
+    </section>
+
+    <section id="scene-3" class="scene clip" data-start="12.06" data-duration="5.87" data-track-index="2">
+      <img class="media" src="assets/shot-03.jpg" alt="Meccha Chameleon official Steam screenshot">
+      <div class="shade"></div>
+      <div class="headline small"><span class="green">PINTE.</span><br>ESCONDA.<br><span class="cyan">ENGANE.</span></div>
+      <div class="caption">Você pinta o personagem para se misturar ao cenário e <strong>enganar o caçador</strong>.</div>
+      <div class="source">REFERÊNCIA VISUAL TRANSFORMADA • STEAM</div>
+      <div class="progress-track"><div class="progress"></div></div>
+    </section>
+
+    <section id="scene-4" class="scene clip" data-start="17.93" data-duration="6.42" data-track-index="3">
+      <img class="media" src="assets/shot-04.jpg" alt="Meccha Chameleon official Steam screenshot">
+      <div class="shade"></div>
+      <div class="headline small">SUPORTE A<br>CONTROLE<br><span class="alpha">ALFA</span></div>
+      <div class="caption">O controle já funciona, mas a <strong>interface ainda não</strong> pode ser operada por ele.</div>
+      <div class="source">LIMITAÇÃO INFORMADA PELO DESENVOLVEDOR</div>
+      <div class="progress-track"><div class="progress"></div></div>
+    </section>
+
+    <section id="scene-5" class="scene clip" data-start="24.35" data-duration="7.70" data-track-index="4">
+      <img class="media" src="assets/shot-05.jpg" alt="Meccha Chameleon official Steam screenshot">
+      <div class="shade"></div>
+      <div class="checklist"><div class="check"><span>✓</span>Japão, Coreia do Sul e Leste Asiático</div><div class="check"><span>✓</span>Correção nas colisões dos clones</div><div class="check"><span>✓</span>Campo de visão: 100 → 105</div></div>
+      <div class="caption">Novas regiões, correções de colisão e <strong>mais visão para o caçador</strong>.</div>
+      <div class="source">CHANGELOG OFICIAL • UPDATE 2.6.0</div>
+      <div class="progress-track"><div class="progress"></div></div>
+    </section>
+
+    <section id="scene-6" class="scene clip" data-start="32.05" data-duration="8.70" data-track-index="5">
+      <img class="media" src="assets/shot-06.jpg" alt="Meccha Chameleon official Steam screenshot">
+      <div class="shade"></div>
+      <div class="question">Você conseguiria desaparecer no cenário?<div class="follow">SIGA @FASENOVAGAMES</div></div>
+      <div class="caption">Você jogaria? Segue a <strong>Fase Nova Games</strong> para mais notícias.</div>
+      <div class="source">CONTEÚDO EDITORIAL • REVISÃO HUMANA PENDENTE</div>
+      <div class="progress-track"><div class="progress"></div></div>
+    </section>
+
+    <div class="brand"><img src="assets/profile-logo.png" alt="Fase Nova Games"><div class="brand-name">FASE NOVA GAMES</div><div class="brand-tag">NOTÍCIA</div></div>
+    <audio id="audio-1" class="clip" src="audio/scene-01.wav" data-start="0" data-duration="5.50" data-track-index="10" data-volume="1"></audio>
+    <audio id="audio-2" class="clip" src="audio/scene-02.wav" data-start="5.50" data-duration="6.56" data-track-index="10" data-volume="1"></audio>
+    <audio id="audio-3" class="clip" src="audio/scene-03.wav" data-start="12.06" data-duration="5.87" data-track-index="10" data-volume="1"></audio>
+    <audio id="audio-4" class="clip" src="audio/scene-04.wav" data-start="17.93" data-duration="6.42" data-track-index="10" data-volume="1"></audio>
+    <audio id="audio-5" class="clip" src="audio/scene-05.wav" data-start="24.35" data-duration="7.69" data-track-index="10" data-volume="1"></audio>
+    <audio id="audio-6" class="clip" src="audio/scene-06.wav" data-start="32.05" data-duration="8.70" data-track-index="10" data-volume="1"></audio>
+  </main>
+  <script>
+    const timeline = gsap.timeline({ paused: true });
+    const scenes = [
+      ["#scene-1", 0, 5.50], ["#scene-2", 5.50, 6.56], ["#scene-3", 12.06, 5.87],
+      ["#scene-4", 17.93, 6.42], ["#scene-5", 24.35, 7.70], ["#scene-6", 32.05, 8.70]
+    ];
+    scenes.forEach(([selector, start, duration], index) => {
+      timeline.set(selector, { autoAlpha: 1 }, start);
+      if (index > 0) timeline.set(scenes[index - 1][0], { autoAlpha: 0 }, start);
+      timeline.from(`${selector} .headline, ${selector} .update-card, ${selector} .checklist, ${selector} .question`, { opacity: 0, y: 48, duration: 0.45, ease: "power3.out" }, start + 0.12);
+      timeline.from(`${selector} .caption`, { opacity: 0, y: 30, duration: 0.35, ease: "power2.out" }, start + 0.35);
+      timeline.fromTo(`${selector} .media`, { scale: 1.02 }, { scale: 1.08, duration, ease: "none" }, start);
+      timeline.fromTo(`${selector} .progress`, { scaleX: 0 }, { scaleX: 1, duration, ease: "none" }, start);
+    });
+    window.__timelines = window.__timelines || {};
+    window.__timelines["fase-nova-meccha-2-6"] = timeline;
+  </script>
+</body>
+</html>

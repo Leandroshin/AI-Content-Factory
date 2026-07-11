@@ -117,14 +117,25 @@ These percentages are planning estimates, not test coverage.
 
 ### Media providers
 
-- Replace or renew the expired ElevenLabs credential before another real
-  smoke test.
+- A new restricted ElevenLabs key is stored locally outside Git and voice
+  lookup succeeds. TTS is currently blocked by a failed/incomplete invoice;
+  settle billing before selecting the persistent Fase Nova Games voice.
 - Select one real image provider based on cost, quality and licensing.
 - HyperFrames is the proven deterministic editorial/motion layer; its REAL
   adapter passed lint, strict visual check and physical MP4 rendering.
 - FFmpeg remains the local encoder and fallback.
 - AI video generation is a separate optional provider and is added only after
   image, voice and local editing are measured.
+
+### First Fase Nova Games cut
+
+- Meccha Chameleon 2.6.0 official Steam evidence was converted into a physical
+  40.79-second 1080x1920 HyperFrames cut.
+- Six distinct transformed Steam screenshots, source labels, captions and CTA
+  passed lint, strict runtime/layout/contrast/frame checks and contact-sheet
+  review.
+- Microsoft Daniel pt-BR is a temporary timing voice only. Publication remains
+  blocked until ElevenLabs replacement and owner approval.
 
 ### Publication and analytics
 
