@@ -18,7 +18,12 @@ from core.content_factory.models import (
     ContentWorkflowResult,
     ContentWorkflowStepResult,
 )
-from core.departments.audio.models import AudioTrack, MasterProfile, MixProfile, VoiceSegment
+from core.departments.audio.models import (
+    AudioTrack,
+    MasterProfile,
+    MixProfile,
+    VoiceSegment,
+)
 from core.departments.image.models import (
     CanvasSpec,
     ExportProfile,
@@ -326,6 +331,19 @@ class ContentProductionWorkflow:
             "source_script_task_id": script_output.get("task_id", ""),
             "source_audio_task_id": audio_output.get("task_id", ""),
             "source_image_task_id": image_output.get("task_id", ""),
+            "editing_standard": brief.metadata.get("editing_standard", ""),
+            "render_engine_preference": brief.metadata.get("render_engine_preference", ""),
+            "editorial_requirements": {
+                "word_level_captions": True,
+                "keyword_emphasis": True,
+                "source_provenance": True,
+                "contact_sheet_review": True,
+                "overflow_check": True,
+                "occlusion_check": True,
+                "preview_review": True,
+                "youtube_shorts_variant": bool(brief.metadata.get("youtube_shorts_variant", False)),
+                "avatar_optional": bool(brief.metadata.get("avatar_optional", False)),
+            } if brief.metadata.get("editing_standard") else {},
         }
         for source_key, target_key in (
             ("video_output_dir", "output_dir"),

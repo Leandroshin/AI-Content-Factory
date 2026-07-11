@@ -23,6 +23,8 @@ Build a daily operating system that can:
 - Company, CEO, DepartmentManager, tasks, employees and observability.
 - ProductionEmployee and ProductionPipeline as the department pattern.
 - Script, Audio, Image and Video production departments.
+- HyperFrames editorial composition with beat-map, caption, provenance and
+  long-form-to-Shorts quality gates.
 - Strategy Intelligence, Product Research and Creative Review departments.
 - Affiliate Deals department with scoring, copy, compliance and publishing
   plan.
@@ -30,7 +32,8 @@ Build a daily operating system that can:
 - HTTP, secrets, providers, retries, rate limits and masked observability.
 - Persistence, organizational memory, quality and session continuity.
 - Budget and explicit owner-approval controls for paid providers.
-- FFmpeg physical rendering and controlled ElevenLabs integration.
+- HyperFrames deterministic composition, FFmpeg encoding/fallback and
+  controlled ElevenLabs integration.
 - Telegram adapter with a proven controlled real smoke test.
 
 ## Proven affiliate flow
@@ -69,9 +72,9 @@ Concrete pieces:
 
 ## Verification baseline
 
-- 95 demo files are present.
-- Standardized run on 2026-07-11: 95/95 demos, 0 failures.
-- 39 demos explicitly printed 1388 assertions; 56 passed without a numeric
+- 96 demo files are present.
+- Standardized run on 2026-07-11: 96/96 demos, 0 failures.
+- 40 demos explicitly printed 1416 assertions; 56 passed without a numeric
   assertion summary.
 - Core compilation was successful at that baseline.
 
@@ -117,7 +120,11 @@ These percentages are planning estimates, not test coverage.
 - Replace or renew the expired ElevenLabs credential before another real
   smoke test.
 - Select one real image provider based on cost, quality and licensing.
-- Add video generation only after image, voice and local editing are measured.
+- HyperFrames is the proven deterministic editorial/motion layer; its REAL
+  adapter passed lint, strict visual check and physical MP4 rendering.
+- FFmpeg remains the local encoder and fallback.
+- AI video generation is a separate optional provider and is added only after
+  image, voice and local editing are measured.
 
 ### Publication and analytics
 

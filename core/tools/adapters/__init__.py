@@ -11,6 +11,7 @@ from .base import AbstractToolAdapter
 from .elevenlabs_adapter import ElevenLabsAdapter
 from .ffmpeg_adapter import FFmpegRenderAdapter
 from .github_adapter import GitHubAdapter
+from .hyperframes_adapter import HyperFramesRenderAdapter
 from .models import (
     AdapterConfigStatus,
     AdapterExecutionResult,
@@ -35,6 +36,7 @@ __all__ = [
     "ExecutionMode",
     "FFmpegRenderAdapter",
     "GitHubAdapter",
+    "HyperFramesRenderAdapter",
     "OwnerGuidance",
     "PlaywrightAdapter",
     "TelegramAdapter",

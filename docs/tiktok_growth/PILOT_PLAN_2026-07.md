@@ -11,8 +11,9 @@ purchase, engagement exchange, copied video or automated person-like posting.
 ## Operating flow
 
 Trend evidence -> scored shortlist -> Shin approval -> ContentBrief -> Script
--> Audio -> Image -> Video -> final policy review -> manual TikTok upload ->
-metrics after 24 hours and 7 days.
+-> Audio -> Image -> editorial beat map -> HyperFrames composition ->
+EditorialQualityValidator -> separate 9:16 review -> final policy review ->
+manual TikTok upload -> metrics after 24 hours and 7 days.
 
 `core/content_factory/audience_growth.py` implements the evidence, scoring and
 approval bridge. It intentionally reuses the existing production departments.

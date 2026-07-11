@@ -39,6 +39,8 @@ The project now has a concrete production layer:
 - Video, Audio, Image, Script, Affiliate Deals, Strategy Intelligence, Product
   Research, and Creative Review departments
 - Content workflow: Brief -> Script -> Audio -> Image -> Video -> Quality -> Observability
+- HyperFrames editorial composition with strict lint/layout checks, FFmpeg
+  encoding/fallback, and a verified long-form -> chapter -> Shorts contract
 - Affiliate workflow: Strategy Intelligence -> Product Research -> Creative
   Review -> Affiliate Deals -> HITL Approval -> Telegram
 - Provider control, budget guard, masked API settings, Telegram publishing, and

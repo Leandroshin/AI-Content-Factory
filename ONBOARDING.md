@@ -14,7 +14,8 @@ Após ler, você saberá:
 - Quais classes NUNCA podem ser modificadas (CEO, DM, SE, ToolRuntime, etc.)
 - A cadeia de herança: SpecialistEmployee → ProductionEmployee → VideoEditorEmployee
 - O padrão de hooks que todo departamento deve seguir
-- Que existem 10 demos com 345 assertions que não podem quebrar
+- Que a regressão canônica possui 96 demos; a última execução passou 96/96,
+  com 1416 assertions explicitamente reportadas por 40 demos
 
 ---
 
@@ -203,6 +204,10 @@ Cada adapter implementa `execute()` com dual mode: MOCK (dados deterministicos) 
 
 ### 6.10 `demo_real_adapters.py`
 24 assertions: MOCK/REAL dual mode com fallback por env vars.
+
+### 6.11 `demo_editorial_video_quality.py`
+28 assertions: quality gate editorial, HyperFrames adapter e validação de
+capítulos/candidatos long-form -> Shorts sem crop arbitrário.
 
 ---
 

@@ -45,8 +45,11 @@ identity.
    items without factual key points.
 3. Qualified items become `GrowthCandidate` records.
 4. `AudienceGrowthPlanner` scores them and waits for owner approval.
-5. Approved `ContentBrief` records run through Script, Audio, Image and Video.
-6. The package requires subtitles and creates a YouTube Shorts variant.
+5. Approved `ContentBrief` records run through Script, Audio, Image and Video
+   with `editing_standard=hyperframes_editorial_v1` and HyperFrames as the
+   preferred composition engine.
+6. The package requires subtitles, source provenance, editorial visual checks
+   and a separately reviewed YouTube Shorts variant.
 7. Avatar is optional; use it only when it improves trust and does not delay a
    time-sensitive story.
 8. Publishing stays manual until official channel credentials and scopes are

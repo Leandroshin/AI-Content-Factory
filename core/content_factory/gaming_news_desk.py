@@ -204,5 +204,7 @@ class GamingNewsDesk:
                 "youtube_shorts_variant": True,
                 "subtitles_required": True,
                 "avatar_optional": True,
+                "editing_standard": "hyperframes_editorial_v1",
+                "render_engine_preference": "hyperframes",
             },
         )

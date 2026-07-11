@@ -93,6 +93,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Video Department — Models:** `core/departments/video/models.py` — VideoTask, VideoAsset, AudioAsset, ImageAsset, TimelineSegment, SubtitleSegment, RenderProfile, VideoProject (todos frozen+slots)
 - **Video Department — Pipeline:** `core/departments/video/pipeline.py` — PipelineStage, VideoProductionPipeline (extends ProductionPipeline), 8 stages determinísticos
 - **VideoEditorEmployee:** Herda ProductionEmployee (→ SpecialistEmployee), pipeline de 8 stages, 11 video-capabilities, QualityRuntime pós-render
+- **HyperFrames Editorial Layer:** `EditorialQualityValidator` exige beat map, captions, proveniencia, audio prioritario e revisao visual; `LongFormRepurposingValidator` preserva capitulos e rejeita cortes curtos arbitrarios
+- **HyperFramesRenderAdapter:** MOCK/REAL local via CLI oficial; REAL executa lint + check estrito antes de renderizar MP4 e mantem FFmpeg como encoder/fallback
 - **Audio Department:** `core/departments/audio/` — AudioEngineerEmployee, pipeline deterministico, voz por `Capability.SPEECH_GENERATION`, export opcional de asset WAV/MP3 fisico
 - **Image Department:** `core/departments/image/` — ImageDesignerEmployee, pipeline deterministico, export opcional de PNG fisico para capa/asset visual
 - **Script Department:** `core/departments/script/` — ScriptWriterEmployee, roteiro, hook, CTA, variantes, export markdown e quality loop
@@ -122,7 +124,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Hotmart Webhook:** pacote `core/integrations/hotmart/` com autenticacao HOTTOK em tempo constante, payload v2, idempotencia por event ID, redacao de PII, fila local/Neon, retry/dead-letter e endpoint Vercel; configuracao oficial ativa e quatro testes Hotmart confirmados como `202 - Processado`
 - **Audience Growth Planner:** `core/content_factory/audience_growth.py` conecta evidencias de tendencias a shortlist auditavel e `ContentBrief`; bloqueia riscos e exige aprovacao do owner antes da producao/publicacao TikTok
 - **Gaming News Desk:** `core/content_factory/gaming_news_desk.py` deduplica o radar diario, rejeita rumor/fonte fraca/noticia antiga, retorna `no_news` quando nada merece pauta e conecta aprovados ao Audience Growth Planner; automacao Codex roda diariamente as 09:00
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **95/95 demos, 0 falhas** em 2026-07-11; 39 demos reportaram numericamente 1388 assertions, 56 nao emitem total comparavel
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **96/96 demos, 0 falhas** em 2026-07-11; 40 demos reportaram numericamente 1416 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -139,6 +141,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Stage counts via event fields**: `stages_completed`/`stages_failed` adicionados a `ProductionStageAdvanced` — propagam para snapshots sem criar estado extra no projector
 - **Snapshots populados por evento, não manualmente**: Handlers no ObservabilityProjector usam department do evento e `_task_department_map` para bifurcar em Video/Audio/Image
 - **Assets fisicos opcionais**: departamentos continuam deterministicos e retrocompativeis; quando `output_dir`/`write_file` existem, Audio/Image materializam arquivos e Video/FFmpeg consomem por path
+- **Edicao editorial em camadas**: HyperFrames compoe motion/captions/layout de forma deterministica, FFmpeg codifica e permanece fallback, e geracao de imagem/video continua provider opcional com proveniencia e budget
+- **Long-form nao vira Short por crop**: capitulos e candidatos mantem timestamps da fonte, gancho, contexto e payoff; cada variante 9:16 passa por revisao propria
 - **Affiliate Deals sem spam**: a vertical prepara curadoria, score, compliance, criativo e plano de publicacao; Telegram é o primeiro canal real controlado, e WhatsApp fica manual/semi-automatico nesta fase
 - **Telegram REAL só com freios**: o adapter só publica em REAL com `approved=True`, `chat_id` explícito e budget configurado; token fica em SecretProvider/local ignored path, nunca em Git
 - 0 dependências circulares, 0 violações core→engines
@@ -157,7 +161,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **95/95 demos, 0 falhas**; 1388 assertions explicitamente reportadas por 39 demos
+- **Regressão atual**: **96/96 demos, 0 falhas**; 1416 assertions explicitamente reportadas por 40 demos
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando
@@ -166,6 +170,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Stages tracking**: `ProductionStageAdvanced` carrega `stages_completed`/`stages_failed` — snapshots refletem contagem acumulada
 - **Failure + Correction na demo**: Cenário de falha de pipeline (invalid video_type) + falha de qualidade (missing required field) + correção via QualityRuntime
 - **Prova fisica atual**: `output/short_video_factory/` contem MP4s gerados; o demo mais recente validou WAV + PNG + MP4 final com FFmpeg consumindo ambos
+- **Prova HyperFrames REAL**: `examples/hyperframes/editorial_smoke/index.html` passou lint e check estrito e gerou MP4 vertical fisico via `HyperFramesRenderAdapter` (603697 bytes)
 - **Prova gerencial atual**: `demo_managed_content_factory_workflow.py` valida plano executivo + DM + CompanyTaskRuntime + produção real de departamentos; 18/18 tarefas gerenciais concluídas e progresso 100%
 - **Prova de provider controlado**: `demo_provider_budget_guard.py` valida aprovação obrigatória, budget de caracteres/custo/requests, bloqueio antes de HTTP e usage summary; sem chamada externa
 - **Prova de config/painel provider**: `demo_provider_control_center.py` valida ProviderControlCenter, chave mascarada, modo REAL, aprovação com budget explícito, wiring no ElevenLabs e dashboard_state
@@ -188,6 +193,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `core/departments/video/models.py`: VideoTask, VideoAsset, AudioAsset, ImageAsset, TimelineSegment, SubtitleSegment, RenderProfile, VideoProject
 - `core/departments/video/pipeline.py`: PipelineStage, VideoProductionPipeline (extends ProductionPipeline), 8 stages + helpers
 - `core/departments/video/employee.py`: VideoEditorEmployee (extends ProductionEmployee) — VideoCapability, ProductionMetrics (vídeo), 11 domain capabilities, resolve render input files fisicos
+- `core/departments/video/editorial_quality.py`: beat map, captions, quality gate, capitulos e validacao long-form -> Shorts
 
 ### Affiliate Deals Department
 - `core/departments/affiliate_deals/models.py`: MarketplaceSource, PriceSnapshot, CouponInfo, AffiliateLink, ProductOffer, DealScore, OfferMessage, OfferCreative, PublishingPlan, ComplianceCheck, AudienceGrowthPlan, FunnelMetrics, DealCampaign, AffiliateDealTask
@@ -216,6 +222,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `core/tools/provider_settings.py`: estado de painel para providers, secrets mascarados, budgets, approval, snapshots e ligação com adapters
 - `core/tools/provider_panel.py`: renderer HTML interativo para preview do painel de APIs/custos
 - `core/tools/adapters/ffmpeg_adapter.py`: render local MOCK/REAL + consumo opcional de audio/imagem fisicos
+- `core/tools/adapters/hyperframes_adapter.py`: composicao HTML-to-video MOCK/REAL com lint + check antes do render
 - `core/content_factory/workflow.py`: orquestra departamentos e propaga paths fisicos entre audio, imagem e video
 - `core/content_factory/managed_workflow.py`: ponte concreta com ExecutivePlan, DepartmentManager e CompanyTaskRuntime
 - `core/content_factory/affiliate_workflow.py`: fluxo integrado da estrategia ate aprovacao/publicacao
@@ -242,6 +249,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `demo_ffmpeg_render_adapter.py`: 14 assertions
 - `demo_elevenlabs_audio_asset.py`: 11 assertions
 - `demo_short_video_factory.py`: 43 assertions, prova WAV + PNG + MP4 fisico
+- `demo_editorial_video_quality.py`: 28 assertions, prova quality gate, rejeicao de crop arbitrario e adapter HyperFrames
 - `demo_managed_content_factory_workflow.py`: 38 assertions, prova DM + CompanyTaskRuntime + 18/18 tarefas gerenciais + produção concreta
 - `demo_provider_budget_guard.py`: 26 assertions, prova provider REAL controlado sem gastar API
 - `demo_provider_control_center.py`: 32 assertions, prova backend de configuração/painel de providers
