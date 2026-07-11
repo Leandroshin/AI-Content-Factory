@@ -119,7 +119,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Quality→Department Propagation:** `_task_department_map` no ObservabilityProjector mapeia task_id→departamento; `handle_quality_finished` atualiza snapshots específicos (video/audio/image_production.quality_passed)
 - **Demo de Falha + Correção:** Pipeline failure (invalid video_type→stage fail) + Quality correction (strict rule→completeness fail→corrections) — ambos refletidos na observability
 - **Primeiro short fisico:** `demo_short_video_factory.py` gera WAV mockado, PNG fisico e MP4 final de 60s; com FFmpeg local, o render consome os arquivos reais
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **92/92 demos, 0 falhas** em 2026-07-10; 36 demos reportaram numericamente 1298 assertions, 56 nao emitem total comparavel
+- **Hotmart Webhook:** pacote `core/integrations/hotmart/` com autenticacao HOTTOK em tempo constante, payload v2, idempotencia por event ID, redacao de PII, fila local/Neon, retry/dead-letter e endpoint Vercel; configuracao oficial ativa e quatro testes Hotmart confirmados como `202 - Processado`
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **93/93 demos, 0 falhas** em 2026-07-11; 37 demos reportaram numericamente 1342 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -143,8 +144,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 ## Next Steps
 1. **Product URL Intake real** — receber URL, coletar evidencia, normalizar oferta e preservar fallback manual, sem scraping agressivo
 2. **Meta Ads Analytics read-only** — inventariar ativos e relatar campanhas por API oficial antes de criar/editar anuncios
-3. **Hotmart/API + Webhook** — receptor HTTPS com HOTTOK, idempotencia, fila e metricas; cliente API separado e limitado ao escopo oficial da conta
-4. **Marketplace/Affiliate connector** — provar integracao oficial com comissao, link e atribuicao; manter fluxo manual quando API nao existir
+3. **Shopee Affiliate onboarding** — owner deve escolher PF/PJ, cadastrar as redes da marca e concluir a inscricao; somente depois auditar o acesso ao portal oficial Open API
+4. **TikTok Shop Creator onboarding** — owner deve inscrever `achadosbaratosbr2` pelo aplicativo, aguardar aprovacao e concluir identidade/fiscal; API de afiliados para parceiros e uma etapa separada
 5. **Dashboard hospedado + banco** — persistencia multi-sessao, autenticacao e fila HITL utilizavel diariamente
 6. **Metricas de negocio** — cliques, vendas, comissao, custo e ROI alimentando aprendizado aprovado
 7. **Landing page e compliance** — dominio, privacidade, termos, disclosure e eventos de conversao
@@ -154,7 +155,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **92/92 demos, 0 falhas**; 1298 assertions explicitamente reportadas por 36 demos
+- **Regressão atual**: **93/93 demos, 0 falhas**; 1342 assertions explicitamente reportadas por 37 demos
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando

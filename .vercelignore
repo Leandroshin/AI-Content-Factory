@@ -1,0 +1,12 @@
+.git/
+.ai_company/
+docs/
+output/
+temp/
+scripts/
+tests/
+Imagens/
+RespostaLLMS/
+Conteudos do youtube/
+demo_*.py
+*.log

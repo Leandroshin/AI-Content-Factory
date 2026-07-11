@@ -20,6 +20,15 @@ from core.content_factory.affiliate_workflow import (
     AffiliatePublicationPackage,
 )
 from core.content_factory.affiliate_dashboard import AffiliateApprovalDashboardRenderer
+from core.content_factory.hotmart_webhook import (
+    HotmartCommission,
+    HotmartWebhookEvent,
+    HotmartWebhookReceipt,
+    HotmartWebhookReceiver,
+    HotmartWebhookState,
+    HotmartWebhookStore,
+)
+from core.content_factory.hotmart_webhook_postgres import HotmartPostgresStore
 from core.content_factory.managed_workflow import ManagedContentProductionWorkflow
 from core.content_factory.workflow import ContentProductionWorkflow
 
@@ -38,4 +47,11 @@ __all__ = [
     "ContentWorkflowEmployees",
     "ContentWorkflowResult",
     "ContentWorkflowStepResult",
+    "HotmartCommission",
+    "HotmartWebhookEvent",
+    "HotmartWebhookReceipt",
+    "HotmartWebhookReceiver",
+    "HotmartWebhookState",
+    "HotmartWebhookStore",
+    "HotmartPostgresStore",
 ]

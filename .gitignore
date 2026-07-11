@@ -58,6 +58,7 @@ ehthumbs.db
 
 # Project outputs
 .ai_company/
+.vercel/
 output/*
 !output/.gitkeep
 temp/*

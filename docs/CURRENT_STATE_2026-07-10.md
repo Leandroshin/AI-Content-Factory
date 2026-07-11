@@ -1,5 +1,7 @@
 # Current State - 2026-07-10
 
+Operational status last verified on 2026-07-11.
+
 This document is the current source of truth for the AI Content Factory. Older
 roadmaps remain useful as architectural history, but their demo counts and
 pending-work lists must not be read as the present state.
@@ -50,11 +52,26 @@ Concrete pieces:
 - Manual intake is available so the owner can start with real affiliate links
   before marketplace APIs are ready.
 
+## Official connector status
+
+- **Hotmart webhook:** active for all products with only purchase approved,
+  canceled, refunded and chargeback events. Hotmart's official history showed
+  four `202 - Processado` deliveries. Neon persistence and PII exclusion were
+  verified, then the official test rows were removed.
+- **Shopee Affiliate:** the authenticated Open API portal currently redirects
+  this account to the affiliate enrollment form. API work is blocked until the
+  owner chooses PF/PJ, registers truthful brand social accounts and submits the
+  program terms personally.
+- **TikTok Shop:** the current business goal uses the Creator Affiliate route,
+  which starts in the TikTok mobile app. Enrollment approval plus identity and
+  tax verification are prerequisites. TikTok Partner/Affiliate API access is a
+  separate approval track and must not be assumed.
+
 ## Verification baseline
 
-- 92 demo files are present.
-- Standardized run on 2026-07-10: 92/92 demos, 0 failures.
-- 36 demos explicitly printed 1298 assertions; 56 passed without a numeric
+- 93 demo files are present.
+- Standardized run on 2026-07-11: 93/93 demos, 0 failures.
+- 37 demos explicitly printed 1342 assertions; 56 passed without a numeric
   assertion summary.
 - Core compilation was successful at that baseline.
 
@@ -90,7 +107,9 @@ These percentages are planning estimates, not test coverage.
 - Support affiliate-link generation or validation per official platform.
 - Capture commission rules and attribution windows.
 - Keep manual fallback for platforms without an accessible API.
-- Hotmart is split into an API client and a verified webhook receiver. See
+- Hotmart remains split into an API client and a verified webhook receiver.
+  The receiver, Neon schema, Vercel URL and sensitive host variables are live.
+  Health, hosted idempotency and Hotmart's official test all passed. See
   docs/hotmart_integration/PLAN.md.
 
 ### Media providers
@@ -145,8 +164,8 @@ verification.
 1. Finish master documentation, transcript inventory and Graphify refresh.
 2. Add real product-URL intake with evidence and manual fallback.
 3. Configure Meta read-only through official assets and token storage.
-4. Deploy and test the Hotmart webhook receiver, then prove the API scope
-   available to this account.
+4. Complete Shopee and TikTok Shop owner onboarding, then prove only the API
+   scopes actually granted to each account.
 5. Host dashboard and compliant landing page.
 6. Add conversion and ROI feedback.
 7. Select the first real image provider.

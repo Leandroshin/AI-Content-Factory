@@ -1,0 +1,19 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/webhooks/hotmart/v2",
+      "destination": "/api/hotmart"
+    },
+    {
+      "source": "/health/hotmart",
+      "destination": "/api/hotmart"
+    }
+  ],
+  "functions": {
+    "api/**/*.py": {
+      "maxDuration": 10,
+      "excludeFiles": "{demo_*.py,docs/**,output/**,temp/**,scripts/**,tests/**,Imagens/**,RespostaLLMS/**,.ai_company/**}"
+    }
+  }
+}
