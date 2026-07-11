@@ -6,6 +6,31 @@ pendências reais e a ordem oficial de evolução até a versão 1.0.
 
 ---
 
+## Atualizacao canonica - 10/07/2026
+
+O estado operacional atual esta em:
+
+docs/CURRENT_STATE_2026-07-10.md
+
+As contagens e pendencias abaixo preservam o roadmap original e parte da
+historia arquitetural. Elas nao substituem o estado canonico mais novo.
+
+Resumo atual:
+
+- 92 demos presentes;
+- regressao padronizada: 92/92 demos, 0 falhas;
+- 1298 assertions explicitamente reportadas por 36 demos;
+- departamentos adicionais: Affiliate Deals, Strategy Intelligence, Product
+  Research e Creative Review;
+- fluxo integrado: Strategy Intelligence -> Product Research -> Creative
+  Review -> Affiliate Deals -> HITL Approval -> Telegram;
+- dashboard local persistente com entrada manual, aprovacao, rejeicao e
+  publicacao MOCK;
+- proxima fronteira: dados reais de produto, APIs oficiais, Meta read-only,
+  hospedagem, conversoes e ROI.
+
+---
+
 ## 1. Estado atual
 
 ### Resumo objetivo da arquitetura existente

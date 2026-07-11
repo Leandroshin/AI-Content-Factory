@@ -97,8 +97,15 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Image Department:** `core/departments/image/` — ImageDesignerEmployee, pipeline deterministico, export opcional de PNG fisico para capa/asset visual
 - **Script Department:** `core/departments/script/` — ScriptWriterEmployee, roteiro, hook, CTA, variantes, export markdown e quality loop
 - **Affiliate Deals Department:** `core/departments/affiliate_deals/` — AffiliateDealsEmployee, score deterministico de ofertas, copy estilo Telegram/WhatsApp manual, criativo, compliance de afiliado, plano de publicacao e funil Facebook warmup -> Telegram
+- **Strategy Intelligence Department:** `core/departments/strategy_intelligence/` — fontes rastreaveis, padroes, evidencias e recomendacoes sem transformar transcricao bruta em ordem
+- **Product Research Department:** `core/departments/product_research/` — normalizacao e shortlist de candidatos com score, sinais de marketplace e motivos auditaveis
+- **Creative Review Department:** `core/departments/creative_review/` — decide manter, melhorar, substituir ou bloquear criativo antes da publicacao
 - **Content Factory Workflow:** `core/content_factory/` — esteira concreta `Brief -> Script -> Audio -> Image -> Video -> Quality -> Observability`
 - **Managed Content Workflow:** `ManagedContentProductionWorkflow` cria `ExecutivePlan`, registra funcionarios produtivos no `CompanyRuntime`, aciona `DepartmentManager` (`assign -> start -> complete`) para todas as tarefas e expõe progresso/saúde via `CompanyTaskRuntime`
+- **Affiliate Commerce Workflow:** `core/content_factory/affiliate_workflow.py` conecta Strategy Intelligence -> Product Research -> Creative Review -> Affiliate Deals -> HITL Approval -> Telegram
+- **HITL Approval Gateway:** aprovar, rejeitar, expirar e auditar decisoes antes de qualquer publicacao
+- **Affiliate Approval Dashboard:** renderer HTML operacional para fila, score, compliance, preview e decisoes
+- **Affiliate Dashboard Server:** backend local persistente com entrada manual, aprovacao, rejeicao e publicacao MOCK-safe
 - **FFmpegRenderAdapter:** `core/tools/adapters/ffmpeg_adapter.py` — MOCK deterministico e REAL via `ffmpeg/ffprobe`, com consumo de `audio_file_path`/`image_file_path` quando existem
 - **ElevenLabs physical assets:** `ElevenLabsAdapter` escreve WAV deterministico em MOCK e grava bytes de audio no modo REAL quando `output_dir`/`write_file` sao passados
 - **Provider Budget Guard:** `core/tools/provider_control.py` — ProviderBudget, ProviderPricing, ProviderBudgetGuard, decisões pre-flight e usage summary para bloquear REAL antes de HTTP quando faltar aprovação ou budget
@@ -112,7 +119,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Quality→Department Propagation:** `_task_department_map` no ObservabilityProjector mapeia task_id→departamento; `handle_quality_finished` atualiza snapshots específicos (video/audio/image_production.quality_passed)
 - **Demo de Falha + Correção:** Pipeline failure (invalid video_type→stage fail) + Quality correction (strict rule→completeness fail→corrections) — ambos refletidos na observability
 - **Primeiro short fisico:** `demo_short_video_factory.py` gera WAV mockado, PNG fisico e MP4 final de 60s; com FFmpeg local, o render consome os arquivos reais
-- **Regressão:** `python -m compileall -q core` OK; **84 demos, 3375 assertions, 0 falhas** em 2026-07-05
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **92/92 demos, 0 falhas** em 2026-07-10; 36 demos reportaram numericamente 1298 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -134,15 +141,20 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - 0 dependências circulares, 0 violações core→engines
 
 ## Next Steps
-1. **Telegram approval queue no workflow** — conectar Affiliate Deals -> TelegramAdapter com fila de aprovação humana, `chat_id` configurável, histórico de posts e retry seguro
-2. **Affiliate Growth Dashboard / 2.5D** — visualizar ofertas, scores, compliance, aprovacoes, funil Facebook warmup -> Telegram e ROI
-3. **Meta Ads Analytics read-only** — modelar leitura/relatorio de campanhas antes de qualquer automacao de criacao/edicao de anuncio
-4. **Atualizar chave ElevenLabs** — smoke REAL encontrou `AuthExpiredError`/401 com a chave local atual; substituir a chave e repetir `AI_COMPANY_RUN_REAL_ELEVENLABS=1 python demo_elevenlabs_real_smoke.py`
-5. **Imagem/video provider real** — escolher proximo adapter por custo/qualidade (imagem primeiro ou texto-para-video curto), sem criar gerador do zero
+1. **Product URL Intake real** — receber URL, coletar evidencia, normalizar oferta e preservar fallback manual, sem scraping agressivo
+2. **Meta Ads Analytics read-only** — inventariar ativos e relatar campanhas por API oficial antes de criar/editar anuncios
+3. **Hotmart/API + Webhook** — receptor HTTPS com HOTTOK, idempotencia, fila e metricas; cliente API separado e limitado ao escopo oficial da conta
+4. **Marketplace/Affiliate connector** — provar integracao oficial com comissao, link e atribuicao; manter fluxo manual quando API nao existir
+5. **Dashboard hospedado + banco** — persistencia multi-sessao, autenticacao e fila HITL utilizavel diariamente
+6. **Metricas de negocio** — cliques, vendas, comissao, custo e ROI alimentando aprendizado aprovado
+7. **Landing page e compliance** — dominio, privacidade, termos, disclosure e eventos de conversao
+8. **Atualizar chave ElevenLabs** — repetir smoke REAL controlado depois da troca
+9. **Imagem provider real** — escolher por custo, qualidade e licenca antes de texto-para-video
+10. **2.5D operacional** — visualizar uma operacao real ja funcional, sem substituir o dashboard
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **84 demos, 3375 assertions, 0 falhas**
+- **Regressão atual**: **92/92 demos, 0 falhas**; 1298 assertions explicitamente reportadas por 36 demos
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando
@@ -203,7 +215,11 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `core/tools/adapters/ffmpeg_adapter.py`: render local MOCK/REAL + consumo opcional de audio/imagem fisicos
 - `core/content_factory/workflow.py`: orquestra departamentos e propaga paths fisicos entre audio, imagem e video
 - `core/content_factory/managed_workflow.py`: ponte concreta com ExecutivePlan, DepartmentManager e CompanyTaskRuntime
+- `core/content_factory/affiliate_workflow.py`: fluxo integrado da estrategia ate aprovacao/publicacao
+- `core/content_factory/affiliate_dashboard.py`: renderer da fila operacional
+- `core/content_factory/affiliate_dashboard_server.py`: persistencia e API local da fila HITL
 - `core/events/domain_events.py`: ProductionStarted, ProductionStageAdvanced (+stages_completed/failed), ProductionCompleted, QualityValidationStarted/Finished
+- `scripts/run_all_demos.py`: executor padronizado, remove opt-ins REAL, aplica timeout e grava relatorio JSON local ignorado pelo Git
 
 ### Demos
 - `demo_tool_runtime.py`: 38 assertions
@@ -230,3 +246,10 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `demo_elevenlabs_real_smoke.py`: 3 assertions em dry-run; opt-in REAL com teto de gasto e relatório redigido
 - `demo_affiliate_deals_department.py`: 79 assertions, prova Affiliate Deals + funil de crescimento + compliance + observability
 - `demo_telegram_publishing_adapter.py`: 40 assertions, prova Telegram Bot API seguro + mensagem Affiliate Deals pronta para publicação
+- `demo_hitl_approval_gateway.py`: prova bloqueio, aprovacao, rejeicao e auditoria HITL
+- `demo_product_research_department.py`: prova shortlist e score de pesquisa
+- `demo_strategy_intelligence_department.py`: prova extracao de padroes e evidencias
+- `demo_creative_review_department.py`: prova gate de qualidade do criativo
+- `demo_affiliate_factory_workflow.py`: prova Strategy -> Research -> Creative -> Deals -> HITL -> Telegram
+- `demo_affiliate_approval_dashboard.py`: prova estado e UI da fila de aprovacao
+- `demo_affiliate_dashboard_server.py`: prova backend, persistencia e entrada manual
