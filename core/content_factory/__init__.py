@@ -20,6 +20,14 @@ from core.content_factory.audience_growth import (
     GrowthScore,
     TrendEvidence,
 )
+from core.content_factory.gaming_news_desk import (
+    GamingNewsDesk,
+    GamingNewsDeskResult,
+    GamingNewsItem,
+    GamingNewsSource,
+    GamingNewsState,
+    JsonGamingNewsStateStore,
+)
 from core.content_factory.hotmart_webhook import (
     HotmartCommission,
     HotmartWebhookEvent,
@@ -57,6 +65,11 @@ __all__ = [
     "ContentWorkflowEmployees",
     "ContentWorkflowResult",
     "ContentWorkflowStepResult",
+    "GamingNewsDesk",
+    "GamingNewsDeskResult",
+    "GamingNewsItem",
+    "GamingNewsSource",
+    "GamingNewsState",
     "GrowthCandidate",
     "GrowthDecision",
     "GrowthDecisionStatus",
@@ -68,6 +81,7 @@ __all__ = [
     "HotmartWebhookReceiver",
     "HotmartWebhookState",
     "HotmartWebhookStore",
+    "JsonGamingNewsStateStore",
     "ManagedContentProductionWorkflow",
     "TrendEvidence",
 ]

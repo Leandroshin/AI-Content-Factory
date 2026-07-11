@@ -17,9 +17,9 @@ historia arquitetural. Elas nao substituem o estado canonico mais novo.
 
 Resumo atual:
 
-- 94 demos presentes;
-- regressao padronizada: 94/94 demos, 0 falhas;
-- 1366 assertions explicitamente reportadas por 38 demos;
+- 95 demos presentes;
+- regressao padronizada: 95/95 demos, 0 falhas;
+- 1388 assertions explicitamente reportadas por 39 demos;
 - departamentos adicionais: Affiliate Deals, Strategy Intelligence, Product
   Research e Creative Review;
 - fluxo integrado: Strategy Intelligence -> Product Research -> Creative
