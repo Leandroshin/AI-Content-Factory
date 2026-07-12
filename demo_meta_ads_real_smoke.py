@@ -152,7 +152,7 @@ def main() -> None:
     center.apply_to_meta_ads(adapter)
 
     results = (
-        adapter.execute(_request("get_permissions")),
+        adapter.execute(_request("list_ad_accounts")),
         adapter.execute(_request("get_ad_account", account_id)),
         adapter.execute(_request("list_campaigns", account_id)),
     )
