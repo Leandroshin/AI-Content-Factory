@@ -126,7 +126,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Gaming News Desk:** `core/content_factory/gaming_news_desk.py` deduplica o radar diario, rejeita rumor/fonte fraca/noticia antiga, retorna `no_news` quando nada merece pauta e conecta aprovados ao Audience Growth Planner; automacao Codex roda diariamente as 09:00
 - **Kokoro Local TTS:** `KokoroTTSAdapter` oferece MOCK deterministico e REAL local isolado por subprocesso; usa pt-BR `lang_code="p"`, voz `pm_alex`, nao exige chave e nao importa dependencias opcionais no runtime principal
 - **Segundo corte Fase Nova Games:** Meccha Chameleon 2.6.0 agora usa oito trechos de gameplay oficial, microcortes, zoom, cinco transicoes, motion graphics, voz Kokoro pt-BR e ambiente; V2 fisica de 40,90s em `output/fase_nova_games/`
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **97/97 demos, 0 falhas** em 2026-07-12; 41 demos reportaram numericamente 1444 assertions, 56 nao emitem total comparavel
+- **Product URL Intake:** `core/content_factory/product_url_intake.py` recebe URLs fornecidas pelo owner, aceita apenas marketplaces HTTPS allowlisted, bloqueia hosts locais/privados/credenciais, extrai JSON-LD/Open Graph, registra hash/timestamp/evidencia, preserva fallback manual e entrega `ProductCandidate` ao fluxo completo de afiliados
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **98/98 demos, 0 falhas** em 2026-07-12; 42 demos reportaram numericamente 1481 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -150,20 +151,19 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - 0 dependências circulares, 0 violações core→engines
 
 ## Next Steps
-1. **Product URL Intake real** — receber URL, coletar evidencia, normalizar oferta e preservar fallback manual, sem scraping agressivo
-2. **Meta Ads Analytics read-only** — inventariar ativos e relatar campanhas por API oficial antes de criar/editar anuncios
-3. **Shopee Affiliate onboarding** — owner deve escolher PF/PJ, cadastrar as redes da marca e concluir a inscricao; somente depois auditar o acesso ao portal oficial Open API
-4. **TikTok Shop Creator onboarding** — owner deve inscrever `achadosbaratosbr2` pelo aplicativo, aguardar aprovacao e concluir identidade/fiscal; API de afiliados para parceiros e uma etapa separada
-5. **Dashboard hospedado + banco** — persistencia multi-sessao, autenticacao e fila HITL utilizavel diariamente
-6. **Metricas de negocio** — cliques, vendas, comissao, custo e ROI alimentando aprendizado aprovado
-7. **Landing page e compliance** — dominio, privacidade, termos, disclosure e eventos de conversao
-8. **Aprovar voz editorial** — Kokoro local e gratuito e o baseline atual; ElevenLabs permanece opcional apos regularizar `payment_issue` e comparar qualidade/custo
-9. **Imagem provider real** — escolher por custo, qualidade e licenca antes de texto-para-video
-10. **2.5D operacional** — visualizar uma operacao real ja funcional, sem substituir o dashboard
+1. **Meta Ads Analytics read-only** — inventariar ativos e relatar campanhas por API oficial antes de criar/editar anuncios
+2. **Shopee Affiliate onboarding** — owner deve escolher PF/PJ, cadastrar as redes da marca e concluir a inscricao; somente depois auditar o acesso ao portal oficial Open API
+3. **TikTok Shop Creator onboarding** — owner deve inscrever `achadosbaratosbr2` pelo aplicativo, aguardar aprovacao e concluir identidade/fiscal; API de afiliados para parceiros e uma etapa separada
+4. **Dashboard hospedado + banco** — persistencia multi-sessao, autenticacao e fila HITL utilizavel diariamente
+5. **Metricas de negocio** — cliques, vendas, comissao, custo e ROI alimentando aprendizado aprovado
+6. **Landing page e compliance** — dominio, privacidade, termos, disclosure e eventos de conversao
+7. **Aprovar voz editorial** — Kokoro local e gratuito e o baseline atual; ElevenLabs permanece opcional apos regularizar `payment_issue` e comparar qualidade/custo
+8. **Imagem provider real** — escolher por custo, qualidade e licenca antes de texto-para-video
+9. **2.5D operacional** — visualizar uma operacao real ja funcional, sem substituir o dashboard
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **97/97 demos, 0 falhas**; 1444 assertions explicitamente reportadas por 41 demos
+- **Regressão atual**: **98/98 demos, 0 falhas**; 1481 assertions explicitamente reportadas por 42 demos
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando
@@ -232,6 +232,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `core/content_factory/workflow.py`: orquestra departamentos e propaga paths fisicos entre audio, imagem e video
 - `core/content_factory/managed_workflow.py`: ponte concreta com ExecutivePlan, DepartmentManager e CompanyTaskRuntime
 - `core/content_factory/affiliate_workflow.py`: fluxo integrado da estrategia ate aprovacao/publicacao
+- `core/content_factory/product_url_intake.py`: coleta controlada de uma URL, evidencia estruturada, fallback manual e conversao para `ProductCandidate`
 - `core/content_factory/affiliate_dashboard.py`: renderer da fila operacional
 - `core/content_factory/affiliate_dashboard_server.py`: persistencia e API local da fila HITL
 - `core/events/domain_events.py`: ProductionStarted, ProductionStageAdvanced (+stages_completed/failed), ProductionCompleted, QualityValidationStarted/Finished
@@ -255,6 +256,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `demo_ffmpeg_render_adapter.py`: 14 assertions
 - `demo_elevenlabs_audio_asset.py`: 11 assertions
 - `demo_kokoro_tts_adapter.py`: 28 assertions, prova contrato MOCK/REAL local sem baixar modelo na regressao
+- `demo_product_url_intake.py`: 37 assertions, prova extracao, bloqueios de URL/host, fallback manual e URL -> HITL sem publicacao automatica
 - `demo_short_video_factory.py`: 43 assertions, prova WAV + PNG + MP4 fisico
 - `demo_editorial_video_quality.py`: 28 assertions, prova quality gate, rejeicao de crop arbitrario e adapter HyperFrames
 - `demo_managed_content_factory_workflow.py`: 38 assertions, prova DM + CompanyTaskRuntime + 18/18 tarefas gerenciais + produção concreta

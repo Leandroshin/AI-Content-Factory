@@ -13,6 +13,44 @@ Do not start by scraping everything. Start with a controlled research funnel:
 4. Send shortlisted products to `AffiliateDealsEmployee`.
 5. Keep publishing behind the HITL approval gateway.
 
+## Product URL Intake
+
+`ProductUrlIntake` is the controlled bridge from an owner-provided product URL
+to `ProductCandidate`. It performs one request per URL and does not crawl search
+results, seller pages or related products.
+
+Current allowlist:
+
+- Amazon Brasil;
+- Mercado Livre Brasil;
+- Shopee Brasil;
+- Hotmart;
+- TikTok Shop links under `tiktok.com`;
+- Kiwify Brasil.
+
+Safety and evidence rules:
+
+- HTTPS is mandatory;
+- localhost, private/IP hosts and embedded credentials are blocked before HTTP;
+- canonical and image metadata are validated before handoff;
+- JSON-LD Product is preferred, with Open Graph as fallback;
+- body parsing is bounded and content receives a SHA-256 evidence hash;
+- missing name, price or image becomes `needs_manual_review`;
+- HTTP denial can use explicit owner-provided manual fields;
+- no URL path can bypass HITL approval or publish automatically.
+
+The full convenience path is:
+
+```text
+ProductUrlIntake
+  -> ProductCandidate
+  -> Product Research
+  -> Creative Review
+  -> Affiliate Deals
+  -> HITL Approval
+  -> Telegram
+```
+
 ## Raw Input Folders
 
 Use local raw folders for noisy material:

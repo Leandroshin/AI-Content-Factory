@@ -47,9 +47,19 @@ from core.content_factory.models import (
     ContentWorkflowResult,
     ContentWorkflowStepResult,
 )
+from core.content_factory.product_url_intake import (
+    DEFAULT_MARKETPLACES,
+    MarketplaceProfile,
+    ProductUrlBatchResult,
+    ProductUrlEvidence,
+    ProductUrlIntake,
+    ProductUrlIntakeResult,
+    ProductUrlIntakeStatus,
+)
 from core.content_factory.workflow import ContentProductionWorkflow
 
 __all__ = [
+    "DEFAULT_MARKETPLACES",
     "AffiliateApprovalDashboardRenderer",
     "AffiliateCommerceWorkflow",
     "AffiliateFactoryEmployees",
@@ -83,5 +93,11 @@ __all__ = [
     "HotmartWebhookStore",
     "JsonGamingNewsStateStore",
     "ManagedContentProductionWorkflow",
+    "MarketplaceProfile",
+    "ProductUrlBatchResult",
+    "ProductUrlEvidence",
+    "ProductUrlIntake",
+    "ProductUrlIntakeResult",
+    "ProductUrlIntakeStatus",
     "TrendEvidence",
 ]

@@ -72,9 +72,9 @@ Concrete pieces:
 
 ## Verification baseline
 
-- 97 demo files are present.
-- Standardized run on 2026-07-12: 97/97 demos, 0 failures.
-- 41 demos explicitly printed 1444 assertions; 56 passed without a numeric
+- 98 demo files are present.
+- Standardized run on 2026-07-12: 98/98 demos, 0 failures.
+- 42 demos explicitly printed 1481 assertions; 56 passed without a numeric
   assertion summary.
 - Core compilation was successful at that baseline.
 
@@ -98,8 +98,10 @@ These percentages are planning estimates, not test coverage.
 
 ### Product and opportunity input
 
-- Accept a marketplace/product URL and extract a normalized candidate.
-- Preserve source, timestamp, price evidence, seller and image provenance.
+- Product URL Intake now accepts owner-provided HTTPS URLs from allowlisted
+  marketplaces and extracts JSON-LD/Open Graph into `ProductCandidate`.
+- Source, timestamp, content hash, price evidence, seller, image and warnings
+  are preserved; blocked pages retain an explicit manual fallback.
 - Prefer official APIs or owner-provided exports.
 - Treat browser research as controlled evidence collection, never aggressive
   scraping.

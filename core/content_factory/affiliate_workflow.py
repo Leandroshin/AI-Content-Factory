@@ -11,13 +11,17 @@ runtime and it keeps publishing behind a human approval gate.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 from uuid import UUID, uuid4
 
 from core.approval import ApprovalRequest, ApprovalRuntime, TelegramApprovalGateway
 from core.company.specialist_employee import ReceivedTask, TaskDecision
 from core.content_factory.models import ContentWorkflowStepResult
+from core.content_factory.product_url_intake import (
+    ProductUrlIntake,
+    ProductUrlIntakeResult,
+)
 from core.departments.affiliate_deals import (
     DEFAULT_DISCLOSURE,
     AffiliateDealsEmployee,
@@ -31,7 +35,10 @@ from core.departments.affiliate_deals import (
 )
 from core.departments.creative_review import CreativeAsset, CreativeReviewEmployee
 from core.departments.product_research import ProductCandidate, ProductResearchEmployee
-from core.departments.strategy_intelligence import StrategyIntelligenceEmployee, StrategySource
+from core.departments.strategy_intelligence import (
+    StrategyIntelligenceEmployee,
+    StrategySource,
+)
 from core.tools import AdapterExecutionResult, TelegramAdapter
 
 
@@ -77,6 +84,7 @@ class AffiliateFactoryWorkflowResult:
     approval_notification: AdapterExecutionResult | None = None
     pending_publication: AdapterExecutionResult | None = None
     publication_result: AdapterExecutionResult | None = None
+    product_intake_results: tuple[ProductUrlIntakeResult, ...] = field(default_factory=tuple)
     summary: str = ""
     error: str = ""
 
@@ -109,6 +117,50 @@ class AffiliateCommerceWorkflow:
             telegram_adapter,
             owner_chat_id=owner_chat_id,
         )
+
+    def run_offer_pipeline_from_urls(
+        self,
+        *,
+        title: str,
+        employees: AffiliateFactoryEmployees,
+        strategy_sources: tuple[StrategySource, ...],
+        product_urls: tuple[str, ...],
+        product_intake: ProductUrlIntake,
+        affiliate_urls: dict[str, str] | None = None,
+        overrides_by_url: dict[str, dict[str, Any]] | None = None,
+        creative_assets: tuple[CreativeAsset, ...] = (),
+        campaign: DealCampaign | None = None,
+        audience_growth_plan: AudienceGrowthPlan | None = None,
+        shortlist_size: int = 3,
+        auto_approve: bool = False,
+        approved_by: str = "owner",
+    ) -> AffiliateFactoryWorkflowResult:
+        """Collect product evidence, then enter the existing affiliate flow."""
+        batch = product_intake.intake_many(
+            product_urls,
+            affiliate_urls=affiliate_urls,
+            overrides_by_url=overrides_by_url,
+        )
+        if not batch.candidates:
+            return AffiliateFactoryWorkflowResult(
+                success=False,
+                product_intake_results=batch.results,
+                summary="Product URL intake produced no usable candidates",
+                error="Provide a supported product URL or complete the manual fallback fields.",
+            )
+        result = self.run_offer_pipeline(
+            title=title,
+            employees=employees,
+            strategy_sources=strategy_sources,
+            product_candidates=batch.candidates,
+            creative_assets=creative_assets,
+            campaign=campaign,
+            audience_growth_plan=audience_growth_plan,
+            shortlist_size=shortlist_size,
+            auto_approve=auto_approve,
+            approved_by=approved_by,
+        )
+        return replace(result, product_intake_results=batch.results)
 
     def run_offer_pipeline(
         self,
