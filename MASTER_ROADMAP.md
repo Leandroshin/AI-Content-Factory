@@ -17,9 +17,9 @@ historia arquitetural. Elas nao substituem o estado canonico mais novo.
 
 Resumo atual:
 
-- 98 demos presentes;
-- regressao padronizada: 98/98 demos, 0 falhas;
-- 1481 assertions explicitamente reportadas por 42 demos;
+- 100 demos presentes;
+- regressao padronizada: 100/100 demos, 0 falhas;
+- 1540 assertions explicitamente reportadas por 44 demos;
 - departamentos adicionais: Affiliate Deals, Strategy Intelligence, Product
   Research e Creative Review;
 - fluxo integrado: Strategy Intelligence -> Product Research -> Creative
@@ -59,7 +59,7 @@ parte operacionalizada em memória. O núcleo atual cobre:
 - Eventos: 10
 - Snapshots: 8
 - Módulos: 25
-- Demos no baseline arquitetural original: 7 (o estado atual possui 98)
+- Demos no baseline arquitetural original: 7 (o estado atual possui 100)
 
 ### Leitura curta do estado
 

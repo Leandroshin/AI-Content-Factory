@@ -11,6 +11,7 @@ from .base import Provider
 from .elevenlabs import ElevenLabsProvider
 from .github_provider import GitHubProvider
 from .google import GoogleProvider
+from .meta_marketing import MetaMarketingProvider
 from .openai import OpenAIProvider
 from .playwright import PlaywrightProvider
 from .telegram import TelegramProvider
@@ -19,6 +20,7 @@ __all__ = [
     "ElevenLabsProvider",
     "GitHubProvider",
     "GoogleProvider",
+    "MetaMarketingProvider",
     "OpenAIProvider",
     "PlaywrightProvider",
     "Provider",

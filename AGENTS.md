@@ -127,7 +127,9 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Kokoro Local TTS:** `KokoroTTSAdapter` oferece MOCK deterministico e REAL local isolado por subprocesso; usa pt-BR `lang_code="p"`, voz `pm_alex`, nao exige chave e nao importa dependencias opcionais no runtime principal
 - **Segundo corte Fase Nova Games:** Meccha Chameleon 2.6.0 agora usa oito trechos de gameplay oficial, microcortes, zoom, cinco transicoes, motion graphics, voz Kokoro pt-BR e ambiente; V2 fisica de 40,90s em `output/fase_nova_games/`
 - **Product URL Intake:** `core/content_factory/product_url_intake.py` recebe URLs fornecidas pelo owner, aceita apenas marketplaces HTTPS allowlisted, bloqueia hosts locais/privados/credenciais, extrai JSON-LD/Open Graph, registra hash/timestamp/evidencia, preserva fallback manual e entrega `ProductCandidate` ao fluxo completo de afiliados
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **98/98 demos, 0 falhas** em 2026-07-12; 42 demos reportaram numericamente 1481 assertions, 56 nao emitem total comparavel
+- **Meta Ads Analytics Read-Only:** `MetaAdsAnalyticsAdapter` + `MetaMarketingProvider` oferecem apenas cinco operacoes GET (permissoes, contas, conta, campanhas e insights), campos/datas/limites allowlisted, token Bearer redigido, paginacao sem URLs sensiveis e bloqueio pre-HTTP de toda escrita; Provider Control Center exige token + limite + aprovacao
+- **Meta Ads REAL Smoke:** `demo_meta_ads_real_smoke.py` e seco por padrao e limita o opt-in REAL a tres leituras; primeiro inventario REAL aguarda novo token `ads_read` em `secrets/meta_ads.env`
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **100/100 demos, 0 falhas** em 2026-07-12; 44 demos reportaram numericamente 1540 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -151,7 +153,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - 0 dependências circulares, 0 violações core→engines
 
 ## Next Steps
-1. **Meta Ads Analytics read-only** — inventariar ativos e relatar campanhas por API oficial antes de criar/editar anuncios
+1. **Meta Ads REAL authorization** — recuperar/gerar token `ads_read`, salvar fora do Git e executar o smoke de tres leituras; nenhuma permissao `ads_management`
 2. **Shopee Affiliate onboarding** — owner deve escolher PF/PJ, cadastrar as redes da marca e concluir a inscricao; somente depois auditar o acesso ao portal oficial Open API
 3. **TikTok Shop Creator onboarding** — owner deve inscrever `achadosbaratosbr2` pelo aplicativo, aguardar aprovacao e concluir identidade/fiscal; API de afiliados para parceiros e uma etapa separada
 4. **Dashboard hospedado + banco** — persistencia multi-sessao, autenticacao e fila HITL utilizavel diariamente
@@ -163,7 +165,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **98/98 demos, 0 falhas**; 1481 assertions explicitamente reportadas por 42 demos
+- **Regressão atual**: **100/100 demos, 0 falhas**; 1540 assertions explicitamente reportadas por 44 demos
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando
@@ -221,6 +223,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `core/tools/http/events.py`, `rate_limiter.py`, `real_client.py`
 - `core/tools/adapters/elevenlabs_adapter.py`: MOCK/REAL de TTS + escrita opcional de audio fisico
 - `core/tools/adapters/kokoro_adapter.py`: MOCK/REAL local de TTS via runner Python isolado, sem chave de API
+- `core/tools/adapters/meta_ads_adapter.py`: Meta Ads somente leitura, GET allowlisted, token redigido e bloqueio de escrita antes do HTTP
+- `core/tools/providers/meta_marketing.py`: contrato versionavel da Meta Marketing API
 - `scripts/kokoro_tts_runner.py`: protocolo JSON stdin/stdout para Kokoro pt-BR e WAV 24 kHz
 - `core/tools/adapters/telegram_adapter.py`: Telegram Bot API MOCK/REAL com aprovação, `chat_id`, budget guard e limite de 4096 caracteres
 - `core/tools/providers/telegram.py`: Provider contract da Telegram Bot API
@@ -257,6 +261,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `demo_elevenlabs_audio_asset.py`: 11 assertions
 - `demo_kokoro_tts_adapter.py`: 28 assertions, prova contrato MOCK/REAL local sem baixar modelo na regressao
 - `demo_product_url_intake.py`: 37 assertions, prova extracao, bloqueios de URL/host, fallback manual e URL -> HITL sem publicacao automatica
+- `demo_meta_ads_read_only.py`: 56 assertions, prova provider/painel, GET de contas/campanhas/insights, limites, redacao e bloqueio de escrita
+- `demo_meta_ads_real_smoke.py`: 3 assertions em dry-run; opt-in REAL limitado a permissoes, conta e campanhas com relatorio redigido
 - `demo_short_video_factory.py`: 43 assertions, prova WAV + PNG + MP4 fisico
 - `demo_editorial_video_quality.py`: 28 assertions, prova quality gate, rejeicao de crop arbitrario e adapter HyperFrames
 - `demo_managed_content_factory_workflow.py`: 38 assertions, prova DM + CompanyTaskRuntime + 18/18 tarefas gerenciais + produção concreta

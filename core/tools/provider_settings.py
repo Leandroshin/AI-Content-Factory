@@ -256,6 +256,62 @@ class ProviderControlCenter:
         )
         return self.register_profile(profile)
 
+    def register_meta_ads(
+        self,
+        *,
+        max_requests: int = 100,
+        execution_mode: ExecutionMode = ExecutionMode.MOCK,
+        api_version: str = "",
+        ad_account_id: str = "",
+    ) -> ProviderControlProfile:
+        """Register the strictly read-only Meta Marketing API profile."""
+        provider = "meta_marketing"
+        budget = ProviderBudget(
+            provider=provider,
+            owner_approved=False,
+            max_cost_usd=0.0,
+            max_units=max(0, int(max_requests)),
+            max_requests=max(0, int(max_requests)),
+            notes="Owner approval and request cap required for REAL read-only analytics.",
+        )
+        pricing = tuple(
+            ProviderPricing(
+                provider=provider,
+                operation=operation,
+                unit_name="requests",
+                unit_cost_usd=0.0,
+                pricing_note="Meta read-only API request; no ad spend action is available.",
+            )
+            for operation in (
+                "get_permissions",
+                "list_ad_accounts",
+                "get_ad_account",
+                "list_campaigns",
+                "get_insights",
+            )
+        )
+        profile = ProviderControlProfile(
+            provider=provider,
+            display_name="Meta Ads Analytics",
+            category="analytics",
+            execution_mode=execution_mode,
+            budget=budget,
+            pricing=pricing,
+            secret_slots=(ProviderSecretSlot(
+                key="meta_access_token",
+                label="Meta Read-Only Access Token",
+                required=True,
+            ),),
+            metadata={
+                "capabilities": ("social_media", "read_only_analytics"),
+                "read_only": True,
+                "api_version": api_version,
+                "ad_account_id": ad_account_id,
+                "write_actions_available": False,
+            },
+        )
+        return self.register_profile(profile)
+
     def set_execution_mode(self, provider: str, mode: ExecutionMode) -> ProviderControlProfile:
         """Switch provider mode for the future settings panel."""
         profile = self._require_profile(provider)
@@ -337,6 +393,14 @@ class ProviderControlCenter:
     def apply_to_telegram(self, adapter: Any) -> None:
         """Apply provider control settings to a Telegram adapter instance."""
         profile = self._require_profile("telegram")
+        adapter.set_execution_mode(profile.execution_mode)
+        adapter.set_budget_guard(self._budget_guard)
+        if self._secret_provider is not None:
+            adapter.set_secret_provider(self._secret_provider)
+
+    def apply_to_meta_ads(self, adapter: Any) -> None:
+        """Apply read-only Meta provider controls to an adapter instance."""
+        profile = self._require_profile("meta_marketing")
         adapter.set_execution_mode(profile.execution_mode)
         adapter.set_budget_guard(self._budget_guard)
         if self._secret_provider is not None:

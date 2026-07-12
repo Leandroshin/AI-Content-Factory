@@ -72,9 +72,9 @@ Concrete pieces:
 
 ## Verification baseline
 
-- 98 demo files are present.
-- Standardized run on 2026-07-12: 98/98 demos, 0 failures.
-- 42 demos explicitly printed 1481 assertions; 56 passed without a numeric
+- 100 demo files are present.
+- Standardized run on 2026-07-12: 100/100 demos, 0 failures.
+- 44 demos explicitly printed 1540 assertions; 56 passed without a numeric
   assertion summary.
 - Core compilation was successful at that baseline.
 
@@ -144,8 +144,11 @@ These percentages are planning estimates, not test coverage.
 
 ### Publication and analytics
 
-- Meta starts read-only: account/page/Instagram inventory and performance
-  reports.
+- Meta Ads read-only provider and adapter are implemented for permissions,
+  account inventory, campaigns and insights. Token redaction, fixed fields,
+  bounded dates/pages and pre-HTTP write blocking are verified.
+- The first REAL Meta inventory is pending only because no `ads_read` token is
+  currently stored; the three-request opt-in smoke is ready.
 - Posting and ads must use official APIs and human approval.
 - No browser script may imitate a person or warm an account automatically.
 - No campaign creation, payment setup or spend without explicit owner action.

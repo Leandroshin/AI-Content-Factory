@@ -13,6 +13,7 @@ from .ffmpeg_adapter import FFmpegRenderAdapter
 from .github_adapter import GitHubAdapter
 from .hyperframes_adapter import HyperFramesRenderAdapter
 from .kokoro_adapter import KokoroTTSAdapter
+from .meta_ads_adapter import MetaAdsAnalyticsAdapter
 from .models import (
     AdapterConfigStatus,
     AdapterExecutionResult,
@@ -39,6 +40,7 @@ __all__ = [
     "GitHubAdapter",
     "HyperFramesRenderAdapter",
     "KokoroTTSAdapter",
+    "MetaAdsAnalyticsAdapter",
     "OwnerGuidance",
     "PlaywrightAdapter",
     "TelegramAdapter",
