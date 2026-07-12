@@ -15,8 +15,13 @@ Game media:
 
 - official store header;
 - six official 1920x1080 screenshots;
+- one official Steam gameplay trailer, locally re-encoded to H.264/AAC;
 - contact sheet generated locally for editorial review.
 
 Source API:
 
 `https://store.steampowered.com/api/appdetails?appids=4704690&l=english`
+
+The video uses short, transformed excerpts of the official trailer as editorial
+evidence. Narration, captions, framing, motion graphics and commentary are
+original to Fase Nova Games. Raw media and generated audio remain outside Git.

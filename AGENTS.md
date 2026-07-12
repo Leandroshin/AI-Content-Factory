@@ -124,8 +124,9 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Hotmart Webhook:** pacote `core/integrations/hotmart/` com autenticacao HOTTOK em tempo constante, payload v2, idempotencia por event ID, redacao de PII, fila local/Neon, retry/dead-letter e endpoint Vercel; configuracao oficial ativa e quatro testes Hotmart confirmados como `202 - Processado`
 - **Audience Growth Planner:** `core/content_factory/audience_growth.py` conecta evidencias de tendencias a shortlist auditavel e `ContentBrief`; bloqueia riscos e exige aprovacao do owner antes da producao/publicacao TikTok
 - **Gaming News Desk:** `core/content_factory/gaming_news_desk.py` deduplica o radar diario, rejeita rumor/fonte fraca/noticia antiga, retorna `no_news` quando nada merece pauta e conecta aprovados ao Audience Growth Planner; automacao Codex roda diariamente as 09:00
-- **Primeiro corte Fase Nova Games:** pauta oficial Meccha Chameleon 2.6.0 virou composição HyperFrames de 40,79s, 1080x1920, seis cenas, mídia oficial Steam, áudio temporário pt-BR e pacote reproduzível em `productions/fase_nova_games/meccha_chameleon_2_6/`
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **96/96 demos, 0 falhas** em 2026-07-11; 40 demos reportaram numericamente 1416 assertions, 56 nao emitem total comparavel
+- **Kokoro Local TTS:** `KokoroTTSAdapter` oferece MOCK deterministico e REAL local isolado por subprocesso; usa pt-BR `lang_code="p"`, voz `pm_alex`, nao exige chave e nao importa dependencias opcionais no runtime principal
+- **Segundo corte Fase Nova Games:** Meccha Chameleon 2.6.0 agora usa oito trechos de gameplay oficial, microcortes, zoom, cinco transicoes, motion graphics, voz Kokoro pt-BR e ambiente; V2 fisica de 40,90s em `output/fase_nova_games/`
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **97/97 demos, 0 falhas** em 2026-07-12; 41 demos reportaram numericamente 1444 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -156,13 +157,13 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 5. **Dashboard hospedado + banco** — persistencia multi-sessao, autenticacao e fila HITL utilizavel diariamente
 6. **Metricas de negocio** — cliques, vendas, comissao, custo e ROI alimentando aprendizado aprovado
 7. **Landing page e compliance** — dominio, privacidade, termos, disclosure e eventos de conversao
-8. **Regularizar fatura ElevenLabs** — chave nova valida e escopos corretos; TTS bloqueado por `payment_issue`, depois selecionar voz fixa e substituir a faixa temporaria
+8. **Aprovar voz editorial** — Kokoro local e gratuito e o baseline atual; ElevenLabs permanece opcional apos regularizar `payment_issue` e comparar qualidade/custo
 9. **Imagem provider real** — escolher por custo, qualidade e licenca antes de texto-para-video
 10. **2.5D operacional** — visualizar uma operacao real ja funcional, sem substituir o dashboard
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **96/96 demos, 0 falhas**; 1416 assertions explicitamente reportadas por 40 demos
+- **Regressão atual**: **97/97 demos, 0 falhas**; 1444 assertions explicitamente reportadas por 41 demos
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando
@@ -172,12 +173,13 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Failure + Correction na demo**: Cenário de falha de pipeline (invalid video_type) + falha de qualidade (missing required field) + correção via QualityRuntime
 - **Prova fisica atual**: `output/short_video_factory/` contem MP4s gerados; o demo mais recente validou WAV + PNG + MP4 final com FFmpeg consumindo ambos
 - **Prova HyperFrames REAL**: `examples/hyperframes/editorial_smoke/index.html` passou lint e check estrito e gerou MP4 vertical fisico via `HyperFramesRenderAdapter` (603697 bytes)
-- **Prova editorial Fase Nova Games**: primeiro corte Meccha Chameleon passou lint/check estrito/contraste/frame QA, gerou H.264+AAC de 40,79s e contact sheet com seis cenas sem texto cortado
+- **Prova editorial Fase Nova Games**: segundo corte Meccha Chameleon passou lint/check estrito, 43/43 contrastes e QA de mídia; gerou H.264+AAC de 40,90s com oito trechos de gameplay, voz Kokoro, motion graphics e sem IDs técnicos públicos
+- **Prova Kokoro local**: `demo_kokoro_tts_adapter.py` valida 28 assertions sem download/modelo; smoke REAL local gerou seis WAVs pt-BR a 24 kHz para a V2
 - **Prova gerencial atual**: `demo_managed_content_factory_workflow.py` valida plano executivo + DM + CompanyTaskRuntime + produção real de departamentos; 18/18 tarefas gerenciais concluídas e progresso 100%
 - **Prova de provider controlado**: `demo_provider_budget_guard.py` valida aprovação obrigatória, budget de caracteres/custo/requests, bloqueio antes de HTTP e usage summary; sem chamada externa
 - **Prova de config/painel provider**: `demo_provider_control_center.py` valida ProviderControlCenter, chave mascarada, modo REAL, aprovação com budget explícito, wiring no ElevenLabs e dashboard_state
 - **Prova visual do painel provider**: `demo_provider_panel_ui.py` gera `output/provider_control_panel/index.html` com três providers, chave mascarada, modo MOCK/REAL, busca, filtros, seleção, budget, aprovação e usage/custo; sem chamada externa
-- **Prova REAL opt-in ElevenLabs**: `demo_elevenlabs_real_smoke.py` roda seco na regressão; com `AI_COMPANY_RUN_REAL_ELEVENLABS=1`, tentou 1 chamada real com 14 caracteres, budget máximo US$0.002, recebeu `AuthExpiredError`/401 e escreveu relatório redigido sem chave em `output/elevenlabs_real_smoke/report.json`
+- **Prova REAL opt-in ElevenLabs**: `demo_elevenlabs_real_smoke.py` roda seco na regressão; o smoke antigo registrou 401 sem expor a chave. A chave restrita atual valida leitura de vozes, mas TTS retorna `payment_issue` ate a fatura ser regularizada
 - **Prova Affiliate Deals**: `demo_affiliate_deals_department.py` valida 79 assertions: oferta forte `post_now` pendente de aprovacao, oferta fraca `skip`/rejeitada, oferta sem affiliate URL bloqueada por compliance, funil Facebook warmup -> Telegram e observability `deal_metrics`
 - **Prova Telegram REAL controlado**: `demo_telegram_publishing_adapter.py` valida 40 assertions em MOCK/MockHttpClient; smoke REAL local validou `@achados_baratos_br_bot` via `getMe` e enviou mensagem técnica para `@achadosbaratosBrasil` (`message_id=2`) com token fora do Git
 - **Correção Conversation/Memory**: `demo_conversation_memory_integration.py` valida timestamp preservado sem depender de igualdade acidental de `time.time()`
@@ -218,6 +220,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `core/observability.py`: ProductionSnapshot + Video/Audio/Image production/department/detail snapshots + task_department_map + qualité→dept propagation
 - `core/tools/http/events.py`, `rate_limiter.py`, `real_client.py`
 - `core/tools/adapters/elevenlabs_adapter.py`: MOCK/REAL de TTS + escrita opcional de audio fisico
+- `core/tools/adapters/kokoro_adapter.py`: MOCK/REAL local de TTS via runner Python isolado, sem chave de API
+- `scripts/kokoro_tts_runner.py`: protocolo JSON stdin/stdout para Kokoro pt-BR e WAV 24 kHz
 - `core/tools/adapters/telegram_adapter.py`: Telegram Bot API MOCK/REAL com aprovação, `chat_id`, budget guard e limite de 4096 caracteres
 - `core/tools/providers/telegram.py`: Provider contract da Telegram Bot API
 - `core/tools/provider_control.py`: budget guard e usage summary para providers externos
@@ -250,6 +254,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `demo_content_factory_workflow.py`: 43 assertions
 - `demo_ffmpeg_render_adapter.py`: 14 assertions
 - `demo_elevenlabs_audio_asset.py`: 11 assertions
+- `demo_kokoro_tts_adapter.py`: 28 assertions, prova contrato MOCK/REAL local sem baixar modelo na regressao
 - `demo_short_video_factory.py`: 43 assertions, prova WAV + PNG + MP4 fisico
 - `demo_editorial_video_quality.py`: 28 assertions, prova quality gate, rejeicao de crop arbitrario e adapter HyperFrames
 - `demo_managed_content_factory_workflow.py`: 38 assertions, prova DM + CompanyTaskRuntime + 18/18 tarefas gerenciais + produção concreta

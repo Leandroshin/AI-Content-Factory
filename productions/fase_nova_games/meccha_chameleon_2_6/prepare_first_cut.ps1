@@ -2,7 +2,9 @@ $ErrorActionPreference = "Stop"
 
 $root = (Resolve-Path (Join-Path $PSScriptRoot "..\..\..")).Path
 $assetDir = Join-Path $PSScriptRoot "assets"
-$audioDir = Join-Path $PSScriptRoot "audio"
+$audioDir = Join-Path $PSScriptRoot "audio-v2"
+$kokoroPython = Join-Path $root ".ai_company\venvs\kokoro\Scripts\python.exe"
+$kokoroRunner = Join-Path $root "scripts\kokoro_tts_runner.py"
 New-Item -ItemType Directory -Force $assetDir, $audioDir | Out-Null
 
 $assetUrls = @(
@@ -22,24 +24,39 @@ for ($index = 0; $index -lt $assetUrls.Count; $index++) {
 $brandLogo = Join-Path $root "assets\brands\fase_nova_games\profile-logo.png"
 Copy-Item -LiteralPath $brandLogo -Destination (Join-Path $assetDir "profile-logo.png") -Force
 
-Add-Type -AssemblyName System.Speech
+$trailerUrl = "https://video.akamai.steamstatic.com/store_trailers/4704690/438048352/68ce99874351195c215dd093f02a8de3fed9ef66/1781024020/hls_264_master.m3u8?t=1781024570"
+$trailerPath = Join-Path $assetDir "official-trailer-clean.mp4"
+& ffmpeg -y -err_detect ignore_err -i $trailerUrl -c:v libx264 -preset medium -crf 18 -pix_fmt yuv420p -c:a aac -b:a 192k -movflags +faststart $trailerPath
+if ($LASTEXITCODE -ne 0) {
+    throw "FFmpeg could not prepare the official trailer."
+}
+
+if (-not (Test-Path -LiteralPath $kokoroPython)) {
+    throw "Kokoro environment not found at $kokoroPython"
+}
+
+$env:PATH = "C:\Program Files\eSpeak NG;$env:PATH"
 $segments = @(
-    "O jogo de esconde-esconde que virou fenômeno na Steam acabou de receber uma atualização bem curiosa.",
-    "A versão dois ponto seis adicionou o mapa de colaboração HIKAKIN Museum, com mecânicas exclusivas dentro do mapa.",
-    "Aqui, você pinta o próprio personagem para se misturar ao cenário, se esconder e enganar o caçador.",
-    "O jogo também ganhou suporte para controle em versão alfa, mas a interface ainda não pode ser controlada por ele.",
-    "A atualização adicionou regiões para Japão, Coreia do Sul e Leste Asiático, corrigiu colisões e aumentou o campo de visão do caçador.",
-    "Você jogaria um esconde-esconde em que precisa pintar o personagem para desaparecer no cenário? Segue a Fase Nova Games para mais notícias."
+    "Esse jogo de esconde-esconde... virou fenômeno na Steam! E agora, acabou de receber uma atualização bem curiosa.",
+    "A versão dois ponto seis trouxe o mapa de colaboração HIKAKIN Museum — com mecânicas exclusivas dentro do mapa.",
+    "A ideia é simples... e caótica: você pinta o personagem, se mistura ao cenário... e tenta enganar o caçador.",
+    "Também chegou suporte para controle, em versão alfa. Mas atenção: a interface ainda não funciona pelo controle.",
+    "E tem mais: novas regiões na Ásia, correções nas colisões... e o campo de visão do caçador subiu de cem para cento e cinco.",
+    "Agora eu quero saber: você conseguiria desaparecer nesse cenário? Segue a Fase Nova Games para mais notícias."
 )
 
 for ($index = 0; $index -lt $segments.Count; $index++) {
-    $synthesizer = New-Object System.Speech.Synthesis.SpeechSynthesizer
-    $synthesizer.SelectVoice("Microsoft Daniel")
-    $synthesizer.Rate = 3
     $destination = Join-Path $audioDir ("scene-{0:D2}.wav" -f ($index + 1))
-    $synthesizer.SetOutputToWaveFile($destination)
-    $synthesizer.Speak($segments[$index])
-    $synthesizer.Dispose()
+    $payload = @{
+        text = $segments[$index]
+        voice = "pm_alex"
+        speed = 1.0
+        output_path = $destination
+    } | ConvertTo-Json -Compress
+    $result = $payload | & $kokoroPython $kokoroRunner
+    if ($LASTEXITCODE -ne 0) {
+        throw "Kokoro failed on scene $($index + 1): $result"
+    }
 }
 
-Write-Output "First-cut assets and temporary narration are ready."
+Write-Output "Second-cut gameplay and Kokoro narration are ready."

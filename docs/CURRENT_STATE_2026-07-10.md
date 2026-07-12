@@ -72,9 +72,9 @@ Concrete pieces:
 
 ## Verification baseline
 
-- 96 demo files are present.
-- Standardized run on 2026-07-11: 96/96 demos, 0 failures.
-- 40 demos explicitly printed 1416 assertions; 56 passed without a numeric
+- 97 demo files are present.
+- Standardized run on 2026-07-12: 97/97 demos, 0 failures.
+- 41 demos explicitly printed 1444 assertions; 56 passed without a numeric
   assertion summary.
 - Core compilation was successful at that baseline.
 
@@ -119,7 +119,10 @@ These percentages are planning estimates, not test coverage.
 
 - A new restricted ElevenLabs key is stored locally outside Git and voice
   lookup succeeds. TTS is currently blocked by a failed/incomplete invoice;
-  settle billing before selecting the persistent Fase Nova Games voice.
+  settle billing before treating it as an optional premium voice.
+- Kokoro is the working zero-cost local TTS baseline. Its adapter keeps the
+  model and optional dependencies in an isolated subprocess and generated the
+  six Brazilian Portuguese narration assets used by the second cut.
 - Select one real image provider based on cost, quality and licensing.
 - HyperFrames is the proven deterministic editorial/motion layer; its REAL
   adapter passed lint, strict visual check and physical MP4 rendering.
@@ -127,15 +130,15 @@ These percentages are planning estimates, not test coverage.
 - AI video generation is a separate optional provider and is added only after
   image, voice and local editing are measured.
 
-### First Fase Nova Games cut
+### Fase Nova Games editorial proof
 
 - Meccha Chameleon 2.6.0 official Steam evidence was converted into a physical
-  40.79-second 1080x1920 HyperFrames cut.
-- Six distinct transformed Steam screenshots, source labels, captions and CTA
-  passed lint, strict runtime/layout/contrast/frame checks and contact-sheet
-  review.
-- Microsoft Daniel pt-BR is a temporary timing voice only. Publication remains
-  blocked until ElevenLabs replacement and owner approval.
+  40.90-second 1080x1920 HyperFrames second cut.
+- Eight official gameplay excerpts, six editorial scenes, five transitions,
+  camera motion, source labels, captions and CTA passed lint, strict checks,
+  43/43 contrast checks and contact-sheet review.
+- Kokoro `pm_alex` is the current local pt-BR narrator. Publication remains
+  blocked only until owner review; ElevenLabs is no longer a prerequisite.
 
 ### Publication and analytics
 
