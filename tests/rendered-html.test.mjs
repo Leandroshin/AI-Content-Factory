@@ -111,12 +111,14 @@ test("product intake separates owner input from the authenticated worker", async
   const store = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/store.ts", import.meta.url), "utf8"));
   assert.match(ownerRoute, /Amazon Brasil/);
   assert.match(ownerRoute, /Mercado Livre/);
+  assert.match(ownerRoute, /meli\.la/);
   assert.match(ownerRoute, /Shopee/);
   assert.match(ownerRoute, /Adidas/);
   assert.match(ownerRoute, /Digistore24/);
   assert.match(ownerRoute, /Braip/);
   assert.match(ownerRoute, /Tipo de página/);
   assert.match(ownerRoute, /HTTPS público/);
+  assert.match(ownerRoute, /product\.hostname\.toLowerCase\(\) === "meli\.la"/);
   assert.match(workerRoute, /requireDashboardIntake/);
   assert.match(workerRoute, /completed.*needs_input.*blocked/s);
   assert.match(store, /product_intake_requests/);
@@ -138,5 +140,19 @@ test("approved product analysis becomes a comparable zero-cost campaign package"
   assert.match(store, /US\$ 0,00 nesta preparação/);
   assert.match(store, /publicationStatus: "blocked"/);
   assert.match(store, /aprovação final do owner/);
+  assert.doesNotMatch(`${ownerRoute}\n${store}`, /fetch\(|axios|http:\/\//);
+});
+
+test("selected campaign package becomes an organic brief without execution", async () => {
+  const client = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/DashboardClient.tsx", import.meta.url), "utf8"));
+  const ownerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/route.ts", import.meta.url), "utf8"));
+  const store = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/store.ts", import.meta.url), "utf8"));
+  assert.match(client, /Criar briefing orgânico/);
+  assert.match(client, /Provider não chamado · publicação bloqueada/);
+  assert.match(ownerRoute, /prepare_organic_brief/);
+  assert.match(store, /ready_for_owner_review/);
+  assert.match(store, /metricsToCollect/);
+  assert.match(store, /providerStatus: "not_called"/);
+  assert.match(store, /publicationStatus: "blocked"/);
   assert.doesNotMatch(`${ownerRoute}\n${store}`, /fetch\(|axios|http:\/\//);
 });

@@ -1,9 +1,9 @@
-import { createProductIntake, prepareCampaignPackage, productIntakeState } from "./store";
+import { createProductIntake, prepareCampaignPackage, prepareOrganicBrief, productIntakeState } from "./store";
 
 const MAX_BODY_BYTES = 8_000;
 const MARKETPLACES = [
   { name: "Amazon Brasil", domains: ["amazon.com.br"] },
-  { name: "Mercado Livre", domains: ["mercadolivre.com.br", "mercadolivre.com"] },
+  { name: "Mercado Livre", domains: ["mercadolivre.com.br", "mercadolivre.com", "meli.la"] },
   { name: "Shopee", domains: ["shopee.com.br"] },
   { name: "Adidas", domains: ["adidas.com.br"] },
   { name: "Digistore24", domains: ["digistore24.com", "digistore24-app.com"] },
@@ -25,7 +25,9 @@ export async function POST(request: Request) {
     const product = publicHttps(body.productUrl, "URL do produto");
     const marketplace = marketplaceFor(product.hostname);
     if (!marketplace) throw new Error("Use uma URL de uma loja reconhecida: Amazon Brasil, Mercado Livre, Shopee, Adidas, Digistore24 ou Braip");
-    const affiliateUrl = body.affiliateUrl ? publicHttps(body.affiliateUrl, "Link afiliado").toString() : "";
+    const affiliateUrl = body.affiliateUrl
+      ? publicHttps(body.affiliateUrl, "Link afiliado").toString()
+      : product.hostname.toLowerCase() === "meli.la" ? product.toString() : "";
     const evidenceUrl = body.evidenceUrl ? publicHttps(body.evidenceUrl, "URL de evidência").toString() : "";
     const language = enumValue(body.language, LANGUAGES, "Idioma", "unknown");
     const sourceKind = enumValue(body.sourceKind, SOURCE_KINDS, "Tipo de página", "product_page");
@@ -47,10 +49,10 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json() as Record<string, unknown>;
-    if (body.action !== "prepare_campaign" || typeof body.productId !== "string" || !body.productId.trim()) {
-      throw new Error("Ação de campanha inválida");
-    }
-    return Response.json(await prepareCampaignPackage(body.productId.trim()));
+    if (typeof body.productId !== "string" || !body.productId.trim()) throw new Error("Produto inválido");
+    if (body.action === "prepare_campaign") return Response.json(await prepareCampaignPackage(body.productId.trim()));
+    if (body.action === "prepare_organic_brief") return Response.json(await prepareOrganicBrief(body.productId.trim()));
+    throw new Error("Ação de campanha inválida");
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Dados inválidos" }, { status: 400 });
   }

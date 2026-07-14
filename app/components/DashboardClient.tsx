@@ -384,6 +384,26 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
     }
   }
 
+  async function prepareOrganicBrief(productId: string) {
+    setBusy(`brief-${productId}`);
+    setNotice("");
+    try {
+      const response = await fetch("/api/products", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "prepare_organic_brief", productId }),
+      });
+      const payload = await response.json() as ProductIntakePayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Não foi possível criar o briefing");
+      setProducts(payload.items ?? []);
+      setNotice("Briefing orgânico criado para sua revisão. Providers, gastos e publicação continuam bloqueados.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível criar o briefing.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className={styles.shell} data-theme={theme}>
       {theme === "matrix" && <div className={styles.matrixRain} aria-hidden="true">{Array.from({ length: 14 }, (_, index) => <span key={index}>0100110101101001010011010010110100101101</span>)}</div>}
@@ -430,7 +450,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
         {notice && <div className={styles.notice} role="status"><CircleAlert size={16} /> {notice}<button aria-label="Fechar aviso" onClick={() => setNotice("")}><X size={15} /></button></div>}
 
         {view === "central" && <CentralView data={data} pending={pending} onOpenOpportunity={openOpportunity} onMetric={openMetric} onView={changeView} />}
-        {view === "products" && <ProductsView items={products} busy={busy} onSubmit={addProduct} onPrepareCampaign={prepareCampaign} />}
+        {view === "products" && <ProductsView items={products} busy={busy} onSubmit={addProduct} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} />}
         {view === "opportunities" && <OpportunitiesView
           visible={visible}
           selected={selected}
@@ -494,7 +514,7 @@ function CentralView({ data, pending, onOpenOpportunity, onMetric, onView }: { d
   </>;
 }
 
-function ProductsView({ items, busy, onSubmit, onPrepareCampaign }: { items: ProductIntakeItem[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onPrepareCampaign: (productId: string) => void }) {
+function ProductsView({ items, busy, onSubmit, onPrepareCampaign, onPrepareBrief }: { items: ProductIntakeItem[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void }) {
   const [productUrl, setProductUrl] = useState("");
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
@@ -534,13 +554,13 @@ function ProductsView({ items, busy, onSubmit, onPrepareCampaign }: { items: Pro
     </form>
     <div className={styles.productQueue}>
       <SectionHead kicker="ACOMPANHAMENTO" title="Produtos e pacotes" />
-      {items.some((item) => item.campaignPackage) && <CampaignComparison items={items.filter((item) => item.campaignPackage)} />}
-      {items.length ? <div className={styles.productList}>{items.map((item) => <ProductIntakeRow key={item.id} item={item} busy={busy === `campaign-${item.id}`} onPrepareCampaign={onPrepareCampaign} />)}</div> : <div className={styles.empty}>Nenhum produto enviado ainda.</div>}
+      {items.some((item) => item.campaignPackage) && <CampaignComparison items={items.filter((item) => item.campaignPackage)} busy={busy} onPrepareBrief={onPrepareBrief} />}
+      {items.length ? <div className={styles.productList}>{items.map((item) => <ProductIntakeRow key={item.id} item={item} busy={busy} onPrepareCampaign={onPrepareCampaign} onPrepareBrief={onPrepareBrief} />)}</div> : <div className={styles.empty}>Nenhum produto enviado ainda.</div>}
     </div>
   </section>;
 }
 
-function ProductIntakeRow({ item, busy, onPrepareCampaign }: { item: ProductIntakeItem; busy: boolean; onPrepareCampaign: (productId: string) => void }) {
+function ProductIntakeRow({ item, busy, onPrepareCampaign, onPrepareBrief }: { item: ProductIntakeItem; busy: string | null; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void }) {
   const stage = item.status === "queued" ? 1 : item.status === "analyzing" ? 2 : item.status === "needs_input" ? 4 : item.status === "completed" ? 5 : 2;
   const status = item.status === "queued" ? "Recebido" : item.status === "analyzing" ? "Analisando" : item.status === "needs_input" ? "Precisa de você" : item.status === "completed" ? "Pronto para decisão" : "Bloqueado";
   return <article className={styles.productRow}>
@@ -568,7 +588,7 @@ function ProductIntakeRow({ item, busy, onPrepareCampaign }: { item: ProductInta
     {item.ownerNotes && <blockquote className={styles.ownerNotes}>{item.ownerNotes}</blockquote>}
     {item.missingFields.length > 0 && <div className={styles.missingFields}>{item.missingFields.map((field) => <span key={field}>{field.replaceAll("_", " ")}</span>)}</div>}
     {!item.affiliateProvided && <div className={styles.affiliatePending}><CircleAlert size={14} /> Link afiliado ainda não informado</div>}
-    {(item.status === "completed" || item.status === "needs_input") && !item.campaignPackage && <button className={styles.prepareCampaign} disabled={busy} onClick={() => onPrepareCampaign(item.id)}><Sparkles size={15} /> {busy ? "Preparando..." : "Preparar pacote sem gasto"}</button>}
+    {(item.status === "completed" || item.status === "needs_input") && !item.campaignPackage && <button className={styles.prepareCampaign} disabled={busy === `campaign-${item.id}`} onClick={() => onPrepareCampaign(item.id)}><Sparkles size={15} /> {busy === `campaign-${item.id}` ? "Preparando..." : "Preparar pacote sem gasto"}</button>}
     {item.campaignPackage && <div className={styles.campaignPackageDetail}>
       <strong>Pacote de campanha</strong>
       <span><b>Canal</b>{item.campaignPackage.channel}</span>
@@ -576,11 +596,13 @@ function ProductIntakeRow({ item, busy, onPrepareCampaign }: { item: ProductInta
       <span><b>Custo</b>{item.campaignPackage.estimatedCost}</span>
       <span><b>Risco</b>{item.campaignPackage.risk}</span>
       <small><ShieldCheck size={13} /> Publicação bloqueada até resolver {item.campaignPackage.missingToPublish.length} pendência(s).</small>
+      {!item.campaignPackage.organicBrief && <button className={styles.prepareCampaign} disabled={busy === `brief-${item.id}`} onClick={() => onPrepareBrief(item.id)}><Sparkles size={15} /> {busy === `brief-${item.id}` ? "Criando briefing..." : "Transformar em briefing orgânico"}</button>}
+      {item.campaignPackage.organicBrief && <OrganicBriefCard brief={item.campaignPackage.organicBrief} />}
     </div>}
   </article>;
 }
 
-function CampaignComparison({ items }: { items: ProductIntakeItem[] }) {
+function CampaignComparison({ items, busy, onPrepareBrief }: { items: ProductIntakeItem[]; busy: string | null; onPrepareBrief: (productId: string) => void }) {
   return <section className={styles.campaignComparison}>
     <div><small>COMPARAÇÃO SEM GASTO</small><strong>Pacotes preparados</strong><span>Escolha o melhor caminho depois de comparar evidência, canal, risco e pendências.</span></div>
     <div className={styles.campaignTable}>
@@ -591,8 +613,21 @@ function CampaignComparison({ items }: { items: ProductIntakeItem[] }) {
         <span><b>Risco</b>{item.campaignPackage.risk}</span>
         <span><b>Custo estimado</b>{item.campaignPackage.estimatedCost}</span>
         <em>{item.campaignPackage.missingToPublish.length} pendência(s) antes de publicar</em>
+        {!item.campaignPackage.organicBrief ? <button className={styles.selectCampaign} disabled={busy === `brief-${item.id}`} onClick={() => onPrepareBrief(item.id)}><Sparkles size={14} /> {busy === `brief-${item.id}` ? "Criando..." : "Criar briefing orgânico"}</button> : <small className={styles.briefReady}><Check size={13} /> Briefing preparado</small>}
       </article>)}
     </div>
+  </section>;
+}
+
+function OrganicBriefCard({ brief }: { brief: NonNullable<NonNullable<ProductIntakeItem["campaignPackage"]>["organicBrief"]> }) {
+  return <section className={styles.organicBrief}>
+    <div><b>Briefing orgânico</b><strong>{brief.status === "blocked" ? "Com pendências" : "Pronto para sua revisão"}</strong></div>
+    <span><b>Objetivo</b>{brief.goal}</span>
+    <span><b>Público</b>{brief.audience}</span>
+    <span><b>Ângulo</b>{brief.angle}</span>
+    <span><b>Formato</b>{brief.format}</span>
+    <span><b>Métricas</b>{brief.metricsToCollect.join(" · ")}</span>
+    <small><ShieldCheck size={13} /> Provider não chamado · publicação bloqueada</small>
   </section>;
 }
 
