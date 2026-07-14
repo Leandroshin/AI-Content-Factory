@@ -137,3 +137,38 @@ export type ProductIntakeItem = {
 };
 
 export type ProductIntakePayload = { items: ProductIntakeItem[] };
+
+export type ProductResearchCandidate = {
+  candidate_id: string;
+  product_name: string;
+  marketplace: string;
+  source_url: string;
+  image_url: string;
+  current_price: number;
+  old_price: number | null;
+  discount_percent: number;
+  score_total: number;
+  recommendation: string;
+  reasons: string[];
+  risk_flags: string[];
+};
+
+export type ProductResearchMissionItem = {
+  id: string;
+  goal: string;
+  marketplaces: string[];
+  category: string;
+  maxPrice: number | null;
+  timeframe: string;
+  resultLimit: number;
+  targetChannel: string;
+  status: "queued" | "researching" | "review" | "needs_input" | "blocked";
+  result: { shortlisted?: ProductResearchCandidate[]; next_actions?: string[]; total_candidates?: number };
+  error: string;
+  providerStatus: "not_called";
+  publicationStatus: "blocked";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProductResearchMissionPayload = { missions: ProductResearchMissionItem[] };

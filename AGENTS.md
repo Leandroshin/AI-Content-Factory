@@ -118,6 +118,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Product Dashboard Intake:** area privada `Produtos` recebe URL comum + link afiliado opcional, persiste a fila em D1 e mostra cinco etapas sem confundir coleta, Creative Review, afiliacao e decisao
 - **Product Dashboard Worker:** `ProductDashboardWorker` busca a fila autenticada somente com opt-in, executa `ProductUrlIntake` uma vez por item e devolve evidencias; nunca fabrica link afiliado nem declara imagem aprovada
 - **Product Queue Automation:** automacao Codex `Analisar fila de produtos` verifica a fila hospedada a cada hora, encerra silenciosamente quando vazia e mantem Creative Review/publicacao fora desta etapa
+- **Product Research Missions:** painel recebe objetivo em linguagem simples, marketplace, periodo, preco, quantidade e canal; worker opt-in consulta catalogo somente leitura, usa o Product Research existente e devolve shortlist auditavel sem fabricar link afiliado, chamar provider pago ou publicar
 - **Dashboard Production Queue:** aprovar uma oportunidade cria somente uma solicitacao MOCK persistida; `DashboardProductionWorker` usa o Script Department para devolver hook, roteiro, CTA e plano visual em `review`, mantendo audio, video, providers pagos e publicacao bloqueados
 - **Production Review UX + Gates:** trabalhos da fila sao selecionaveis e exibem estado, canal, fontes e imagem honesta da marca; ofertas sem URL real/link afiliado e rotinas de monitoramento sem noticia concreta falham antes do roteiro; rascunhos de teste podem ser descartados sem publicar
 - **FFmpegRenderAdapter:** `core/tools/adapters/ffmpeg_adapter.py` — MOCK deterministico e REAL via `ffmpeg/ffprobe`, com consumo de `audio_file_path`/`image_file_path` quando existem
@@ -151,7 +152,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Narration-to-Evidence Visual Sync:** beats editoriais agora registram finalidade visual, aderencia a narracao e proveniencia; captura de tela, demonstracao de navegador e evidencia que nao corresponde a fala falham no quality gate
 - **OmniRoute Quarantine Audit:** OmniRoute 3.8.48 foi instalado fora do projeto, limitado a `127.0.0.1`, com autenticacao obrigatoria e sem contas conectadas; o catalogo keyless OpenCode Free declara `tos: avoid` e permanece proibido
 - **Affiliate Network Portfolio:** Strategy Intelligence separa redes digitais/CPA de alta comissao de marketplaces fisicos complementares; Digistore24 e o primeiro onboarding, seguido de Braip e ClickBank, sem excluir Amazon/Mercado Livre dos testes organicos
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **111/111 demos, 0 falhas** em 2026-07-14; 55 demos reportaram numericamente 1817 assertions, 56 nao emitem total comparavel
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **113/113 demos, 0 falhas** em 2026-07-14; 57 demos reportaram numericamente 1839 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -187,7 +188,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **111/111 demos, 0 falhas**; 1817 assertions explicitamente reportadas por 55 demos
+- **Regressão atual**: **113/113 demos, 0 falhas**; 1839 assertions explicitamente reportadas por 57 demos
 - **Prova da fila de producao:** `demo_dashboard_production_worker.py` valida 20 assertions: opt-in, autenticacao, modo MOCK, evidencia preservada, Script Department real, rascunho para revisao e ausencia de chamadas de audio, video ou publicacao
 - **Prova do dashboard**: lint, build vinext, teste Node, D1 local, GET da API, sincronizacao, filtros, menu mobile e QA visual em 1440x900 e 390x844 passaram; Sites privado, D1 hospedado e intake secreto foram publicados em 2026-07-13
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas

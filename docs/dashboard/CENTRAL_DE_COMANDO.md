@@ -38,7 +38,13 @@ Ao selecionar uma linha, o painel lateral mostra:
 
 Em **Producao**, observe o percentual e o bloqueio atual. Exemplo: um video pode estar parado aguardando uma voz editorial aprovada, sem perder o restante do trabalho.
 
-### 6. Envie produtos ou paginas de venda
+### 6. Peca uma pesquisa comercial
+
+Em **Produtos**, use **Pedir pesquisa aos funcionarios** quando voce ainda nao escolheu um produto. Descreva o que procura, selecione marketplace, periodo, preco maximo, quantidade e canal pensado. A fabrica devolve uma shortlist visual com fonte, preco, score, motivos e pendencias.
+
+Nesta etapa o Mercado Livre usa a integracao de catalogo somente leitura. Amazon e Shopee permanecem identificadas como pendentes ate existir acesso oficial. Nenhuma missao cria link afiliado, chama provider pago ou publica conteudo; o link monetizado precisa ser confirmado pelo owner antes da producao.
+
+### 7. Envie produtos ou paginas de venda
 
 Em **Produtos**, cole uma URL para os funcionarios analisarem. O campo principal aceita tanto produto fisico quanto pagina de venda.
 
@@ -60,11 +66,11 @@ Quando o worker protegido roda, ele liga essa entrada ao `ProductURLIntake` e de
 - funil sugerido para Telegram, WhatsApp, landing ou teste organico;
 - pendencias antes do `AffiliateCommerceWorkflow`.
 
-### 7. Confira canais e custos
+### 8. Confira canais e custos
 
 **Canais** separa o que esta conectado do que ainda depende de cadastro. Em **Configuracoes**, APIs e orcamento mostram providers locais, pausados ou prontos antes que qualquer consumo real aconteca.
 
-### 8. Use o historico como prova
+### 9. Use o historico como prova
 
 Toda decisao relevante gera um registro. Isso permite saber quem aprovou, o que mudou e confirmar que publicacao continuou bloqueada.
 

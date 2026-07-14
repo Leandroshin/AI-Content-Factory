@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { DashboardPayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductionRequest } from "./types";
+import type { DashboardPayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductResearchMissionItem, ProductResearchMissionPayload, ProductionRequest } from "./types";
 import styles from "./dashboard.module.css";
 
 type View = "central" | "products" | "opportunities" | "production" | "channels" | "activity" | "settings";
@@ -45,6 +45,7 @@ type ProductFormInput = {
   sourceKind: string;
   ownerNotes: string;
 };
+type ResearchMissionFormInput = { goal: string; marketplaces: string[]; category: string; maxPrice: string; timeframe: string; resultLimit: number; targetChannel: string };
 
 const fallback: DashboardPayload = {
   metrics: { pending: 2, inProduction: 1, ready: 0, blocked: 1 },
@@ -146,6 +147,7 @@ const viewMeta: Record<View, { title: string; eyebrow: string; description: stri
 export function DashboardClient({ operator, authenticated }: { operator: string; authenticated: boolean }) {
   const [data, setData] = useState<DashboardPayload>(fallback);
   const [products, setProducts] = useState<ProductIntakeItem[]>([]);
+  const [researchMissions, setResearchMissions] = useState<ProductResearchMissionItem[]>([]);
   const [view, setView] = useState<View>("central");
   const [theme, setTheme] = useState<Theme>("operational");
   const [selectedId, setSelectedId] = useState(fallback.opportunities[0].id);
@@ -176,6 +178,10 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
     fetch("/api/products")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((payload: ProductIntakePayload) => setProducts(payload.items ?? []))
+      .catch(() => undefined);
+    fetch("/api/research-missions")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((payload: ProductResearchMissionPayload) => setResearchMissions(payload.missions ?? []))
       .catch(() => undefined);
     return () => window.cancelAnimationFrame(themeFrame);
   }, []);
@@ -364,6 +370,28 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
     }
   }
 
+  async function addResearchMission(input: ResearchMissionFormInput) {
+    setBusy("research-mission");
+    setNotice("");
+    try {
+      const response = await fetch("/api/research-missions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...input, maxPrice: input.maxPrice ? Number(input.maxPrice) : null }),
+      });
+      const payload = await response.json() as ProductResearchMissionPayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Não foi possível criar a pesquisa");
+      setResearchMissions(payload.missions ?? []);
+      setNotice("Missão registrada. A coleta será somente leitura e voltará como shortlist; publicação e gastos continuam bloqueados.");
+      return true;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível criar a pesquisa.");
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function prepareCampaign(productId: string) {
     setBusy(`campaign-${productId}`);
     setNotice("");
@@ -450,7 +478,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
         {notice && <div className={styles.notice} role="status"><CircleAlert size={16} /> {notice}<button aria-label="Fechar aviso" onClick={() => setNotice("")}><X size={15} /></button></div>}
 
         {view === "central" && <CentralView data={data} pending={pending} onOpenOpportunity={openOpportunity} onMetric={openMetric} onView={changeView} />}
-        {view === "products" && <ProductsView items={products} busy={busy} onSubmit={addProduct} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} />}
+        {view === "products" && <ProductsView items={products} missions={researchMissions} busy={busy} onSubmit={addProduct} onSubmitMission={addResearchMission} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} />}
         {view === "opportunities" && <OpportunitiesView
           visible={visible}
           selected={selected}
@@ -514,7 +542,7 @@ function CentralView({ data, pending, onOpenOpportunity, onMetric, onView }: { d
   </>;
 }
 
-function ProductsView({ items, busy, onSubmit, onPrepareCampaign, onPrepareBrief }: { items: ProductIntakeItem[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void }) {
+function ProductsView({ items, missions, busy, onSubmit, onSubmitMission, onPrepareCampaign, onPrepareBrief }: { items: ProductIntakeItem[]; missions: ProductResearchMissionItem[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onSubmitMission: (input: ResearchMissionFormInput) => Promise<boolean>; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void }) {
   const [productUrl, setProductUrl] = useState("");
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
@@ -535,7 +563,9 @@ function ProductsView({ items, busy, onSubmit, onPrepareCampaign, onPrepareBrief
     }
   }
 
-  return <section className={styles.productWorkspace}>
+  return <>
+    <ResearchMissionPanel missions={missions} busy={busy} onSubmit={onSubmitMission} />
+    <section className={styles.productWorkspace}>
     <form className={styles.productForm} onSubmit={submit}>
       <SectionHead kicker="NOVA ANÁLISE" title="Adicionar produto" />
       <div className={styles.formBody}>
@@ -557,7 +587,61 @@ function ProductsView({ items, busy, onSubmit, onPrepareCampaign, onPrepareBrief
       {items.some((item) => item.campaignPackage) && <CampaignComparison items={items.filter((item) => item.campaignPackage)} busy={busy} onPrepareBrief={onPrepareBrief} />}
       {items.length ? <div className={styles.productList}>{items.map((item) => <ProductIntakeRow key={item.id} item={item} busy={busy} onPrepareCampaign={onPrepareCampaign} onPrepareBrief={onPrepareBrief} />)}</div> : <div className={styles.empty}>Nenhum produto enviado ainda.</div>}
     </div>
+    </section>
+  </>;
+}
+
+function ResearchMissionPanel({ missions, busy, onSubmit }: { missions: ProductResearchMissionItem[]; busy: string | null; onSubmit: (input: ResearchMissionFormInput) => Promise<boolean> }) {
+  const [goal, setGoal] = useState("");
+  const [marketplace, setMarketplace] = useState("mercado_livre");
+  const [category, setCategory] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [timeframe, setTimeframe] = useState("week");
+  const [resultLimit, setResultLimit] = useState(5);
+  const [targetChannel, setTargetChannel] = useState("telegram_public");
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const accepted = await onSubmit({ goal, marketplaces: [marketplace], category, maxPrice, timeframe, resultLimit, targetChannel });
+    if (accepted) { setGoal(""); setCategory(""); setMaxPrice(""); }
+  }
+
+  return <section className={styles.researchMissionPanel}>
+    <form className={styles.researchMissionComposer} onSubmit={submit}>
+      <SectionHead kicker="MISSÃO DE PESQUISA" title="Pedir pesquisa aos funcionários" />
+      <div className={styles.formBody}>
+        <label><span>O que você quer encontrar?</span><textarea required minLength={2} maxLength={120} value={goal} onChange={(event) => setGoal(event.target.value)} placeholder="Ex: ofertas de tecnologia até R$ 300 com boa procura e imagem limpa" /></label>
+        <div className={styles.missionControls}>
+          <label><span>Marketplace</span><select value={marketplace} onChange={(event) => setMarketplace(event.target.value)}><option value="mercado_livre">Mercado Livre conectado</option><option value="amazon">Amazon pendente</option><option value="shopee">Shopee pendente</option></select></label>
+          <label><span>Período</span><select value={timeframe} onChange={(event) => setTimeframe(event.target.value)}><option value="today">Hoje</option><option value="week">Esta semana</option><option value="evergreen">Oportunidade contínua</option></select></label>
+          <label><span>Preço máximo</span><input type="number" min="1" step="1" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="Sem limite" /></label>
+          <label><span>Resultados</span><select value={resultLimit} onChange={(event) => setResultLimit(Number(event.target.value))}>{[3, 5, 8, 10].map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
+          <label><span>Categoria <small>opcional</small></span><input value={category} maxLength={80} onChange={(event) => setCategory(event.target.value)} placeholder="Ex: games, casa" /></label>
+          <label><span>Canal pensado</span><select value={targetChannel} onChange={(event) => setTargetChannel(event.target.value)}><option value="telegram_public">Telegram público</option><option value="whatsapp_public">WhatsApp público</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option></select></label>
+        </div>
+        <button className={styles.submitProduct} disabled={busy === "research-mission"}><Sparkles size={17} />{busy === "research-mission" ? "Registrando..." : "Iniciar pesquisa"}</button>
+        <p className={styles.formSafety}><ShieldCheck size={15} /> Pesquisa somente leitura. O resultado pede sua confirmação do link monetizado antes de qualquer produção.</p>
+      </div>
+    </form>
+    <div className={styles.researchMissionResults}>
+      <SectionHead kicker="RETORNO VISUAL" title="Pesquisas e shortlist" />
+      {missions.length ? missions.map((mission) => <ResearchMissionCard key={mission.id} mission={mission} />) : <div className={styles.empty}>Crie uma missão simples. Os funcionários devolverão produtos, evidências, score e pendências aqui.</div>}
+    </div>
   </section>;
+}
+
+function ResearchMissionCard({ mission }: { mission: ProductResearchMissionItem }) {
+  const shortlist = mission.result.shortlisted ?? [];
+  const status = mission.status === "queued" ? "Na fila" : mission.status === "researching" ? "Pesquisando" : mission.status === "review" ? "Sua revisão" : mission.status === "needs_input" ? "Precisa de dados" : "Bloqueada";
+  return <article className={styles.researchMissionCard}>
+    <div className={styles.missionHeader}><span><small>{status}</small><strong>{mission.goal}</strong></span><b>{mission.marketplaces.join(" + ")}</b></div>
+    <p>{mission.error || (shortlist.length ? `${shortlist.length} produto(s) selecionado(s) para você comparar.` : "Aguardando o funcionário consultar fontes conectadas.")}</p>
+    {shortlist.length > 0 && <div className={styles.missionShortlist}>{shortlist.map((candidate) => <a key={candidate.candidate_id} href={candidate.source_url} target="_blank" rel="noreferrer">
+      {candidate.image_url ? <Image unoptimized src={candidate.image_url} alt="" width={48} height={48} /> : <span><ShoppingBag size={17} /></span>}
+      <span><strong>{candidate.product_name}</strong><small>R$ {candidate.current_price.toFixed(2).replace(".", ",")} · score {candidate.score_total}</small><em>Link afiliado: confirmar</em></span><ExternalLink size={13} />
+    </a>)}</div>}
+    <footer><span>Provider: não chamado</span><span>Publicação: bloqueada</span></footer>
+  </article>;
 }
 
 function ProductIntakeRow({ item, busy, onPrepareCampaign, onPrepareBrief }: { item: ProductIntakeItem; busy: string | null; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void }) {
