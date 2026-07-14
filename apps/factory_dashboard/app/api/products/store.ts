@@ -45,6 +45,24 @@ export type CampaignPackage = {
   missingToPublish: string[];
   publicationStatus: "blocked";
   generatedAt: string;
+  organicBrief?: OrganicCampaignBrief;
+};
+
+export type OrganicCampaignBrief = {
+  status: "ready_for_owner_review" | "blocked";
+  goal: string;
+  audience: string;
+  angle: string;
+  format: string;
+  channel: string;
+  draftCopy: string;
+  disclosure: string;
+  productionChecklist: string[];
+  metricsToCollect: string[];
+  missingBeforeProduction: string[];
+  providerStatus: "not_called";
+  publicationStatus: "blocked";
+  generatedAt: string;
 };
 
 export async function createProductIntake(input: ProductIntakeInput) {
@@ -155,6 +173,58 @@ export async function prepareCampaignPackage(productId: string) {
     publicationStatus: "blocked",
     generatedAt: now,
   };
+  await db.update(productIntakeRequests).set({
+    campaignPackage: JSON.stringify(campaignPackage),
+    updatedAt: now,
+  }).where(eq(productIntakeRequests.id, productId));
+  return productIntakeState();
+}
+
+export async function prepareOrganicBrief(productId: string) {
+  const db = getDb();
+  await ensureProductSchema();
+  const existing = await db.select().from(productIntakeRequests).where(eq(productIntakeRequests.id, productId)).limit(1);
+  const item = existing[0];
+  if (!item) throw new Error("Product intake request was not found");
+  if (!item.campaignPackage) throw new Error("Prepare e compare o pacote antes de criar o briefing");
+
+  let campaignPackage: CampaignPackage;
+  try {
+    campaignPackage = JSON.parse(item.campaignPackage) as CampaignPackage;
+  } catch {
+    throw new Error("O pacote de campanha precisa ser preparado novamente");
+  }
+
+  const now = new Date().toISOString();
+  const missingBeforeProduction = campaignPackage.missingToPublish
+    .filter((field) => field !== "aprovação final do owner");
+  const isSalesPage = (item.sourceKind ?? "product_page") === "sales_page";
+  const organicBrief: OrganicCampaignBrief = {
+    status: missingBeforeProduction.length ? "blocked" : "ready_for_owner_review",
+    goal: isSalesPage
+      ? "Validar interesse orgânico antes de investir em tráfego pago."
+      : "Validar cliques e intenção de compra com distribuição orgânica controlada.",
+    audience: isSalesPage
+      ? "Pessoas com problema compatível com a promessa, sem segmentação sensível ou alegação não comprovada."
+      : "Seguidores interessados na categoria do produto e em ofertas verificáveis.",
+    angle: campaignPackage.promise,
+    format: campaignPackage.creative,
+    channel: campaignPackage.channel,
+    draftCopy: campaignPackage.copy,
+    disclosure: "Como afiliado, posso receber comissão por compras feitas pelo link, sem custo extra para você.",
+    productionChecklist: [
+      "Confirmar preço, disponibilidade e condições na fonte original.",
+      "Usar somente imagem autorizada, própria ou revisada pelo Creative Review.",
+      "Manter promessa, oferta e disclosure legíveis no criativo.",
+      "Submeter o material final à revisão do owner antes de publicar.",
+    ],
+    metricsToCollect: ["visualizações", "cliques no link", "CTR", "conversões", "comissão", "custo", "ROI"],
+    missingBeforeProduction,
+    providerStatus: "not_called",
+    publicationStatus: "blocked",
+    generatedAt: now,
+  };
+  campaignPackage.organicBrief = organicBrief;
   await db.update(productIntakeRequests).set({
     campaignPackage: JSON.stringify(campaignPackage),
     updatedAt: now,

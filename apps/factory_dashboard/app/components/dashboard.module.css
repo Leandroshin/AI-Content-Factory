@@ -182,6 +182,17 @@
 .campaignPackageDetail > strong { color: var(--dash-matrix); font-size: 10px; text-transform: uppercase; }
 .campaignPackageDetail span { display: grid; gap: 4px; color: var(--dash-muted); font-size: 9px; line-height: 1.45; }
 .campaignPackageDetail small { display: flex; align-items: center; gap: 6px; color: var(--dash-amber); font-size: 8px; }
+.campaignPackageDetail > button { grid-column: 1 / -1; justify-self: start; margin-top: 2px; }
+.selectCampaign { min-height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border: 1px solid var(--dash-cyan); color: var(--dash-cyan); background: rgba(74, 217, 255, .05); border-radius: 4px; cursor: pointer; font-size: 9px; font-weight: 700; }
+.selectCampaign:disabled { opacity: .55; cursor: wait; }
+.briefReady { display: flex; align-items: center; gap: 5px; color: var(--dash-matrix) !important; }
+.organicBrief { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; padding: 12px; border: 1px solid var(--dash-cyan); background: rgba(74, 217, 255, .035); }
+.organicBrief > div, .organicBrief > small { grid-column: 1 / -1; }
+.organicBrief > div { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.organicBrief > div b { color: var(--dash-cyan); font: 700 8px var(--font-geist-mono); text-transform: uppercase; }
+.organicBrief > div strong { color: var(--dash-text); font-size: 10px; }
+.organicBrief span { min-width: 0; }
+.organicBrief small { color: var(--dash-cyan); }
 .filters { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--dash-line); }
 .searchBox { min-width: 230px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--dash-line); color: var(--dash-muted); background: #070b08; }
 .searchBox input { width: 100%; min-height: 34px; border: 0; outline: 0; color: var(--dash-text); background: transparent; font-size: 12px; }
@@ -437,6 +448,8 @@
   .productInsights { grid-template-columns: 1fr; }
   .campaignPackageDetail { grid-template-columns: 1fr; }
   .campaignPackageDetail > strong, .campaignPackageDetail > small { grid-column: 1; }
+  .campaignPackageDetail > button, .organicBrief, .organicBrief > div, .organicBrief > small { grid-column: 1; }
+  .organicBrief { grid-template-columns: 1fr; }
   .campaignTable { grid-template-columns: 1fr; }
   .campaignTable article { border-right: 0; border-bottom: 1px solid var(--dash-line); }
   .quickSearches { padding-bottom: 14px; }

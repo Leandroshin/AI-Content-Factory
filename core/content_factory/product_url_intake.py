@@ -132,7 +132,7 @@ class ProductUrlBatchResult:
 DEFAULT_MARKETPLACES: tuple[MarketplaceProfile, ...] = (
     MarketplaceProfile("amazon", "Amazon", ("amazon.com.br",), 0.92),
     MarketplaceProfile(
-        "mercado_livre", "Mercado Livre", ("mercadolivre.com.br",), 0.86
+        "mercado_livre", "Mercado Livre", ("mercadolivre.com.br", "meli.la"), 0.86
     ),
     MarketplaceProfile("shopee", "Shopee", ("shopee.com.br",), 0.76),
     MarketplaceProfile("adidas", "Adidas", ("adidas.com.br",), 0.88),

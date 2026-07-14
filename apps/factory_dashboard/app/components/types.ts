@@ -92,6 +92,24 @@ export type CampaignPackage = {
   missingToPublish: string[];
   publicationStatus: "blocked";
   generatedAt: string;
+  organicBrief?: OrganicCampaignBrief;
+};
+
+export type OrganicCampaignBrief = {
+  status: "ready_for_owner_review" | "blocked";
+  goal: string;
+  audience: string;
+  angle: string;
+  format: string;
+  channel: string;
+  draftCopy: string;
+  disclosure: string;
+  productionChecklist: string[];
+  metricsToCollect: string[];
+  missingBeforeProduction: string[];
+  providerStatus: "not_called";
+  publicationStatus: "blocked";
+  generatedAt: string;
 };
 
 export type ProductIntakeItem = {
