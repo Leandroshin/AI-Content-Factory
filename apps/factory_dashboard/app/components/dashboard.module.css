@@ -163,6 +163,25 @@
 .missingFields { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
 .missingFields span { color: var(--dash-amber); border-color: #584728; }
 .affiliatePending { display: flex; align-items: center; gap: 6px; margin-top: 9px; color: var(--dash-amber); font-size: 9px; }
+.prepareCampaign { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 12px; padding: 0 12px; border: 1px solid var(--dash-matrix); color: var(--dash-matrix); background: rgba(78, 245, 139, .06); border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 700; }
+.prepareCampaign:disabled { opacity: .55; cursor: wait; }
+.campaignComparison { border-bottom: 1px solid var(--dash-line-bright); background: rgba(78, 245, 139, .025); }
+.campaignComparison > div:first-child { display: grid; gap: 5px; padding: 16px 18px; border-bottom: 1px solid var(--dash-line); }
+.campaignComparison small { color: var(--dash-matrix); font: 700 8px var(--font-geist-mono); }
+.campaignComparison strong { font-size: 13px; }
+.campaignComparison span { color: var(--dash-muted); font-size: 9px; line-height: 1.45; }
+.campaignTable { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.campaignTable article { min-width: 0; display: grid; align-content: start; gap: 9px; padding: 14px 16px; border-right: 1px solid var(--dash-line); }
+.campaignTable article:last-child { border-right: 0; }
+.campaignTable article > strong { color: var(--dash-text); font-size: 11px; }
+.campaignTable article span { display: grid; gap: 3px; }
+.campaignTable article b, .campaignPackageDetail b { color: var(--dash-matrix); font: 700 8px var(--font-geist-mono); text-transform: uppercase; }
+.campaignTable em { color: var(--dash-amber); font: normal 8px var(--font-geist-mono); }
+.campaignPackageDetail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 12px; padding: 12px; border: 1px solid var(--dash-line-bright); background: #071009; }
+.campaignPackageDetail > strong, .campaignPackageDetail > small { grid-column: 1 / -1; }
+.campaignPackageDetail > strong { color: var(--dash-matrix); font-size: 10px; text-transform: uppercase; }
+.campaignPackageDetail span { display: grid; gap: 4px; color: var(--dash-muted); font-size: 9px; line-height: 1.45; }
+.campaignPackageDetail small { display: flex; align-items: center; gap: 6px; color: var(--dash-amber); font-size: 8px; }
 .filters { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--dash-line); }
 .searchBox { min-width: 230px; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--dash-line); color: var(--dash-muted); background: #070b08; }
 .searchBox input { width: 100%; min-height: 34px; border: 0; outline: 0; color: var(--dash-text); background: transparent; font-size: 12px; }
@@ -416,6 +435,10 @@
   .productIdentity > b { grid-column: 2; text-align: left; }
   .productStages span { font-size: 7px; }
   .productInsights { grid-template-columns: 1fr; }
+  .campaignPackageDetail { grid-template-columns: 1fr; }
+  .campaignPackageDetail > strong, .campaignPackageDetail > small { grid-column: 1; }
+  .campaignTable { grid-template-columns: 1fr; }
+  .campaignTable article { border-right: 0; border-bottom: 1px solid var(--dash-line); }
   .quickSearches { padding-bottom: 14px; }
 }
 

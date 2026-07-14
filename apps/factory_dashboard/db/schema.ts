@@ -51,6 +51,7 @@ export const productIntakeRequests = sqliteTable("product_intake_requests", {
   commissionNotes: text("commission_notes"),
   funnelSuggestion: text("funnel_suggestion"),
   affiliateReadiness: text("affiliate_readiness"),
+  campaignPackage: text("campaign_package"),
   missingFields: text("missing_fields").notNull(),
   submittedAt: text("submitted_at").notNull(),
   updatedAt: text("updated_at").notNull(),

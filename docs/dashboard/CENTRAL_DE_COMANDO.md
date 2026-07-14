@@ -107,4 +107,4 @@ O Radar de Games executa diariamente as 09:00 em uma tarefa separada. A bolinha 
 
 ## Proxima integracao
 
-`GamingNewsDesk`, `AudienceGrowthPlanner` e a entrada visual de produtos ja possuem pontes review-only para a fila hospedada. O proximo passo tecnico e transformar as analises aprovadas em pacotes comparaveis de campanha, ainda sem provider pago, para voce escolher quais ideias merecem producao.
+`GamingNewsDesk`, `AudienceGrowthPlanner` e a entrada visual de produtos possuem pontes review-only para a fila hospedada. Uma analise de produto concluida pode agora virar, por decisao manual do owner, um pacote comparavel com produto, promessa, criativo, canal, copy segura, risco, custo zero da preparacao e pendencias. Esse pacote nunca publica, compra anuncio ou chama provider.
