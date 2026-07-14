@@ -93,8 +93,8 @@
 .red { color: var(--dash-red) !important; }
 
 .centralGrid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, .75fr); gap: 18px; }
-.attentionPanel, .todayPanel, .queue, .detail, .pageSection, .activityPanel, .healthPanel, .themePanel, .costPanel, .safetyPanel, .productForm, .productQueue { min-width: 0; border: 1px solid var(--dash-line); background: rgba(10, 16, 13, .96); }
-.shell[data-theme="matrix"] .attentionPanel, .shell[data-theme="matrix"] .todayPanel, .shell[data-theme="matrix"] .queue, .shell[data-theme="matrix"] .detail, .shell[data-theme="matrix"] .pageSection, .shell[data-theme="matrix"] .activityPanel, .shell[data-theme="matrix"] .healthPanel, .shell[data-theme="matrix"] .themePanel, .shell[data-theme="matrix"] .costPanel, .shell[data-theme="matrix"] .safetyPanel, .shell[data-theme="matrix"] .productForm, .shell[data-theme="matrix"] .productQueue { background: rgba(1, 9, 2, .94); }
+.attentionPanel, .todayPanel, .queue, .detail, .pageSection, .activityPanel, .healthPanel, .themePanel, .costPanel, .safetyPanel, .productForm, .productQueue, .researchMissionComposer, .researchMissionResults { min-width: 0; border: 1px solid var(--dash-line); background: rgba(10, 16, 13, .96); }
+.shell[data-theme="matrix"] .attentionPanel, .shell[data-theme="matrix"] .todayPanel, .shell[data-theme="matrix"] .queue, .shell[data-theme="matrix"] .detail, .shell[data-theme="matrix"] .pageSection, .shell[data-theme="matrix"] .activityPanel, .shell[data-theme="matrix"] .healthPanel, .shell[data-theme="matrix"] .themePanel, .shell[data-theme="matrix"] .costPanel, .shell[data-theme="matrix"] .safetyPanel, .shell[data-theme="matrix"] .productForm, .shell[data-theme="matrix"] .productQueue, .shell[data-theme="matrix"] .researchMissionComposer, .shell[data-theme="matrix"] .researchMissionResults { background: rgba(1, 9, 2, .94); }
 .sectionHead { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 18px; border-bottom: 1px solid var(--dash-line); }
 .sectionHead h2 { margin: 2px 0 0; font-size: 17px; }
 .textButton, .iconText { display: flex; align-items: center; gap: 6px; border: 0; color: var(--dash-matrix); background: transparent; cursor: pointer; font-size: 11px; }
@@ -118,6 +118,27 @@
 
 .workspace { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(330px, .72fr); gap: 18px; align-items: start; }
 .productWorkspace { display: grid; grid-template-columns: minmax(310px, .55fr) minmax(0, 1.25fr); gap: 18px; align-items: start; }
+.researchMissionPanel { display: grid; grid-template-columns: minmax(380px, .8fr) minmax(0, 1.2fr); gap: 18px; margin-bottom: 18px; align-items: start; }
+.missionControls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.missionControls label > input { width: 100%; height: 42px; padding: 0 10px; border: 1px solid var(--dash-line-bright); background: #070b08; }
+.researchMissionResults > .empty { min-height: 220px; display: grid; place-items: center; padding: 25px; text-align: center; }
+.researchMissionCard { padding: 16px 18px; border-bottom: 1px solid var(--dash-line); }
+.researchMissionCard:last-child { border-bottom: 0; }
+.missionHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.missionHeader small, .missionHeader strong { display: block; }
+.missionHeader small { margin-bottom: 5px; color: var(--dash-matrix); font: 700 8px var(--font-geist-mono); text-transform: uppercase; }
+.missionHeader strong { font-size: 12px; }
+.missionHeader b { color: var(--dash-cyan); font: 8px var(--font-geist-mono); text-transform: uppercase; }
+.researchMissionCard > p { color: var(--dash-muted); font-size: 10px; line-height: 1.5; }
+.missionShortlist { display: grid; gap: 6px; }
+.missionShortlist > a { min-width: 0; display: grid; grid-template-columns: 48px minmax(0, 1fr) 14px; align-items: center; gap: 10px; padding: 9px; border: 1px solid var(--dash-line); color: var(--dash-text); background: var(--dash-raised); text-decoration: none; }
+.missionShortlist img, .missionShortlist > a > span:first-child { width: 48px; height: 48px; display: grid; place-items: center; object-fit: cover; color: var(--dash-matrix); background: var(--dash-soft); }
+.missionShortlist strong, .missionShortlist small, .missionShortlist em { display: block; }
+.missionShortlist strong { font-size: 10px; }
+.missionShortlist small { margin-top: 4px; color: var(--dash-muted); font-size: 8px; }
+.missionShortlist em { margin-top: 4px; color: var(--dash-amber); font: normal 8px var(--font-geist-mono); }
+.researchMissionCard footer { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.researchMissionCard footer span { padding: 4px 6px; border: 1px solid var(--dash-line); color: var(--dash-muted); font: 8px var(--font-geist-mono); }
 .productForm { position: sticky; top: 20px; }
 .formBody { display: grid; gap: 16px; padding: 18px; }
 .formBody label > span { display: block; margin-bottom: 7px; color: var(--dash-muted); font-size: 10px; text-transform: uppercase; }
@@ -393,7 +414,7 @@
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metric:nth-child(2) { border-right: 0; }
   .metric:nth-child(-n+2) { border-bottom: 1px solid var(--dash-line); }
-  .workspace, .centralGrid, .historyLayout, .productWorkspace { grid-template-columns: 1fr; }
+  .workspace, .centralGrid, .historyLayout, .productWorkspace, .researchMissionPanel { grid-template-columns: 1fr; }
   .productForm { position: static; }
   .detail { min-height: 420px; }
   .settingsLayout { grid-template-columns: 1fr; }

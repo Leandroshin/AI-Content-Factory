@@ -57,6 +57,22 @@ export const productIntakeRequests = sqliteTable("product_intake_requests", {
   updatedAt: text("updated_at").notNull(),
 });
 
+export const productResearchMissions = sqliteTable("product_research_missions", {
+  id: text("id").primaryKey(),
+  goal: text("goal").notNull(),
+  marketplaces: text("marketplaces").notNull(),
+  category: text("category").notNull(),
+  maxPriceCents: integer("max_price_cents"),
+  timeframe: text("timeframe").notNull(),
+  resultLimit: integer("result_limit").notNull(),
+  targetChannel: text("target_channel").notNull(),
+  status: text("status").notNull(),
+  result: text("result").notNull(),
+  error: text("error").notNull(),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 export const productionRequests = sqliteTable("production_requests", {
   id: text("id").primaryKey(),
   opportunityId: text("opportunity_id").notNull().unique(),

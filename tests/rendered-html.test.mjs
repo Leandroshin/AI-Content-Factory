@@ -128,6 +128,24 @@ test("product intake separates owner input from the authenticated worker", async
   assert.doesNotMatch(`${ownerRoute}\n${workerRoute}\n${store}`, /console\.(log|error)/);
 });
 
+test("research missions stay bounded, read-only and separated from publication", async () => {
+  const client = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/DashboardClient.tsx", import.meta.url), "utf8"));
+  const ownerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/research-missions/route.ts", import.meta.url), "utf8"));
+  const workerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/intake/product-research/route.ts", import.meta.url), "utf8"));
+  const store = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/research-missions/store.ts", import.meta.url), "utf8"));
+  assert.match(client, /Pedir pesquisa aos funcionários/);
+  assert.match(client, /Mercado Livre conectado/);
+  assert.match(client, /Amazon pendente/);
+  assert.match(client, /Link afiliado: confirmar/);
+  assert.match(client, /Publicação: bloqueada/);
+  assert.match(ownerRoute, /resultLimit.*3.*10/s);
+  assert.match(workerRoute, /requireDashboardIntake/);
+  assert.match(workerRoute, /review.*needs_input.*blocked/s);
+  assert.match(store, /providerStatus: "not_called"/);
+  assert.match(store, /publicationStatus: "blocked"/);
+  assert.doesNotMatch(`${ownerRoute}\n${workerRoute}\n${store}`, /axios|http:\/\//);
+});
+
 test("approved product analysis becomes a comparable zero-cost campaign package", async () => {
   const client = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/DashboardClient.tsx", import.meta.url), "utf8"));
   const ownerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/route.ts", import.meta.url), "utf8"));
