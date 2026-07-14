@@ -33,6 +33,20 @@ export type ProductIntakeInput = {
   marketplace: string;
 };
 
+export type CampaignPackage = {
+  status: "draft_ready" | "blocked";
+  product: string;
+  promise: string;
+  creative: string;
+  channel: string;
+  copy: string;
+  risk: string;
+  estimatedCost: string;
+  missingToPublish: string[];
+  publicationStatus: "blocked";
+  generatedAt: string;
+};
+
 export async function createProductIntake(input: ProductIntakeInput) {
   const db = getDb();
   await ensureProductSchema();
@@ -54,6 +68,7 @@ export async function createProductIntake(input: ProductIntakeInput) {
     analysisSummary: input.ownerNotes
       ? `Aguardando coleta segura. Contexto do owner: ${input.ownerNotes}`
       : "Aguardando coleta segura dos dados do produto.",
+    campaignPackage: null,
     missingFields: "[]",
     submittedAt: existing[0]?.submittedAt ?? now,
     updatedAt: now,
@@ -110,6 +125,43 @@ export async function productWorkerQueue(limit = 10) {
   })) };
 }
 
+export async function prepareCampaignPackage(productId: string) {
+  const db = getDb();
+  await ensureProductSchema();
+  const existing = await db.select().from(productIntakeRequests).where(eq(productIntakeRequests.id, productId)).limit(1);
+  const item = existing[0];
+  if (!item) throw new Error("Product intake request was not found");
+  if (!["completed", "needs_input"].includes(item.status)) throw new Error("A análise precisa terminar antes do pacote de campanha");
+
+  const now = new Date().toISOString();
+  const missing = parseMissingFields(item.missingFields);
+  if (!item.affiliateUrl) missing.push("link afiliado validado");
+  missing.push("aprovação final do owner");
+  const missingToPublish = [...new Set(missing.map((field) => field.replaceAll("_", " ")))];
+  const isSalesPage = (item.sourceKind ?? "product_page") === "sales_page";
+  const product = item.productName || `Produto em ${item.marketplace}`;
+  const campaignPackage: CampaignPackage = {
+    status: missingToPublish.length > 1 ? "blocked" : "draft_ready",
+    product,
+    promise: item.promiseReview || "Promessa ainda não confirmada pela análise.",
+    creative: item.creativeRecommendation || "Criativo ainda depende de revisão visual.",
+    channel: isSalesPage ? "Landing própria + Telegram" : "Telegram + WhatsApp manual",
+    copy: `${product}. Confira preço, disponibilidade e condições na página oficial. Como afiliado, posso receber comissão por compras feitas pelo link, sem custo extra para você.`,
+    risk: missingToPublish.length > 3
+      ? "Alto: existem pendências comerciais ou de evidência antes de publicar."
+      : "Médio: conferir rastreamento, condições da oferta e revisão final.",
+    estimatedCost: "US$ 0,00 nesta preparação",
+    missingToPublish,
+    publicationStatus: "blocked",
+    generatedAt: now,
+  };
+  await db.update(productIntakeRequests).set({
+    campaignPackage: JSON.stringify(campaignPackage),
+    updatedAt: now,
+  }).where(eq(productIntakeRequests.id, productId));
+  return productIntakeState();
+}
+
 export async function applyProductWorkerResult(input: ProductWorkerResult) {
   const db = getDb();
   await ensureProductSchema();
@@ -126,6 +178,7 @@ export async function applyProductWorkerResult(input: ProductWorkerResult) {
     commissionNotes: input.commissionNotes ?? "",
     funnelSuggestion: input.funnelSuggestion ?? "",
     affiliateReadiness: input.affiliateReadiness ?? "",
+    campaignPackage: null,
     missingFields: JSON.stringify(input.missingFields),
     updatedAt: now,
   }).where(eq(productIntakeRequests.id, input.requestId));
@@ -160,6 +213,7 @@ async function ensureProductSchema() {
   await addColumnIfMissing("product_intake_requests", "commission_notes", "TEXT");
   await addColumnIfMissing("product_intake_requests", "funnel_suggestion", "TEXT");
   await addColumnIfMissing("product_intake_requests", "affiliate_readiness", "TEXT");
+  await addColumnIfMissing("product_intake_requests", "campaign_package", "TEXT");
   await env.DB.prepare("CREATE INDEX IF NOT EXISTS product_intake_status_idx ON product_intake_requests(status)").run();
 }
 
@@ -174,8 +228,9 @@ async function addColumnIfMissing(table: string, column: string, definition: str
 }
 
 function publicItem(item: typeof productIntakeRequests.$inferSelect) {
-  let missingFields: string[] = [];
-  try { missingFields = JSON.parse(item.missingFields) as string[]; } catch { missingFields = []; }
+  const missingFields = parseMissingFields(item.missingFields);
+  let campaignPackage: CampaignPackage | null = null;
+  try { campaignPackage = item.campaignPackage ? JSON.parse(item.campaignPackage) as CampaignPackage : null; } catch { campaignPackage = null; }
   return {
     id: item.id,
     productUrl: item.productUrl,
@@ -194,8 +249,13 @@ function publicItem(item: typeof productIntakeRequests.$inferSelect) {
     commissionNotes: item.commissionNotes ?? "",
     funnelSuggestion: item.funnelSuggestion ?? "",
     affiliateReadiness: item.affiliateReadiness ?? "",
+    campaignPackage,
     missingFields,
     submittedAt: item.submittedAt,
     updatedAt: item.updatedAt,
   };
+}
+
+function parseMissingFields(value: string) {
+  try { return JSON.parse(value) as string[]; } catch { return []; }
 }

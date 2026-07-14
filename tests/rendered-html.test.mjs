@@ -125,3 +125,18 @@ test("product intake separates owner input from the authenticated worker", async
   assert.match(store, /nenhuma publicação está autorizada/);
   assert.doesNotMatch(`${ownerRoute}\n${workerRoute}\n${store}`, /console\.(log|error)/);
 });
+
+test("approved product analysis becomes a comparable zero-cost campaign package", async () => {
+  const client = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/DashboardClient.tsx", import.meta.url), "utf8"));
+  const ownerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/route.ts", import.meta.url), "utf8"));
+  const store = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/store.ts", import.meta.url), "utf8"));
+  assert.match(client, /Preparar pacote sem gasto/);
+  assert.match(client, /Pacotes preparados/);
+  assert.match(client, /Custo estimado/);
+  assert.match(ownerRoute, /prepare_campaign/);
+  assert.match(store, /campaign_package/);
+  assert.match(store, /US\$ 0,00 nesta preparação/);
+  assert.match(store, /publicationStatus: "blocked"/);
+  assert.match(store, /aprovação final do owner/);
+  assert.doesNotMatch(`${ownerRoute}\n${store}`, /fetch\(|axios|http:\/\//);
+});

@@ -80,6 +80,20 @@ export type ProviderPlan = {
 
 export type ProductIntakeStatus = "queued" | "analyzing" | "completed" | "needs_input" | "blocked";
 
+export type CampaignPackage = {
+  status: "draft_ready" | "blocked";
+  product: string;
+  promise: string;
+  creative: string;
+  channel: string;
+  copy: string;
+  risk: string;
+  estimatedCost: string;
+  missingToPublish: string[];
+  publicationStatus: "blocked";
+  generatedAt: string;
+};
+
 export type ProductIntakeItem = {
   id: string;
   productUrl: string;
@@ -98,6 +112,7 @@ export type ProductIntakeItem = {
   commissionNotes: string;
   funnelSuggestion: string;
   affiliateReadiness: string;
+  campaignPackage: CampaignPackage | null;
   missingFields: string[];
   submittedAt: string;
   updatedAt: string;

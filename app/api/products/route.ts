@@ -1,4 +1,4 @@
-import { createProductIntake, productIntakeState } from "./store";
+import { createProductIntake, prepareCampaignPackage, productIntakeState } from "./store";
 
 const MAX_BODY_BYTES = 8_000;
 const MARKETPLACES = [
@@ -39,6 +39,18 @@ export async function POST(request: Request) {
       ownerNotes,
       marketplace,
     }), { status: 202 });
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "Dados inválidos" }, { status: 400 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json() as Record<string, unknown>;
+    if (body.action !== "prepare_campaign" || typeof body.productId !== "string" || !body.productId.trim()) {
+      throw new Error("Ação de campanha inválida");
+    }
+    return Response.json(await prepareCampaignPackage(body.productId.trim()));
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Dados inválidos" }, { status: 400 });
   }
