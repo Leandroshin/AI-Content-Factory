@@ -135,7 +135,15 @@ DEFAULT_MARKETPLACES: tuple[MarketplaceProfile, ...] = (
         "mercado_livre", "Mercado Livre", ("mercadolivre.com.br",), 0.86
     ),
     MarketplaceProfile("shopee", "Shopee", ("shopee.com.br",), 0.76),
+    MarketplaceProfile("adidas", "Adidas", ("adidas.com.br",), 0.88),
     MarketplaceProfile("hotmart", "Hotmart", ("hotmart.com",), 0.78),
+    MarketplaceProfile(
+        "digistore24",
+        "Digistore24",
+        ("digistore24.com", "digistore24-app.com"),
+        0.74,
+    ),
+    MarketplaceProfile("braip", "Braip", ("braip.com", "ev.braip.com"), 0.76),
     MarketplaceProfile("tiktok_shop", "TikTok Shop", ("tiktok.com",), 0.72),
     MarketplaceProfile("kiwify", "Kiwify", ("kiwify.com.br",), 0.74),
 )

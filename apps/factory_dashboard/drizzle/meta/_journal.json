@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1783917937222,
+      "tag": "0000_wealthy_war_machine",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1783947399549,
+      "tag": "0001_rapid_jack_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783956197130,
+      "tag": "0002_stale_runaways",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1783991661729,
+      "tag": "0003_heavy_shriek",
+      "breakpoints": true
+    }
+  ]
+}

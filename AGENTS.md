@@ -100,6 +100,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Script Department:** `core/departments/script/` — ScriptWriterEmployee, roteiro, hook, CTA, variantes, export markdown e quality loop
 - **Affiliate Deals Department:** `core/departments/affiliate_deals/` — AffiliateDealsEmployee, score deterministico de ofertas, copy estilo Telegram/WhatsApp manual, criativo, compliance de afiliado, plano de publicacao e funil Facebook warmup -> Telegram
 - **Strategy Intelligence Department:** `core/departments/strategy_intelligence/` — fontes rastreaveis, padroes, evidencias e recomendacoes sem transformar transcricao bruta em ordem
+- **TikTok Shop 8s Learning Pattern:** Strategy Intelligence reconhece Gemini Omni Flash/Google Flow, trata 8 segundos como experimento comparativo, bloqueia uso de rostos aleatorios do Pinterest e exige metricas proprias antes de aceitar alegacoes de receita
+- **Gemini Omni Flash Provider:** chave validada por inventario oficial e guardada em `secrets/gemini.env`; `GeminiOmniVideoAdapter` oferece MOCK/REAL, output MP4 e bloqueio REAL obrigatorio por requests, segundos e custo (baseline oficial aproximado de USD 0.10/s em 720p)
 - **Product Research Department:** `core/departments/product_research/` — normalizacao e shortlist de candidatos com score, sinais de marketplace e motivos auditaveis
 - **Creative Review Department:** `core/departments/creative_review/` — decide manter, melhorar, substituir ou bloquear criativo antes da publicacao
 - **Content Factory Workflow:** `core/content_factory/` — esteira concreta `Brief -> Script -> Audio -> Image -> Video -> Quality -> Observability`
@@ -108,6 +110,16 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **HITL Approval Gateway:** aprovar, rejeitar, expirar e auditar decisoes antes de qualquer publicacao
 - **Affiliate Approval Dashboard:** renderer HTML operacional para fila, score, compliance, preview e decisoes
 - **Affiliate Dashboard Server:** backend local persistente com entrada manual, aprovacao, rejeicao e publicacao MOCK-safe
+- **Factory Dashboard V2:** `apps/factory_dashboard/` agora usa areas independentes (Central, Oportunidades, Producao, Canais, Historico e Configuracoes), busca global, fila filtravel, fontes clicaveis por oportunidade, temas Operacional/Matrix persistidos e menu mobile com fechamento por backdrop
+- **Gaming Radar Dashboard Intake:** endpoint aditivo `POST /api/intake/gaming`, desativado sem segredo, valida payload limitado e fontes HTTPS e faz upsert idempotente de oportunidades sem produzir, publicar ou gastar
+- **Factory Dashboard Hosted:** Central de Comando publicada em modo privado no Sites com D1 persistente e `DASHBOARD_INTAKE_TOKEN` secreto ativo em `https://central-ai-content-factory.leandro-az-v.chatgpt.site`
+- **Gaming Dashboard Bridge:** `GamingDashboardBridge` entrega somente decisoes `review` ao intake hospedado, ignora `no_news`, bloqueia por padrao e nao reenvia pautas aprovadas ou bloqueadas
+- **Commerce Dashboard Bridge:** `CommerceDashboardBridge` envia produtos completos com link afiliado e previews de workflow ainda pendentes de HITL para `/api/intake/commerce`; itens incompletos ficam bloqueados e a decisao visual nunca libera publicacao
+- **Product Dashboard Intake:** area privada `Produtos` recebe URL comum + link afiliado opcional, persiste a fila em D1 e mostra cinco etapas sem confundir coleta, Creative Review, afiliacao e decisao
+- **Product Dashboard Worker:** `ProductDashboardWorker` busca a fila autenticada somente com opt-in, executa `ProductUrlIntake` uma vez por item e devolve evidencias; nunca fabrica link afiliado nem declara imagem aprovada
+- **Product Queue Automation:** automacao Codex `Analisar fila de produtos` verifica a fila hospedada a cada hora, encerra silenciosamente quando vazia e mantem Creative Review/publicacao fora desta etapa
+- **Dashboard Production Queue:** aprovar uma oportunidade cria somente uma solicitacao MOCK persistida; `DashboardProductionWorker` usa o Script Department para devolver hook, roteiro, CTA e plano visual em `review`, mantendo audio, video, providers pagos e publicacao bloqueados
+- **Production Review UX + Gates:** trabalhos da fila sao selecionaveis e exibem estado, canal, fontes e imagem honesta da marca; ofertas sem URL real/link afiliado e rotinas de monitoramento sem noticia concreta falham antes do roteiro; rascunhos de teste podem ser descartados sem publicar
 - **FFmpegRenderAdapter:** `core/tools/adapters/ffmpeg_adapter.py` — MOCK deterministico e REAL via `ffmpeg/ffprobe`, com consumo de `audio_file_path`/`image_file_path` quando existem
 - **ElevenLabs physical assets:** `ElevenLabsAdapter` escreve WAV deterministico em MOCK e grava bytes de audio no modo REAL quando `output_dir`/`write_file` sao passados
 - **Provider Budget Guard:** `core/tools/provider_control.py` — ProviderBudget, ProviderPricing, ProviderBudgetGuard, decisões pre-flight e usage summary para bloquear REAL antes de HTTP quando faltar aprovação ou budget
@@ -129,7 +141,17 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Product URL Intake:** `core/content_factory/product_url_intake.py` recebe URLs fornecidas pelo owner, aceita apenas marketplaces HTTPS allowlisted, bloqueia hosts locais/privados/credenciais, extrai JSON-LD/Open Graph, registra hash/timestamp/evidencia, preserva fallback manual e entrega `ProductCandidate` ao fluxo completo de afiliados
 - **Meta Ads Analytics Read-Only:** `MetaAdsAnalyticsAdapter` + `MetaMarketingProvider` oferecem apenas cinco operacoes GET (permissoes, contas, conta, campanhas e insights), campos/datas/limites allowlisted, token Bearer redigido, paginacao sem URLs sensiveis e bloqueio pre-HTTP de toda escrita; Provider Control Center exige token + limite + aprovacao
 - **Meta Ads REAL Smoke:** `demo_meta_ads_real_smoke.py` e seco por padrao e limita o opt-in REAL a tres leituras; primeiro inventario REAL aguarda novo token `ads_read` em `secrets/meta_ads.env`
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **100/100 demos, 0 falhas** em 2026-07-12; 44 demos reportaram numericamente 1540 assertions, 56 nao emitem total comparavel
+- **Factory Command Center:** `apps/factory_dashboard/` fornece cockpit Matrix responsivo com D1, fila HITL, decisoes persistentes, producao, canais, providers, custos e auditoria; aprovar producao nao publica nem gera custo
+- **Second Media Approval Gate:** rascunhos aprovados entram em uma fila separada; Audio, Image e Video Departments geram planos tecnicos MOCK para nova revisao, com provider `not_called`, asset final `not_generated` e publicacao bloqueada
+- **Affiliate onboarding real:** Amazon Associados ativo com ID registrado e Mercado Livre app criado com Client Credentials; segredos ficam em `secrets/`, fora do Git; status operacional em `docs/operations/AFFILIATE_PLATFORM_STATUS.md`
+- **Mercado Livre Catalog Read-Only:** `MercadoLivreCatalogAdapter` oferece apenas quatro operacoes GET allowlisted (item, busca, multiget e categoria), token Bearer redigido, limites de consulta e bloqueio pre-HTTP de publicacao, mensagens, compras e vendas
+- **Private Sites Worker Auth:** filas locais de produto e producao usam `OAI-Sites-Authorization` separado do token do intake; o painel permanece privado e os dois segredos ficam fora do Git
+- **DeepSeek Safe Workspace:** `docs/external_llm_inbox/deepseek/00_START_HERE.md` fornece prompt reutilizavel, pastas permitidas, prototipos isolados e handoff obrigatorio para revisao do Codex
+- **Media Provider Quote Gate:** `core/tools/provider_quote.py` compara o plano local gratuito e alternativas pagas antes de qualquer chamada; custo parcial ou provider sem preco mantem a execucao bloqueada
+- **Narration-to-Evidence Visual Sync:** beats editoriais agora registram finalidade visual, aderencia a narracao e proveniencia; captura de tela, demonstracao de navegador e evidencia que nao corresponde a fala falham no quality gate
+- **OmniRoute Quarantine Audit:** OmniRoute 3.8.48 foi instalado fora do projeto, limitado a `127.0.0.1`, com autenticacao obrigatoria e sem contas conectadas; o catalogo keyless OpenCode Free declara `tos: avoid` e permanece proibido
+- **Affiliate Network Portfolio:** Strategy Intelligence separa redes digitais/CPA de alta comissao de marketplaces fisicos complementares; Digistore24 e o primeiro onboarding, seguido de Braip e ClickBank, sem excluir Amazon/Mercado Livre dos testes organicos
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **111/111 demos, 0 falhas** em 2026-07-14; 55 demos reportaram numericamente 1817 assertions, 56 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -153,10 +175,10 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - 0 dependências circulares, 0 violações core→engines
 
 ## Next Steps
-1. **Meta Ads REAL authorization** — recuperar/gerar token `ads_read`, salvar fora do Git e executar o smoke de tres leituras; nenhuma permissao `ads_management`
-2. **Shopee Affiliate onboarding** — owner deve escolher PF/PJ, cadastrar as redes da marca e concluir a inscricao; somente depois auditar o acesso ao portal oficial Open API
-3. **TikTok Shop Creator onboarding** — owner deve inscrever `achadosbaratosbr2` pelo aplicativo, aguardar aprovacao e concluir identidade/fiscal; API de afiliados para parceiros e uma etapa separada
-4. **Dashboard hospedado + banco** — persistencia multi-sessao, autenticacao e fila HITL utilizavel diariamente
+1. **Digistore24 Affiliate onboarding** — criar a conta oficial, configurar recebimento e selecionar uma oferta verificavel; nenhum anuncio pago antes de validar termos, pagina, geografia, reembolso e link de promocao
+2. **Affiliate portfolio validation** — comparar Digistore24, Braip e ClickBank por comissao, conversao, cookie, restricoes, payout e evidencia; MaxWeb, MediaScalers e BuyGoods entram depois da candidatura/aprovacao
+3. **Meta Ads REAL authorization** — recuperar/gerar token `ads_read`, salvar fora do Git e executar o smoke de tres leituras; nenhuma permissao `ads_management`
+4. **Gateway LLM oficial** — manter OmniRoute isolado e integrar somente providers com API/OAuth autorizado; OpenCode Free, cookies de sessao, anti-ban e pooling de contas ficam proibidos
 5. **Metricas de negocio** — cliques, vendas, comissao, custo e ROI alimentando aprendizado aprovado
 6. **Landing page e compliance** — dominio, privacidade, termos, disclosure e eventos de conversao
 7. **Aprovar voz editorial** — Kokoro local e gratuito e o baseline atual; ElevenLabs permanece opcional apos regularizar `payment_issue` e comparar qualidade/custo
@@ -165,7 +187,9 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **100/100 demos, 0 falhas**; 1540 assertions explicitamente reportadas por 44 demos
+- **Regressão atual**: **111/111 demos, 0 falhas**; 1817 assertions explicitamente reportadas por 55 demos
+- **Prova da fila de producao:** `demo_dashboard_production_worker.py` valida 20 assertions: opt-in, autenticacao, modo MOCK, evidencia preservada, Script Department real, rascunho para revisao e ausencia de chamadas de audio, video ou publicacao
+- **Prova do dashboard**: lint, build vinext, teste Node, D1 local, GET da API, sincronizacao, filtros, menu mobile e QA visual em 1440x900 e 390x844 passaram; Sites privado, D1 hospedado e intake secreto foram publicados em 2026-07-13
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando
@@ -217,6 +241,9 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `docs/external_llm_inbox/qwen/`: pasta de entrada para arquivos novos vindos do Qwen
 
 ### Infraestrutura
+- `apps/factory_dashboard/`: Central de Comando web responsiva, privada e hospedavel pelo Sites
+- `apps/factory_dashboard/app/api/`: leitura da fila e decisoes HITL persistidas no D1
+- `docs/dashboard/CENTRAL_DE_COMANDO.md`: guia visual de uso no desktop e celular
 - `core/company/quality.py`: QualityRuntime (regras, validação, correções)
 - `core/conversation/runtime.py`: bridge Conversation→Memory preservando timestamp original da mensagem
 - `core/observability.py`: ProductionSnapshot + Video/Audio/Image production/department/detail snapshots + task_department_map + qualité→dept propagation
@@ -224,7 +251,11 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `core/tools/adapters/elevenlabs_adapter.py`: MOCK/REAL de TTS + escrita opcional de audio fisico
 - `core/tools/adapters/kokoro_adapter.py`: MOCK/REAL local de TTS via runner Python isolado, sem chave de API
 - `core/tools/adapters/meta_ads_adapter.py`: Meta Ads somente leitura, GET allowlisted, token redigido e bloqueio de escrita antes do HTTP
+- `core/tools/adapters/mercado_livre_adapter.py`: catalogo Mercado Livre somente leitura, GET allowlisted, OAuth Bearer redigido e bloqueio de toda escrita antes do HTTP
 - `core/tools/providers/meta_marketing.py`: contrato versionavel da Meta Marketing API
+- `core/tools/providers/mercado_livre.py`: contrato da API Mercado Livre brasileira
+- `core/tools/adapters/gemini_omni_video_adapter.py`: Gemini Omni Flash MOCK/REAL com MP4 fisico e bloqueio pago por aprovacao, segundos, requests e custo
+- `core/tools/providers/gemini.py`: contrato versionavel da Gemini API com autenticacao em header
 - `scripts/kokoro_tts_runner.py`: protocolo JSON stdin/stdout para Kokoro pt-BR e WAV 24 kHz
 - `core/tools/adapters/telegram_adapter.py`: Telegram Bot API MOCK/REAL com aprovação, `chat_id`, budget guard e limite de 4096 caracteres
 - `core/tools/providers/telegram.py`: Provider contract da Telegram Bot API
@@ -237,6 +268,9 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `core/content_factory/managed_workflow.py`: ponte concreta com ExecutivePlan, DepartmentManager e CompanyTaskRuntime
 - `core/content_factory/affiliate_workflow.py`: fluxo integrado da estrategia ate aprovacao/publicacao
 - `core/content_factory/product_url_intake.py`: coleta controlada de uma URL, evidencia estruturada, fallback manual e conversao para `ProductCandidate`
+- `core/content_factory/commerce_dashboard_bridge.py`: ponte review-only de Product URL Intake/Affiliate Workflow para o painel hospedado
+- `core/content_factory/product_dashboard_worker.py`: worker controlado da fila visual para coleta de evidencia e devolucao segura
+- `core/content_factory/gaming_dashboard_bridge.py`: ponte review-only do radar para o intake privado hospedado
 - `core/content_factory/affiliate_dashboard.py`: renderer da fila operacional
 - `core/content_factory/affiliate_dashboard_server.py`: persistencia e API local da fila HITL
 - `core/events/domain_events.py`: ProductionStarted, ProductionStageAdvanced (+stages_completed/failed), ProductionCompleted, QualityValidationStarted/Finished
@@ -252,7 +286,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `demo_quality_loop.py`: 34 assertions
 - `demo_session_recovery.py`: 30 assertions
 - `demo_real_adapters.py`: 24 assertions
-- `demo_video_department.py`: 55 assertions
+- `demo_video_department.py`: 56 assertions
 - `demo_audio_department.py`: 56 assertions
 - `demo_image_department.py`: 57 assertions
 - `demo_department_observability.py`: 62 assertions
@@ -260,9 +294,13 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `demo_ffmpeg_render_adapter.py`: 14 assertions
 - `demo_elevenlabs_audio_asset.py`: 11 assertions
 - `demo_kokoro_tts_adapter.py`: 28 assertions, prova contrato MOCK/REAL local sem baixar modelo na regressao
-- `demo_product_url_intake.py`: 37 assertions, prova extracao, bloqueios de URL/host, fallback manual e URL -> HITL sem publicacao automatica
+- `demo_product_url_intake.py`: 39 assertions, prova extracao, bloqueios de URL/host, fallback manual, Adidas multiloja e URL -> HITL sem publicacao automatica
+- `demo_commerce_dashboard_bridge.py`: 21 assertions, prova gates de produto/link afiliado/HITL e entrega visual sem publicar
+- `demo_product_dashboard_worker.py`: 21 assertions, prova fila -> coleta -> painel, link afiliado ausente e Creative Review pendente sem publicacao
 - `demo_meta_ads_read_only.py`: 56 assertions, prova provider/painel, GET de contas/campanhas/insights, limites, redacao e bloqueio de escrita
 - `demo_meta_ads_real_smoke.py`: 3 assertions em dry-run; opt-in REAL limitado a permissoes, conta e campanhas com relatorio redigido
+- `demo_gemini_omni_video_adapter.py`: 18 assertions, prova chave mascarada, MOCK padrao, bloqueio pre-HTTP, budget, REST `steps`, 9:16 e MP4 fisico sem chamada paga
+- `demo_gaming_dashboard_bridge.py`: 21 assertions, prova bridge desativada por padrao, review-only, no-news skip, token no header e payload auditavel
 - `demo_short_video_factory.py`: 43 assertions, prova WAV + PNG + MP4 fisico
 - `demo_editorial_video_quality.py`: 28 assertions, prova quality gate, rejeicao de crop arbitrario e adapter HyperFrames
 - `demo_managed_content_factory_workflow.py`: 38 assertions, prova DM + CompanyTaskRuntime + 18/18 tarefas gerenciais + produção concreta
@@ -274,7 +312,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - `demo_telegram_publishing_adapter.py`: 40 assertions, prova Telegram Bot API seguro + mensagem Affiliate Deals pronta para publicação
 - `demo_hitl_approval_gateway.py`: prova bloqueio, aprovacao, rejeicao e auditoria HITL
 - `demo_product_research_department.py`: prova shortlist e score de pesquisa
-- `demo_strategy_intelligence_department.py`: prova extracao de padroes e evidencias
+- `demo_strategy_intelligence_department.py`: 29 assertions, prova extracao de padroes, evidencias e aprendizado seguro do formato TikTok Shop de 8 segundos
 - `demo_creative_review_department.py`: prova gate de qualidade do criativo
 - `demo_affiliate_factory_workflow.py`: prova Strategy -> Research -> Creative -> Deals -> HITL -> Telegram
 - `demo_affiliate_approval_dashboard.py`: prova estado e UI da fila de aprovacao
