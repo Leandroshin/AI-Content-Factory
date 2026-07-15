@@ -127,7 +127,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Provider Control Center:** `core/tools/provider_settings.py` — estado de painel para providers: secret slots mascarados, modo MOCK/REAL, budgets, approval, snapshots e dashboard_state
 - **Provider Panel UI:** `core/tools/provider_panel.py` — renderer HTML interativo alimentado por `ProviderControlCenter.dashboard_state()`, com chaves mascaradas, MOCK/REAL, busca, filtros, seleção de provider, budgets, aprovação e usage/custo
 - **ElevenLabs REAL controlado:** `ElevenLabsAdapter` aceita `set_budget_guard()`; em REAL, `synthesize` só chama HTTP se owner approval + limites de requests/unidades/custo permitirem; erros HTTP reais viram `AdapterExecutionResult(success=False)` em vez de traceback
-- **Telegram Publishing Adapter:** `core/tools/adapters/telegram_adapter.py` + `TelegramProvider` — `get_me` e `send_message` em MOCK/REAL; envio REAL exige `bot_token`, `chat_id`, `approved=True` e budget guard; teste REAL enviou mensagem técnica para `@achadosbaratosBrasil` com `message_id=2`
+- **Telegram Publishing Adapter:** `core/tools/adapters/telegram_adapter.py` + `TelegramProvider` — `get_me`, `send_message` e `send_photo` em MOCK/REAL; envio REAL exige `bot_token`, `chat_id`, `approved=True` e budget guard; teste REAL enviou mensagem técnica para `@achadosbaratosBrasil` com `message_id=2`
+- **Telegram Publication Queue:** o painel mostra a copy exata, exige confirmação comercial e uma aprovação final separada, fixa o destino em `@achadosbaratosBrasil` e registra status, horário e `message_id`; usa foto oficial quando a URL pública passa na validação, exige `#publi`, expira preço/pacote em duas horas, bloqueia link duplicado e publica no máximo um item aprovado por execução; WhatsApp permanece fora desta fase
 - **HTTP secret redaction:** `RealHttpClient` mascara URLs do Telegram no formato `/bot<TOKEN>/...` antes de publicar eventos HTTP
 - **Observability Snapshots:** ProductionSnapshot (genérico) + Video/Audio/Image/Script/AffiliateDeals production + department/detail snapshots — todos declarados em `core/observability.py`
 - **Stage Counts in Snapshots:** `ProductionStageAdvanced` carrega `stages_completed`/`stages_failed`; handlers no ObservabilityProjector propagam para production snapshots genérico + departamental
@@ -152,7 +153,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Narration-to-Evidence Visual Sync:** beats editoriais agora registram finalidade visual, aderencia a narracao e proveniencia; captura de tela, demonstracao de navegador e evidencia que nao corresponde a fala falham no quality gate
 - **OmniRoute Quarantine Audit:** OmniRoute 3.8.48 foi instalado fora do projeto, limitado a `127.0.0.1`, com autenticacao obrigatoria e sem contas conectadas; o catalogo keyless OpenCode Free declara `tos: avoid` e permanece proibido
 - **Affiliate Network Portfolio:** Strategy Intelligence separa redes digitais/CPA de alta comissao de marketplaces fisicos complementares; Digistore24 e o primeiro onboarding, seguido de Braip e ClickBank, sem excluir Amazon/Mercado Livre dos testes organicos
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **113/113 demos, 0 falhas** em 2026-07-14; 57 demos reportaram numericamente 1839 assertions, 56 nao emitem total comparavel
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **114/114 demos, 0 falhas** em 2026-07-15; 57 demos reportaram numericamente 1844 assertions, 57 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -188,7 +189,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **113/113 demos, 0 falhas**; 1839 assertions explicitamente reportadas por 57 demos
+- **Regressão atual**: **114/114 demos, 0 falhas**; 1844 assertions explicitamente reportadas por 57 demos
 - **Prova da fila de producao:** `demo_dashboard_production_worker.py` valida 20 assertions: opt-in, autenticacao, modo MOCK, evidencia preservada, Script Department real, rascunho para revisao e ausencia de chamadas de audio, video ou publicacao
 - **Prova do dashboard**: lint, build vinext, teste Node, D1 local, GET da API, sincronizacao, filtros, menu mobile e QA visual em 1440x900 e 390x844 passaram; Sites privado, D1 hospedado e intake secreto foram publicados em 2026-07-13
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
@@ -209,6 +210,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Prova REAL opt-in ElevenLabs**: `demo_elevenlabs_real_smoke.py` roda seco na regressão; o smoke antigo registrou 401 sem expor a chave. A chave restrita atual valida leitura de vozes, mas TTS retorna `payment_issue` ate a fatura ser regularizada
 - **Prova Affiliate Deals**: `demo_affiliate_deals_department.py` valida 79 assertions: oferta forte `post_now` pendente de aprovacao, oferta fraca `skip`/rejeitada, oferta sem affiliate URL bloqueada por compliance, funil Facebook warmup -> Telegram e observability `deal_metrics`
 - **Prova Telegram REAL controlado**: `demo_telegram_publishing_adapter.py` valida 40 assertions em MOCK/MockHttpClient; smoke REAL local validou `@achados_baratos_br_bot` via `getMe` e enviou mensagem técnica para `@achadosbaratosBrasil` (`message_id=2`) com token fora do Git
+- **Prova da fila Telegram**: `demo_telegram_publication_worker.py` valida 20 assertions: opt-in, intake autenticado, destino allowlisted, copy curta com `#publi`, foto oficial, callback `sent` com `message_id` e bloqueio de canal desconhecido antes da API; nenhum envio REAL ocorre na regressao
 - **Correção Conversation/Memory**: `demo_conversation_memory_integration.py` valida timestamp preservado sem depender de igualdade acidental de `time.time()`
 - 0 dependências circulares; nenhuma classe existente foi modificada (exceto adições aditivas em domain_events.py, base/employee.py, observability.py)
 

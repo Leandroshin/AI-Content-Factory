@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import ipaddress
 import re
 from typing import Any
+from urllib.parse import urlparse
 
 from core.tools.adapters.base import AbstractToolAdapter
 from core.tools.adapters.models import (
@@ -21,6 +23,7 @@ from core.tools.secrets.models import SecretKey
 
 _TELEGRAM_TOKEN_RE = re.compile(r"^\d{6,12}:[A-Za-z0-9_-]{30,}$")
 _MAX_TELEGRAM_TEXT = 4096
+_MAX_TELEGRAM_CAPTION = 1024
 
 
 class TelegramAdapter(AbstractToolAdapter):
@@ -114,10 +117,26 @@ class TelegramAdapter(AbstractToolAdapter):
 
     def _execute_mock(self, request: ToolRequest) -> AdapterExecutionResult:
         action = str(request.params.get("action", "get_me"))
-        if action == "send_message":
-            validation = self._validate_send_params(request, require_chat=True)
+        if action in {"send_message", "send_photo"}:
+            text_key = "caption" if action == "send_photo" else "text"
+            max_length = _MAX_TELEGRAM_CAPTION if action == "send_photo" else _MAX_TELEGRAM_TEXT
+            validation = self._validate_send_params(
+                request,
+                require_chat=True,
+                text_key=text_key,
+                max_length=max_length,
+            )
             if validation:
                 return validation
+            if action == "send_photo" and not self._valid_photo_url(
+                str(request.params.get("photo", ""))
+            ):
+                return AdapterExecutionResult(
+                    success=False,
+                    summary="",
+                    output={"channel": "telegram", "_mock": True},
+                    error="Telegram send_photo requires a public HTTPS photo URL.",
+                )
             approved = bool(request.params.get("approved", False))
             if not approved:
                 return AdapterExecutionResult(
@@ -128,18 +147,19 @@ class TelegramAdapter(AbstractToolAdapter):
                         "channel": "telegram",
                         "_mock": True,
                     },
-                    error="Telegram send_message requires approved=True.",
+                    error=f"Telegram {action} requires approved=True.",
                 )
-            text = str(request.params.get("text", ""))
+            text = str(request.params.get(text_key, ""))
             chat_id = str(request.params.get("chat_id", ""))
             return AdapterExecutionResult(
                 success=True,
-                summary=f"Telegram message prepared for chat {chat_id}",
+                summary=f"Telegram {action} prepared for chat {chat_id}",
                 output={
                     "status": "sent_mock",
                     "message_id": 1001,
                     "chat_id": chat_id,
                     "text_length": len(text),
+                    "delivery_kind": "photo" if action == "send_photo" else "text",
                     "channel": "telegram",
                     "_mock": True,
                 },
@@ -178,6 +198,8 @@ class TelegramAdapter(AbstractToolAdapter):
 
         if action == "send_message":
             return self._send_message_real(request, token)
+        if action == "send_photo":
+            return self._send_photo_real(request, token)
         return self._get_me_real(token)
 
     def _get_me_real(self, token: str) -> AdapterExecutionResult:
@@ -303,6 +325,92 @@ class TelegramAdapter(AbstractToolAdapter):
             error="" if ok else self._safe_telegram_error(resp_body, resp.status_code),
         )
 
+    def _send_photo_real(self, request: ToolRequest, token: str) -> AdapterExecutionResult:
+        validation = self._validate_send_params(
+            request,
+            require_chat=True,
+            text_key="caption",
+            max_length=_MAX_TELEGRAM_CAPTION,
+        )
+        if validation:
+            return validation
+        photo = str(request.params.get("photo", "")).strip()
+        if not self._valid_photo_url(photo):
+            return AdapterExecutionResult(
+                success=False,
+                summary="",
+                output={"channel": "telegram", "_real": True},
+                error="Telegram send_photo requires a public HTTPS photo URL.",
+            )
+        if not bool(request.params.get("approved", False)):
+            return AdapterExecutionResult(
+                success=False,
+                summary="Telegram REAL photo blocked before publish: approval required.",
+                output={
+                    "status": "approval_required",
+                    "channel": "telegram",
+                    "_real": True,
+                    "_blocked_by_approval": True,
+                },
+                error="Telegram send_photo requires approved=True before REAL publish.",
+            )
+
+        caption = str(request.params.get("caption", ""))
+        chat_id = str(request.params.get("chat_id", ""))
+        body: dict[str, Any] = {
+            "chat_id": chat_id,
+            "photo": photo,
+            "caption": caption,
+        }
+        for field in ("parse_mode", "disable_notification", "protect_content"):
+            if field in request.params:
+                body[field] = request.params[field]
+
+        budget_decision = self._budget_check("send_photo", 1, "messages")
+        if budget_decision is not None and not budget_decision.allowed:
+            return self._budget_blocked_result("send_photo", budget_decision)
+
+        client = self._require_client()
+        url = self._endpoint(token, "sendPhoto")
+        try:
+            resp = client.post(url, headers={"Content-Type": "application/json"}, body=body)
+        except HttpError as exc:
+            self._budget_record("send_photo", 1, "messages", success=False, billable=False)
+            return AdapterExecutionResult(
+                success=False,
+                summary="Telegram REAL photo send failed before response.",
+                output={
+                    "status": "failed",
+                    "channel": "telegram",
+                    "_real": True,
+                    "_http_error": type(exc).__name__,
+                },
+                error=type(exc).__name__,
+            )
+
+        resp_body = resp.body if isinstance(resp.body, dict) else {}
+        ok = resp.status_code == 200 and bool(resp_body.get("ok", False))
+        result = resp_body.get("result", {}) if isinstance(resp_body.get("result", {}), dict) else {}
+        message_id = result.get("message_id", 0)
+        self._budget_record("send_photo", 1, "messages", success=ok, billable=ok)
+        return AdapterExecutionResult(
+            success=ok,
+            summary=(
+                f"Telegram photo sent: {message_id}"
+                if ok else f"Telegram photo send failed: HTTP {resp.status_code}"
+            ),
+            output={
+                "status": "sent" if ok else "failed",
+                "message_id": message_id,
+                "chat_id": chat_id,
+                "text_length": len(caption),
+                "delivery_kind": "photo",
+                "channel": "telegram",
+                "_real": True,
+            },
+            error="" if ok else self._safe_telegram_error(resp_body, resp.status_code),
+        )
+
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
@@ -328,25 +436,27 @@ class TelegramAdapter(AbstractToolAdapter):
         request: ToolRequest,
         *,
         require_chat: bool,
+        text_key: str = "text",
+        max_length: int = _MAX_TELEGRAM_TEXT,
     ) -> AdapterExecutionResult | None:
-        text = str(request.params.get("text", ""))
+        text = str(request.params.get(text_key, ""))
         if not text.strip():
             return AdapterExecutionResult(
                 success=False,
                 summary="",
                 output={"channel": "telegram"},
-                error="Telegram send_message requires non-empty text.",
+                error=f"Telegram {text_key} requires non-empty text.",
             )
-        if len(text) > _MAX_TELEGRAM_TEXT:
+        if len(text) > max_length:
             return AdapterExecutionResult(
                 success=False,
                 summary="",
                 output={
                     "channel": "telegram",
                     "text_length": len(text),
-                    "max_text_length": _MAX_TELEGRAM_TEXT,
+                    "max_text_length": max_length,
                 },
-                error="Telegram text exceeds 4096 characters.",
+                error=f"Telegram {text_key} exceeds {max_length} characters.",
             )
         if require_chat and not str(request.params.get("chat_id", "")).strip():
             return AdapterExecutionResult(
@@ -356,6 +466,30 @@ class TelegramAdapter(AbstractToolAdapter):
                 error="Telegram send_message requires chat_id.",
             )
         return None
+
+    @staticmethod
+    def _valid_photo_url(value: str) -> bool:
+        value = value.strip()
+        if not value.startswith("https://") or len(value) > 2048:
+            return False
+        parsed = urlparse(value)
+        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+            return False
+        host = parsed.hostname.lower()
+        if host == "localhost" or host.endswith(".localhost"):
+            return False
+        try:
+            address = ipaddress.ip_address(host)
+        except ValueError:
+            return True
+        return not (
+            address.is_private
+            or address.is_loopback
+            or address.is_link_local
+            or address.is_multicast
+            or address.is_reserved
+            or address.is_unspecified
+        )
 
     def _require_client(self) -> Any:
         if self._http_client is None:

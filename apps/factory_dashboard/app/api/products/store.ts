@@ -201,7 +201,7 @@ export async function prepareCampaignPackage(productId: string) {
       ? "Prévia oficial do link do Mercado Livre, sem alterar a imagem do vendedor."
       : item.creativeRecommendation || "Criativo ainda depende de revisão visual.",
     channel: isSalesPage ? "Landing própria + Telegram" : channelName(item.targetChannel),
-    copy: `🔎 OFERTA ENCONTRADA\n\n${product}\n\n💰 ${oldPrice}\n\nConfira preço, estoque e condições no Mercado Livre:\n${link}\n\n🔗 Link de afiliado. Posso receber comissão pela compra, sem custo extra para você.`,
+    copy: `🔥 ${product}\n\n💰 ${oldPrice}\n\n🔗 ${item.marketplace}: ${link}\n\nPreço e estoque podem mudar.\n\n#publi`,
     risk: missingToPublish.length > 3
       ? "Alto: existem pendências comerciais ou de evidência antes de publicar."
       : "Médio: conferir rastreamento, condições da oferta e revisão final.",
@@ -287,11 +287,11 @@ export async function prepareOrganicBrief(productId: string) {
     format: campaignPackage.creative,
     channel: campaignPackage.channel,
     draftCopy: campaignPackage.copy,
-    disclosure: "Como afiliado, posso receber comissão por compras feitas pelo link, sem custo extra para você.",
+    disclosure: "#publi",
     productionChecklist: [
       "Confirmar preço, disponibilidade e condições na fonte original.",
       "Usar somente imagem autorizada, própria ou revisada pelo Creative Review.",
-      "Manter promessa, oferta e disclosure legíveis no criativo.",
+      "Manter promessa, oferta e #publi legíveis no criativo.",
       "Submeter o material final à revisão do owner antes de publicar.",
     ],
     metricsToCollect: ["visualizações", "cliques no link", "CTR", "conversões", "comissão", "custo", "ROI"],

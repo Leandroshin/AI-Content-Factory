@@ -168,6 +168,8 @@ test("approved product analysis becomes a comparable zero-cost campaign package"
   assert.match(store, /US\$ 0,00 nesta preparação/);
   assert.match(store, /publicationStatus: "blocked"/);
   assert.match(store, /aprovação final do owner/);
+  assert.match(store, /#publi/);
+  assert.doesNotMatch(store, /Posso receber comissão pela compra/);
   assert.doesNotMatch(`${ownerRoute}\n${store}`, /fetch\(|axios|http:\/\//);
 });
 
@@ -201,5 +203,11 @@ test("Telegram publication requires exact owner approval and returns delivery ev
   assert.match(store, /ownerApproved: Boolean\(item\.ownerApproved\)/);
   assert.match(store, /telegramMessageId/);
   assert.match(store, /ACTIVE_STATUSES/);
+  assert.match(store, /MAX_PACKAGE_AGE_MS/);
+  assert.match(store, /MAX_PHOTO_CAPTION_LENGTH/);
+  assert.match(store, /imageUrl: item\.imageUrl/);
+  assert.match(store, /message\.includes\("#publi"\)/);
+  assert.match(store, /Este link afiliado já foi publicado no Telegram/);
+  assert.match(store, /publicHttpsImageUrl/);
   assert.doesNotMatch(`${ownerRoute}\n${store}`, /api\.telegram\.org|bot_token/);
 });

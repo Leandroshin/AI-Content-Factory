@@ -8,7 +8,11 @@ const ACTIVE_STATUSES = ["queued", "publishing", "sent"];
 type CampaignPackage = {
   copy: string;
   missingToPublish: string[];
+  generatedAt: string;
 };
+
+const MAX_PACKAGE_AGE_MS = 2 * 60 * 60 * 1000;
+const MAX_PHOTO_CAPTION_LENGTH = 1024;
 
 export async function telegramPublicationState() {
   await ensureTelegramPublicationSchema();
@@ -41,8 +45,15 @@ export async function queueTelegramPublication(productId: string) {
   const blockers = (campaignPackage.missingToPublish ?? [])
     .filter((field) => field !== "aprovação final do owner");
   if (blockers.length) throw new Error(`Resolva antes de publicar: ${blockers.join(", ")}`);
+  const generatedAt = Date.parse(campaignPackage.generatedAt ?? "");
+  const packageAge = Date.now() - generatedAt;
+  if (!Number.isFinite(generatedAt) || packageAge < -5 * 60 * 1000 || packageAge > MAX_PACKAGE_AGE_MS) {
+    throw new Error("Preço e pacote estão antigos. Confirme os dados comerciais novamente antes de publicar");
+  }
+  const imageUrl = publicHttpsImageUrl(product.imageUrl) ? product.imageUrl : "";
   const message = String(campaignPackage.copy ?? "").trim();
-  if (!message || message.length > 4096 || !message.includes(product.affiliateUrl)) {
+  const maxLength = imageUrl ? MAX_PHOTO_CAPTION_LENGTH : 4096;
+  if (!message || message.length > maxLength || !message.includes(product.affiliateUrl) || !message.includes("#publi")) {
     throw new Error("A prévia do Telegram está inválida ou não contém o link afiliado confirmado");
   }
 
@@ -50,6 +61,11 @@ export async function queueTelegramPublication(productId: string) {
     .where(eq(telegramPublicationRequests.productId, productId));
   const active = existing.find((row) => ACTIVE_STATUSES.includes(row.status));
   if (active) return telegramPublicationState();
+  const sameLink = await db.select().from(telegramPublicationRequests)
+    .where(eq(telegramPublicationRequests.affiliateUrl, product.affiliateUrl));
+  if (sameLink.some((row) => row.status === "sent")) {
+    throw new Error("Este link afiliado já foi publicado no Telegram");
+  }
 
   const now = new Date().toISOString();
   await db.insert(telegramPublicationRequests).values({
@@ -59,7 +75,7 @@ export async function queueTelegramPublication(productId: string) {
     chatId: DEFAULT_CHAT_ID,
     messageText: message,
     affiliateUrl: product.affiliateUrl,
-    imageUrl: product.imageUrl,
+    imageUrl,
     ownerApproved: 1,
     linkPreviewEnabled: 1,
     telegramMessageId: null,
@@ -92,6 +108,7 @@ export async function claimTelegramPublication() {
     productId: item.productId,
     chatId: item.chatId,
     messageText: item.messageText,
+    imageUrl: item.imageUrl,
     linkPreviewEnabled: Boolean(item.linkPreviewEnabled),
     ownerApproved: Boolean(item.ownerApproved),
   }] };
@@ -159,4 +176,19 @@ function publicPublication(item: typeof telegramPublicationRequests.$inferSelect
     sentAt: item.sentAt,
     updatedAt: item.updatedAt,
   };
+}
+
+function publicHttpsImageUrl(value: string) {
+  if (!value || value.length > 2048) return false;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    if (url.protocol !== "https:" || url.username || url.password || !host) return false;
+    if (host === "localhost" || host.endsWith(".localhost")) return false;
+    if (/^(127\.|10\.|0\.|169\.254\.|192\.168\.)/.test(host)) return false;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
+    return true;
+  } catch {
+    return false;
+  }
 }
