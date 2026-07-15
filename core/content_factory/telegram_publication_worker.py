@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 import ipaddress
 from typing import Any
 from urllib.parse import urlparse
@@ -23,6 +24,7 @@ class TelegramPublicationWorkItem:
     image_url: str = ""
     link_preview_enabled: bool = True
     owner_approved: bool = False
+    approved_at: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -158,6 +160,8 @@ class TelegramPublicationWorker:
             return "telegram_image_invalid"
         if "#publi" not in item.message_text.lower():
             return "affiliate_disclosure_missing"
+        if not self._approval_is_fresh(item.approved_at):
+            return "telegram_offer_expired"
         return ""
 
     def _report(
@@ -222,7 +226,19 @@ class TelegramPublicationWorker:
             image_url=image_url,
             link_preview_enabled=bool(value.get("linkPreviewEnabled", True)),
             owner_approved=bool(value.get("ownerApproved", False)),
+            approved_at=str(value.get("approvedAt", "")).strip(),
         )
+
+    @staticmethod
+    def _approval_is_fresh(value: str) -> bool:
+        try:
+            approved_at = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return False
+        if approved_at.tzinfo is None:
+            approved_at = approved_at.replace(tzinfo=timezone.utc)
+        age = datetime.now(timezone.utc) - approved_at.astimezone(timezone.utc)
+        return -timedelta(minutes=5) <= age <= timedelta(hours=2)
 
     @staticmethod
     def _message_id(value: Any) -> int | None:

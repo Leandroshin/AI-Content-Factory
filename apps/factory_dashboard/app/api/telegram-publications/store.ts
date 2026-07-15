@@ -94,8 +94,21 @@ export async function claimTelegramPublication() {
   const db = getDb();
   const rows = await db.select().from(telegramPublicationRequests)
     .where(eq(telegramPublicationRequests.status, "queued"))
-    .orderBy(asc(telegramPublicationRequests.createdAt)).limit(1);
-  const item = rows[0];
+    .orderBy(asc(telegramPublicationRequests.createdAt)).limit(100);
+  let item: typeof telegramPublicationRequests.$inferSelect | undefined;
+  for (const candidate of rows) {
+    const approvedAt = Date.parse(candidate.approvedAt);
+    const approvalAge = Date.now() - approvedAt;
+    if (Number.isFinite(approvedAt) && approvalAge >= -5 * 60 * 1000 && approvalAge <= MAX_PACKAGE_AGE_MS) {
+      item = candidate;
+      break;
+    }
+    await db.update(telegramPublicationRequests).set({
+      status: "failed",
+      error: "Oferta expirada. Confirme o preço e prepare um novo pacote antes de publicar",
+      updatedAt: new Date().toISOString(),
+    }).where(eq(telegramPublicationRequests.id, candidate.id));
+  }
   if (!item) return { items: [] };
   const now = new Date().toISOString();
   await db.update(telegramPublicationRequests).set({
@@ -111,6 +124,7 @@ export async function claimTelegramPublication() {
     imageUrl: item.imageUrl,
     linkPreviewEnabled: Boolean(item.linkPreviewEnabled),
     ownerApproved: Boolean(item.ownerApproved),
+    approvedAt: item.approvedAt,
   }] };
 }
 

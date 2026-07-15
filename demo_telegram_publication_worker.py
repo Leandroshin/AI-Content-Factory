@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 from core.content_factory.telegram_publication_worker import TelegramPublicationWorker
 from core.tools import (
     ExecutionMode,
@@ -47,6 +49,7 @@ class RoutingHttpClient(HttpClient):
                 "imageUrl": _IMAGE,
                 "linkPreviewEnabled": True,
                 "ownerApproved": True,
+                "approvedAt": datetime.now(timezone.utc).isoformat(),
             }]})
         if request.url == _ENDPOINT and request.method == HttpMethod.POST:
             return HttpResponse(status_code=202, body={"accepted": True})
@@ -120,6 +123,25 @@ def main() -> None:
     _check(len(blocked_client.requests) == 2, "Rejected destination never reaches Telegram")
     _check(all("api.telegram.org" not in request.url for request in blocked_client.requests), "Destination block happens before Telegram HTTP")
     _check(blocked_client.requests[-1].body["error"] == "telegram_destination_not_allowlisted", "Failure reason returns to the dashboard")
+
+    stale_client = RoutingHttpClient()
+    original_send = stale_client.send
+
+    def stale_send(request: HttpRequest) -> HttpResponse:
+        response = original_send(request)
+        if request.url == _ENDPOINT and request.method == HttpMethod.GET and isinstance(response.body, dict):
+            response.body["items"][0]["approvedAt"] = (
+                datetime.now(timezone.utc) - timedelta(hours=3)
+            ).isoformat()
+        return response
+
+    stale_client.send = stale_send  # type: ignore[method-assign]
+    stale = TelegramPublicationWorker(stale_client, _ENDPOINT).run_once(
+        _adapter(stale_client), token="queue-token", enabled=True,
+    )
+    _check(stale.received == 1 and stale.failed == 1, "Expired offer is rejected before Telegram")
+    _check(all("api.telegram.org" not in request.url for request in stale_client.requests), "Expired price never reaches Telegram")
+    _check(stale_client.requests[-1].body["error"] == "telegram_offer_expired", "Expiration reason returns to the dashboard")
 
     print(f"\nTelegram publication worker demo passed: {_ASSERTIONS}/{_ASSERTIONS} assertions")
 
