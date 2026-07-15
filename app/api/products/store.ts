@@ -30,6 +30,9 @@ export type ProductIntakeInput = {
   language: string;
   sourceKind: string;
   ownerNotes: string;
+  targetChannel: string;
+  trackingLabel: string;
+  channelRegistered: boolean;
   marketplace: string;
 };
 
@@ -79,6 +82,9 @@ export async function createProductIntake(input: ProductIntakeInput) {
     language: input.language,
     sourceKind: input.sourceKind,
     ownerNotes: input.ownerNotes,
+    targetChannel: input.targetChannel,
+    trackingLabel: input.trackingLabel,
+    channelRegistered: input.channelRegistered ? 1 : 0,
     marketplace: input.marketplace,
     status: "queued",
     productName: existing[0]?.productName ?? "",
@@ -140,6 +146,9 @@ export async function productWorkerQueue(limit = 10) {
     language: item.language ?? "",
     sourceKind: item.sourceKind ?? "product_page",
     ownerNotes: item.ownerNotes ?? "",
+    targetChannel: item.targetChannel ?? "telegram_public",
+    trackingLabel: item.trackingLabel ?? "telegram_public",
+    channelRegistered: Boolean(item.channelRegistered),
   })) };
 }
 
@@ -154,6 +163,9 @@ export async function prepareCampaignPackage(productId: string) {
   const now = new Date().toISOString();
   const missing = parseMissingFields(item.missingFields);
   if (!item.affiliateUrl) missing.push("link afiliado validado");
+  if (item.marketplace === "Mercado Livre" && !item.channelRegistered) {
+    missing.push("canal público cadastrado no programa de afiliados do Mercado Livre");
+  }
   missing.push("aprovação final do owner");
   const missingToPublish = [...new Set(missing.map((field) => field.replaceAll("_", " ")))];
   const isSalesPage = (item.sourceKind ?? "product_page") === "sales_page";
@@ -163,8 +175,8 @@ export async function prepareCampaignPackage(productId: string) {
     product,
     promise: item.promiseReview || "Promessa ainda não confirmada pela análise.",
     creative: item.creativeRecommendation || "Criativo ainda depende de revisão visual.",
-    channel: isSalesPage ? "Landing própria + Telegram" : "Telegram + WhatsApp manual",
-    copy: `${product}. Confira preço, disponibilidade e condições na página oficial. Como afiliado, posso receber comissão por compras feitas pelo link, sem custo extra para você.`,
+    channel: isSalesPage ? "Landing própria + Telegram" : channelName(item.targetChannel),
+    copy: `${product}. Confira preço, disponibilidade e condições na página oficial. Como afiliado, posso receber comissão por compras feitas pelo link, sem custo extra para você.${item.trackingLabel ? ` Etiqueta de rastreio: ${item.trackingLabel}.` : ""}`,
     risk: missingToPublish.length > 3
       ? "Alto: existem pendências comerciais ou de evidência antes de publicar."
       : "Médio: conferir rastreamento, condições da oferta e revisão final.",
@@ -295,6 +307,9 @@ async function ensureProductSchema() {
   await addColumnIfMissing("product_intake_requests", "language", "TEXT");
   await addColumnIfMissing("product_intake_requests", "source_kind", "TEXT");
   await addColumnIfMissing("product_intake_requests", "owner_notes", "TEXT");
+  await addColumnIfMissing("product_intake_requests", "target_channel", "TEXT NOT NULL DEFAULT 'telegram_public'");
+  await addColumnIfMissing("product_intake_requests", "tracking_label", "TEXT NOT NULL DEFAULT 'telegram_public'");
+  await addColumnIfMissing("product_intake_requests", "channel_registered", "INTEGER NOT NULL DEFAULT 0");
   await addColumnIfMissing("product_intake_requests", "promise_review", "TEXT");
   await addColumnIfMissing("product_intake_requests", "creative_recommendation", "TEXT");
   await addColumnIfMissing("product_intake_requests", "commission_notes", "TEXT");
@@ -325,6 +340,9 @@ function publicItem(item: typeof productIntakeRequests.$inferSelect) {
     language: item.language ?? "",
     sourceKind: item.sourceKind ?? "product_page",
     ownerNotes: item.ownerNotes ?? "",
+    targetChannel: item.targetChannel ?? "telegram_public",
+    trackingLabel: item.trackingLabel ?? "telegram_public",
+    channelRegistered: Boolean(item.channelRegistered),
     affiliateProvided: Boolean(item.affiliateUrl),
     marketplace: item.marketplace,
     status: item.status as ProductIntakeStatus,
@@ -345,4 +363,10 @@ function publicItem(item: typeof productIntakeRequests.$inferSelect) {
 
 function parseMissingFields(value: string) {
   try { return JSON.parse(value) as string[]; } catch { return []; }
+}
+
+function channelName(value: string | null) {
+  if (value === "whatsapp_public") return "WhatsApp público (preparação manual)";
+  if (value === "instagram_public") return "Instagram público";
+  return "Telegram público";
 }

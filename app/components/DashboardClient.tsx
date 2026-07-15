@@ -44,6 +44,9 @@ type ProductFormInput = {
   language: string;
   sourceKind: string;
   ownerNotes: string;
+  targetChannel: string;
+  trackingLabel: string;
+  channelRegistered: boolean;
 };
 type ResearchMissionFormInput = { goal: string; marketplaces: string[]; category: string; maxPrice: string; timeframe: string; resultLimit: number; targetChannel: string };
 
@@ -569,17 +572,23 @@ function ProductsView({ items, missions, busy, onSubmit, onSubmitMission, onPrep
   const [language, setLanguage] = useState("pt-BR");
   const [sourceKind, setSourceKind] = useState("product_page");
   const [ownerNotes, setOwnerNotes] = useState("");
+  const [targetChannel, setTargetChannel] = useState("telegram_public");
+  const [trackingLabel, setTrackingLabel] = useState("telegram_public");
+  const [channelRegistered, setChannelRegistered] = useState(false);
   const detectedMarketplace = useMemo(() => marketplaceFromUrl(productUrl), [productUrl]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (await onSubmit({ productUrl, affiliateUrl, evidenceUrl, language, sourceKind, ownerNotes })) {
+    if (await onSubmit({ productUrl, affiliateUrl, evidenceUrl, language, sourceKind, ownerNotes, targetChannel, trackingLabel, channelRegistered })) {
       setProductUrl("");
       setAffiliateUrl("");
       setEvidenceUrl("");
       setLanguage("pt-BR");
       setSourceKind("product_page");
       setOwnerNotes("");
+      setTargetChannel("telegram_public");
+      setTrackingLabel("telegram_public");
+      setChannelRegistered(false);
     }
   }
 
@@ -596,10 +605,15 @@ function ProductsView({ items, missions, busy, onSubmit, onSubmitMission, onPrep
           <label><span>Tipo</span><select value={sourceKind} onChange={(event) => setSourceKind(event.target.value)}><option value="product_page">Produto físico</option><option value="sales_page">Página de venda</option></select></label>
           <label><span>Idioma</span><select value={language} onChange={(event) => setLanguage(event.target.value)}><option value="pt-BR">Português</option><option value="en">Inglês</option><option value="es">Espanhol</option><option value="unknown">Não sei</option></select></label>
         </div>
+        <div className={styles.formSplit}>
+          <label><span>Canal da oferta</span><select value={targetChannel} onChange={(event) => { const next = event.target.value; setTargetChannel(next); setTrackingLabel(next); }}><option value="telegram_public">Telegram público</option><option value="whatsapp_public">WhatsApp público</option><option value="instagram_public">Instagram público</option></select></label>
+          <label><span>Etiqueta no Mercado Livre</span><input value={trackingLabel} maxLength={48} onChange={(event) => setTrackingLabel(event.target.value)} placeholder="telegram_public" /><small>Use esta etiqueta ao gerar o link no painel oficial.</small></label>
+        </div>
+        {detectedMarketplace === "Mercado Livre" && <label className={styles.channelConfirmation}><input type="checkbox" checked={channelRegistered} onChange={(event) => setChannelRegistered(event.target.checked)} /><span>Este canal público já está cadastrado no meu perfil de afiliado do Mercado Livre.</span></label>}
         <label><span>Contexto para os funcionários <small>opcional</small></span><textarea value={ownerNotes} onChange={(event) => setOwnerNotes(event.target.value)} maxLength={800} placeholder="Ex: vi essa oferta na Digistore, comissão boa, mas ainda falta PayPal. Quero avaliar promessa, público e risco." /></label>
         <div className={styles.acceptedMarkets} aria-label="Plataformas reconhecidas">{["Amazon Brasil", "Mercado Livre", "Shopee", "Adidas", "Digistore24", "Braip"].map((marketplace) => <span key={marketplace} className={detectedMarketplace === marketplace ? styles.marketActive : ""}>{marketplace}</span>)}</div>
         <button className={styles.submitProduct} disabled={busy === "product"}><PackagePlus size={17} /> {busy === "product" ? "Enviando..." : "Enviar para análise"}</button>
-        <p className={styles.formSafety}><ShieldCheck size={15} /> A página original, o link afiliado e as evidências são preservados. Nenhum anúncio, compra, provider ou publicação começa aqui.</p>
+        <p className={styles.formSafety}><ShieldCheck size={15} /> Gere o link no painel oficial com a etiqueta acima. A fábrica preserva, analisa e prepara a copy; nenhum anúncio, compra ou publicação começa aqui.</p>
       </div>
     </form>
     <div className={styles.productQueue}>
@@ -687,11 +701,13 @@ function ProductIntakeRow({ item, busy, onPrepareCampaign, onPrepareBrief, onRet
     <div className={styles.productMeta}>
       <span>{item.sourceKind === "sales_page" ? "Página de venda" : "Produto físico"}</span>
       <span>{item.language === "en" ? "Inglês" : item.language === "es" ? "Espanhol" : item.language === "pt-BR" ? "Português" : "Idioma indefinido"}</span>
+      <span>{item.targetChannel === "whatsapp_public" ? "WhatsApp público" : item.targetChannel === "instagram_public" ? "Instagram público" : "Telegram público"} · etiqueta {item.trackingLabel}</span>
       {item.evidenceUrl && <a href={item.evidenceUrl} target="_blank" rel="noreferrer">Abrir evidência <ExternalLink size={12} /></a>}
     </div>
     {item.ownerNotes && <blockquote className={styles.ownerNotes}>{item.ownerNotes}</blockquote>}
     {item.missingFields.length > 0 && <div className={styles.missingFields}>{item.missingFields.map((field) => <span key={field}>{field.replaceAll("_", " ")}</span>)}</div>}
     {!item.affiliateProvided && <div className={styles.affiliatePending}><CircleAlert size={14} /> Link afiliado ainda não informado</div>}
+    {item.marketplace === "Mercado Livre" && !item.channelRegistered && <div className={styles.affiliatePending}><CircleAlert size={14} /> Confirme o cadastro deste canal público no programa do Mercado Livre antes de publicar.</div>}
     {(item.status === "needs_input" || item.status === "blocked") && <button className={styles.prepareCampaign} disabled={busy === `retry-${item.id}`} onClick={() => onRetryAnalysis(item.id)}><RefreshCw size={15} /> {busy === `retry-${item.id}` ? "Reenviando..." : "Reanalisar página"}</button>}
     {(item.status === "completed" || item.status === "needs_input") && !item.campaignPackage && <button className={styles.prepareCampaign} disabled={busy === `campaign-${item.id}`} onClick={() => onPrepareCampaign(item.id)}><Sparkles size={15} /> {busy === `campaign-${item.id}` ? "Preparando..." : "Preparar pacote sem gasto"}</button>}
     {item.campaignPackage && <div className={styles.campaignPackageDetail}>

@@ -17,6 +17,8 @@ test("factory dashboard source exposes the operational cockpit", async () => {
   assert.match(client, /Adicionar produto/);
   assert.match(client, /Página de venda ou produto/);
   assert.match(client, /Link afiliado/);
+  assert.match(client, /Etiqueta no Mercado Livre/);
+  assert.match(client, /canal público já está cadastrado/);
   assert.match(client, /Evidência ou página de suporte/);
   assert.match(client, /Contexto para os funcionários/);
   assert.match(client, /Digistore24/);
@@ -161,6 +163,7 @@ test("approved product analysis becomes a comparable zero-cost campaign package"
   assert.match(ownerRoute, /prepare_campaign/);
   assert.match(store, /campaign_package/);
   assert.match(store, /retryProductIntake/);
+  assert.match(store, /canal público cadastrado no programa de afiliados do Mercado Livre/);
   assert.match(store, /Somente análises com pendências podem voltar para coleta/);
   assert.match(store, /US\$ 0,00 nesta preparação/);
   assert.match(store, /publicationStatus: "blocked"/);
