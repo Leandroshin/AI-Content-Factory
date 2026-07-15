@@ -1,4 +1,4 @@
-import { createProductIntake, prepareCampaignPackage, prepareOrganicBrief, productIntakeState } from "./store";
+import { createProductIntake, prepareCampaignPackage, prepareOrganicBrief, productIntakeState, retryProductIntake } from "./store";
 
 const MAX_BODY_BYTES = 8_000;
 const MARKETPLACES = [
@@ -50,6 +50,7 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json() as Record<string, unknown>;
     if (typeof body.productId !== "string" || !body.productId.trim()) throw new Error("Produto inválido");
+    if (body.action === "retry_analysis") return Response.json(await retryProductIntake(body.productId.trim()));
     if (body.action === "prepare_campaign") return Response.json(await prepareCampaignPackage(body.productId.trim()));
     if (body.action === "prepare_organic_brief") return Response.json(await prepareOrganicBrief(body.productId.trim()));
     throw new Error("Ação de campanha inválida");

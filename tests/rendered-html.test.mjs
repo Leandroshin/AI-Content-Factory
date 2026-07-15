@@ -106,6 +106,7 @@ test("commerce intake reuses the same authenticated contract", async () => {
 });
 
 test("product intake separates owner input from the authenticated worker", async () => {
+  const client = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/DashboardClient.tsx", import.meta.url), "utf8"));
   const ownerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/route.ts", import.meta.url), "utf8"));
   const workerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/intake/products/route.ts", import.meta.url), "utf8"));
   const store = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/store.ts", import.meta.url), "utf8"));
@@ -119,6 +120,10 @@ test("product intake separates owner input from the authenticated worker", async
   assert.match(ownerRoute, /Tipo de página/);
   assert.match(ownerRoute, /HTTPS público/);
   assert.match(ownerRoute, /product\.hostname\.toLowerCase\(\) === "meli\.la"/);
+  assert.match(ownerRoute, /retry_analysis/);
+  assert.match(client, /meli\.la/);
+  assert.match(client, /link afiliado para conferência/);
+  assert.match(client, /Reanalisar página/);
   assert.match(workerRoute, /requireDashboardIntake/);
   assert.match(workerRoute, /completed.*needs_input.*blocked/s);
   assert.match(store, /product_intake_requests/);
@@ -155,6 +160,8 @@ test("approved product analysis becomes a comparable zero-cost campaign package"
   assert.match(client, /Custo estimado/);
   assert.match(ownerRoute, /prepare_campaign/);
   assert.match(store, /campaign_package/);
+  assert.match(store, /retryProductIntake/);
+  assert.match(store, /Somente análises com pendências podem voltar para coleta/);
   assert.match(store, /US\$ 0,00 nesta preparação/);
   assert.match(store, /publicationStatus: "blocked"/);
   assert.match(store, /aprovação final do owner/);

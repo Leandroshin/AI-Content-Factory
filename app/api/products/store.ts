@@ -180,6 +180,23 @@ export async function prepareCampaignPackage(productId: string) {
   return productIntakeState();
 }
 
+export async function retryProductIntake(productId: string) {
+  const db = getDb();
+  await ensureProductSchema();
+  const existing = await db.select().from(productIntakeRequests).where(eq(productIntakeRequests.id, productId)).limit(1);
+  const item = existing[0];
+  if (!item) throw new Error("Product intake request was not found");
+  if (!["needs_input", "blocked"].includes(item.status)) throw new Error("Somente análises com pendências podem voltar para coleta");
+
+  await db.update(productIntakeRequests).set({
+    status: "queued",
+    campaignPackage: null,
+    missingFields: JSON.stringify([]),
+    updatedAt: new Date().toISOString(),
+  }).where(eq(productIntakeRequests.id, productId));
+  return productIntakeState();
+}
+
 export async function prepareOrganicBrief(productId: string) {
   const db = getDb();
   await ensureProductSchema();
