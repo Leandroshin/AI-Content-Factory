@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import ipaddress
 import json
+import re
 import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, replace
@@ -550,11 +551,55 @@ def _extract_product_page(html: str, base_url: str) -> _ParsedPage:
             values[key] = value
             if extractor == "none":
                 extractor = "open_graph"
+    marketplace_values = _extract_mercado_livre_page_data(html, base_url)
+    for key, value in marketplace_values.items():
+        if not values.get(key) and value:
+            values[key] = value
+            extractor = "mercado_livre_page_data"
     canonical = parser.canonical_url or meta.get("og:url") or base_url
     values["canonical_url"] = urljoin(base_url, canonical)
     if extractor == "none":
         warnings.append("structured_product_metadata_missing")
     return _ParsedPage(values=values, extractor=extractor, warnings=tuple(warnings))
+
+
+def _extract_mercado_livre_page_data(html: str, base_url: str) -> dict[str, str]:
+    """Read public Mercado Livre hydration data already present in one page fetch.
+
+    Marketplace short links sometimes render an affiliate profile shell, where
+    price is absent from Open Graph but present in the serialized product card.
+    This stays bounded to the owner-provided page response: no catalog API,
+    search, redirect crawl, or additional HTTP request is performed.
+    """
+    host = (urlsplit(base_url).hostname or "").lower()
+    if not (
+        host == "meli.la"
+        or host.endswith(".meli.la")
+        or host == "mercadolivre.com.br"
+        or host.endswith(".mercadolivre.com.br")
+    ):
+        return {}
+
+    current = re.search(
+        r'"current_price"\s*:\s*\{\s*"value"\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*,\s*"currency"\s*:\s*"([A-Z]{3})"',
+        html,
+    )
+    if not current:
+        return {}
+    previous = re.search(
+        r'"previous_price"\s*:\s*\{\s*"value"\s*:\s*([0-9]+(?:\.[0-9]+)?)',
+        html,
+    )
+    sku = re.search(r'"(?:id|item_id)"\s*:\s*"(MLB[0-9]{6,20})"', html)
+    values = {
+        "current_price": current.group(1),
+        "currency": current.group(2),
+    }
+    if previous:
+        values["old_price"] = previous.group(1)
+    if sku:
+        values["sku"] = sku.group(1)
+    return values
 
 
 def _find_json_ld_product(documents: Iterable[str]) -> dict[str, Any]:

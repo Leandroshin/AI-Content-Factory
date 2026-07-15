@@ -64,6 +64,19 @@ def _product_html() -> str:
     """
 
 
+
+def _mercado_livre_short_link_html() -> str:
+    return """
+    <!doctype html><html><head>
+      <meta property="og:title" content="Violão Clássico Giannini N-14">
+      <meta property="og:image" content="https://http2.mlstatic.com/viola.jpg">
+    </head><body>
+      <script>
+        {"price":{"previous_price":{"value":408,"currency":"BRL"},"current_price":{"value":387.6,"currency":"BRL"}},"item_id":"MLB3535284749"}
+      </script>
+    </body></html>
+    """
+
 def _employees(
     company: CompanyRuntime, event_bus: EventBus
 ) -> AffiliateFactoryEmployees:
@@ -169,6 +182,17 @@ def main() -> None:
         "Purpose-specific user agent used",
     )
 
+
+    print("\nStep 1b: read Mercado Livre price embedded in an affiliate short link")
+    short_link_intake = ProductUrlIntake(
+        MockHttpClient(default_response=HttpResponse(status_code=200, body=_mercado_livre_short_link_html()))
+    )
+    short_link = short_link_intake.intake("https://meli.la/15n93JQ")
+    _check(short_link.status == ProductUrlIntakeStatus.READY, "Short link yields ready product evidence")
+    _check(short_link.evidence.current_price == 387.6, "Embedded Mercado Livre current price is extracted")
+    _check(short_link.evidence.old_price == 408.0, "Embedded Mercado Livre previous price is extracted")
+    _check(short_link.evidence.sku == "MLB3535284749", "Embedded Mercado Livre item ID is preserved")
+    _check(short_link.evidence.extractor == "mercado_livre_page_data", "Short link extractor remains auditable")
     print("\nStep 2: block unsafe and unsupported URLs before HTTP")
     before = len(http.sent_requests)
     blocked_local = intake.intake("https://127.0.0.1/admin")

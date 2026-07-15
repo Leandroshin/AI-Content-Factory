@@ -119,6 +119,9 @@ export type ProductIntakeItem = {
   language: string;
   sourceKind: string;
   ownerNotes: string;
+  targetChannel: string;
+  trackingLabel: string;
+  channelRegistered: boolean;
   affiliateProvided: boolean;
   marketplace: string;
   status: ProductIntakeStatus;

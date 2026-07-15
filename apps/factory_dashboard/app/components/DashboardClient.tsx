@@ -44,6 +44,9 @@ type ProductFormInput = {
   language: string;
   sourceKind: string;
   ownerNotes: string;
+  targetChannel: string;
+  trackingLabel: string;
+  channelRegistered: boolean;
 };
 type ResearchMissionFormInput = { goal: string; marketplaces: string[]; category: string; maxPrice: string; timeframe: string; resultLimit: number; targetChannel: string };
 
@@ -412,6 +415,26 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
     }
   }
 
+  async function retryProductAnalysis(productId: string) {
+    setBusy(`retry-${productId}`);
+    setNotice("");
+    try {
+      const response = await fetch("/api/products", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "retry_analysis", productId }),
+      });
+      const payload = await response.json() as ProductIntakePayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Não foi possível reenviar a coleta");
+      setProducts(payload.items ?? []);
+      setNotice("Produto recolocado na coleta. O worker buscará apenas a página enviada; publicação continua bloqueada.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível reenviar a coleta.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function prepareOrganicBrief(productId: string) {
     setBusy(`brief-${productId}`);
     setNotice("");
@@ -478,7 +501,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
         {notice && <div className={styles.notice} role="status"><CircleAlert size={16} /> {notice}<button aria-label="Fechar aviso" onClick={() => setNotice("")}><X size={15} /></button></div>}
 
         {view === "central" && <CentralView data={data} pending={pending} onOpenOpportunity={openOpportunity} onMetric={openMetric} onView={changeView} />}
-        {view === "products" && <ProductsView items={products} missions={researchMissions} busy={busy} onSubmit={addProduct} onSubmitMission={addResearchMission} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} />}
+        {view === "products" && <ProductsView items={products} missions={researchMissions} busy={busy} onSubmit={addProduct} onSubmitMission={addResearchMission} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} onRetryAnalysis={retryProductAnalysis} />}
         {view === "opportunities" && <OpportunitiesView
           visible={visible}
           selected={selected}
@@ -542,24 +565,30 @@ function CentralView({ data, pending, onOpenOpportunity, onMetric, onView }: { d
   </>;
 }
 
-function ProductsView({ items, missions, busy, onSubmit, onSubmitMission, onPrepareCampaign, onPrepareBrief }: { items: ProductIntakeItem[]; missions: ProductResearchMissionItem[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onSubmitMission: (input: ResearchMissionFormInput) => Promise<boolean>; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void }) {
+function ProductsView({ items, missions, busy, onSubmit, onSubmitMission, onPrepareCampaign, onPrepareBrief, onRetryAnalysis }: { items: ProductIntakeItem[]; missions: ProductResearchMissionItem[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onSubmitMission: (input: ResearchMissionFormInput) => Promise<boolean>; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void; onRetryAnalysis: (productId: string) => void }) {
   const [productUrl, setProductUrl] = useState("");
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [language, setLanguage] = useState("pt-BR");
   const [sourceKind, setSourceKind] = useState("product_page");
   const [ownerNotes, setOwnerNotes] = useState("");
+  const [targetChannel, setTargetChannel] = useState("telegram_public");
+  const [trackingLabel, setTrackingLabel] = useState("telegram_public");
+  const [channelRegistered, setChannelRegistered] = useState(false);
   const detectedMarketplace = useMemo(() => marketplaceFromUrl(productUrl), [productUrl]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (await onSubmit({ productUrl, affiliateUrl, evidenceUrl, language, sourceKind, ownerNotes })) {
+    if (await onSubmit({ productUrl, affiliateUrl, evidenceUrl, language, sourceKind, ownerNotes, targetChannel, trackingLabel, channelRegistered })) {
       setProductUrl("");
       setAffiliateUrl("");
       setEvidenceUrl("");
       setLanguage("pt-BR");
       setSourceKind("product_page");
       setOwnerNotes("");
+      setTargetChannel("telegram_public");
+      setTrackingLabel("telegram_public");
+      setChannelRegistered(false);
     }
   }
 
@@ -569,23 +598,28 @@ function ProductsView({ items, missions, busy, onSubmit, onSubmitMission, onPrep
     <form className={styles.productForm} onSubmit={submit}>
       <SectionHead kicker="NOVA ANÁLISE" title="Adicionar produto" />
       <div className={styles.formBody}>
-        <label><span>Página de venda ou produto</span><div><ExternalLink size={16} /><input type="url" required value={productUrl} onChange={(event) => setProductUrl(event.target.value)} placeholder="https://digistore24.com/... ou https://shopee.com.br/..." /></div></label>
-        <label><span>Link afiliado <small>opcional</small></span><div><BadgeDollarSign size={16} /><input type="url" value={affiliateUrl} onChange={(event) => setAffiliateUrl(event.target.value)} placeholder="Cole aqui se já tiver" /></div></label>
+        <label><span>Página de venda ou produto</span><div><ExternalLink size={16} /><input type="url" required value={productUrl} onChange={(event) => setProductUrl(event.target.value)} placeholder="https://produto.mercadolivre.com.br/... ou https://shopee.com.br/..." /></div><small>Para Mercado Livre, o link oficial <code>meli.la</code> também é aceito.</small></label>
+        <label><span>Link afiliado <small>opcional</small></span><div><BadgeDollarSign size={16} /><input type="url" value={affiliateUrl} onChange={(event) => setAffiliateUrl(event.target.value)} placeholder="Cole aqui se já tiver" /></div><small>Se o link <code>meli.la</code> já estiver no primeiro campo, ele é preservado como link afiliado para conferência.</small></label>
         <label><span>Evidência ou página de suporte <small>opcional</small></span><div><FileSearch size={16} /><input type="url" value={evidenceUrl} onChange={(event) => setEvidenceUrl(event.target.value)} placeholder="Página de suporte, print hospedado, termos ou review" /></div></label>
         <div className={styles.formSplit}>
           <label><span>Tipo</span><select value={sourceKind} onChange={(event) => setSourceKind(event.target.value)}><option value="product_page">Produto físico</option><option value="sales_page">Página de venda</option></select></label>
           <label><span>Idioma</span><select value={language} onChange={(event) => setLanguage(event.target.value)}><option value="pt-BR">Português</option><option value="en">Inglês</option><option value="es">Espanhol</option><option value="unknown">Não sei</option></select></label>
         </div>
+        <div className={styles.formSplit}>
+          <label><span>Canal da oferta</span><select value={targetChannel} onChange={(event) => { const next = event.target.value; setTargetChannel(next); setTrackingLabel(next); }}><option value="telegram_public">Telegram público</option><option value="whatsapp_public">WhatsApp público</option><option value="instagram_public">Instagram público</option></select></label>
+          <label><span>Etiqueta no Mercado Livre</span><input value={trackingLabel} maxLength={48} onChange={(event) => setTrackingLabel(event.target.value)} placeholder="telegram_public" /><small>Use esta etiqueta ao gerar o link no painel oficial.</small></label>
+        </div>
+        {detectedMarketplace === "Mercado Livre" && <label className={styles.channelConfirmation}><input type="checkbox" checked={channelRegistered} onChange={(event) => setChannelRegistered(event.target.checked)} /><span>Este canal público já está cadastrado no meu perfil de afiliado do Mercado Livre.</span></label>}
         <label><span>Contexto para os funcionários <small>opcional</small></span><textarea value={ownerNotes} onChange={(event) => setOwnerNotes(event.target.value)} maxLength={800} placeholder="Ex: vi essa oferta na Digistore, comissão boa, mas ainda falta PayPal. Quero avaliar promessa, público e risco." /></label>
         <div className={styles.acceptedMarkets} aria-label="Plataformas reconhecidas">{["Amazon Brasil", "Mercado Livre", "Shopee", "Adidas", "Digistore24", "Braip"].map((marketplace) => <span key={marketplace} className={detectedMarketplace === marketplace ? styles.marketActive : ""}>{marketplace}</span>)}</div>
         <button className={styles.submitProduct} disabled={busy === "product"}><PackagePlus size={17} /> {busy === "product" ? "Enviando..." : "Enviar para análise"}</button>
-        <p className={styles.formSafety}><ShieldCheck size={15} /> A página original, o link afiliado e as evidências são preservados. Nenhum anúncio, compra, provider ou publicação começa aqui.</p>
+        <p className={styles.formSafety}><ShieldCheck size={15} /> Gere o link no painel oficial com a etiqueta acima. A fábrica preserva, analisa e prepara a copy; nenhum anúncio, compra ou publicação começa aqui.</p>
       </div>
     </form>
     <div className={styles.productQueue}>
       <SectionHead kicker="ACOMPANHAMENTO" title="Produtos e pacotes" />
       {items.some((item) => item.campaignPackage) && <CampaignComparison items={items.filter((item) => item.campaignPackage)} busy={busy} onPrepareBrief={onPrepareBrief} />}
-      {items.length ? <div className={styles.productList}>{items.map((item) => <ProductIntakeRow key={item.id} item={item} busy={busy} onPrepareCampaign={onPrepareCampaign} onPrepareBrief={onPrepareBrief} />)}</div> : <div className={styles.empty}>Nenhum produto enviado ainda.</div>}
+      {items.length ? <div className={styles.productList}>{items.map((item) => <ProductIntakeRow key={item.id} item={item} busy={busy} onPrepareCampaign={onPrepareCampaign} onPrepareBrief={onPrepareBrief} onRetryAnalysis={onRetryAnalysis} />)}</div> : <div className={styles.empty}>Nenhum produto enviado ainda.</div>}
     </div>
     </section>
   </>;
@@ -644,7 +678,7 @@ function ResearchMissionCard({ mission }: { mission: ProductResearchMissionItem 
   </article>;
 }
 
-function ProductIntakeRow({ item, busy, onPrepareCampaign, onPrepareBrief }: { item: ProductIntakeItem; busy: string | null; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void }) {
+function ProductIntakeRow({ item, busy, onPrepareCampaign, onPrepareBrief, onRetryAnalysis }: { item: ProductIntakeItem; busy: string | null; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void; onRetryAnalysis: (productId: string) => void }) {
   const stage = item.status === "queued" ? 1 : item.status === "analyzing" ? 2 : item.status === "needs_input" ? 4 : item.status === "completed" ? 5 : 2;
   const status = item.status === "queued" ? "Recebido" : item.status === "analyzing" ? "Analisando" : item.status === "needs_input" ? "Precisa de você" : item.status === "completed" ? "Pronto para decisão" : "Bloqueado";
   return <article className={styles.productRow}>
@@ -667,11 +701,14 @@ function ProductIntakeRow({ item, busy, onPrepareCampaign, onPrepareBrief }: { i
     <div className={styles.productMeta}>
       <span>{item.sourceKind === "sales_page" ? "Página de venda" : "Produto físico"}</span>
       <span>{item.language === "en" ? "Inglês" : item.language === "es" ? "Espanhol" : item.language === "pt-BR" ? "Português" : "Idioma indefinido"}</span>
+      <span>{item.targetChannel === "whatsapp_public" ? "WhatsApp público" : item.targetChannel === "instagram_public" ? "Instagram público" : "Telegram público"} · etiqueta {item.trackingLabel}</span>
       {item.evidenceUrl && <a href={item.evidenceUrl} target="_blank" rel="noreferrer">Abrir evidência <ExternalLink size={12} /></a>}
     </div>
     {item.ownerNotes && <blockquote className={styles.ownerNotes}>{item.ownerNotes}</blockquote>}
     {item.missingFields.length > 0 && <div className={styles.missingFields}>{item.missingFields.map((field) => <span key={field}>{field.replaceAll("_", " ")}</span>)}</div>}
     {!item.affiliateProvided && <div className={styles.affiliatePending}><CircleAlert size={14} /> Link afiliado ainda não informado</div>}
+    {item.marketplace === "Mercado Livre" && !item.channelRegistered && <div className={styles.affiliatePending}><CircleAlert size={14} /> Confirme o cadastro deste canal público no programa do Mercado Livre antes de publicar.</div>}
+    {(item.status === "needs_input" || item.status === "blocked") && <button className={styles.prepareCampaign} disabled={busy === `retry-${item.id}`} onClick={() => onRetryAnalysis(item.id)}><RefreshCw size={15} /> {busy === `retry-${item.id}` ? "Reenviando..." : "Reanalisar página"}</button>}
     {(item.status === "completed" || item.status === "needs_input") && !item.campaignPackage && <button className={styles.prepareCampaign} disabled={busy === `campaign-${item.id}`} onClick={() => onPrepareCampaign(item.id)}><Sparkles size={15} /> {busy === `campaign-${item.id}` ? "Preparando..." : "Preparar pacote sem gasto"}</button>}
     {item.campaignPackage && <div className={styles.campaignPackageDetail}>
       <strong>Pacote de campanha</strong>
@@ -904,7 +941,7 @@ function marketplaceFromUrl(value: string) {
   try {
     const host = new URL(value).hostname.toLowerCase();
     if (host === "amazon.com.br" || host.endsWith(".amazon.com.br")) return "Amazon Brasil";
-    if (host === "mercadolivre.com.br" || host.endsWith(".mercadolivre.com.br") || host === "mercadolivre.com" || host.endsWith(".mercadolivre.com")) return "Mercado Livre";
+    if (host === "mercadolivre.com.br" || host.endsWith(".mercadolivre.com.br") || host === "mercadolivre.com" || host.endsWith(".mercadolivre.com") || host === "meli.la" || host.endsWith(".meli.la")) return "Mercado Livre";
     if (host === "shopee.com.br" || host.endsWith(".shopee.com.br")) return "Shopee";
     if (host === "adidas.com.br" || host.endsWith(".adidas.com.br")) return "Adidas";
     if (host === "digistore24.com" || host.endsWith(".digistore24.com") || host === "digistore24-app.com" || host.endsWith(".digistore24-app.com")) return "Digistore24";

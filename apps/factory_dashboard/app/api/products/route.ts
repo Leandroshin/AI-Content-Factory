@@ -1,4 +1,4 @@
-import { createProductIntake, prepareCampaignPackage, prepareOrganicBrief, productIntakeState } from "./store";
+import { createProductIntake, prepareCampaignPackage, prepareOrganicBrief, productIntakeState, retryProductIntake } from "./store";
 
 const MAX_BODY_BYTES = 8_000;
 const MARKETPLACES = [
@@ -12,6 +12,7 @@ const MARKETPLACES = [
 
 const LANGUAGES = new Set(["pt-BR", "en", "es", "unknown"]);
 const SOURCE_KINDS = new Set(["product_page", "sales_page"]);
+const TARGET_CHANNELS = new Set(["telegram_public", "whatsapp_public", "instagram_public"]);
 
 export async function GET() {
   return Response.json(await productIntakeState());
@@ -32,6 +33,9 @@ export async function POST(request: Request) {
     const language = enumValue(body.language, LANGUAGES, "Idioma", "unknown");
     const sourceKind = enumValue(body.sourceKind, SOURCE_KINDS, "Tipo de página", "product_page");
     const ownerNotes = optionalText(body.ownerNotes, "Contexto", 800);
+    const targetChannel = enumValue(body.targetChannel, TARGET_CHANNELS, "Canal", "telegram_public");
+    const trackingLabel = trackingLabelValue(body.trackingLabel, targetChannel);
+    const channelRegistered = body.channelRegistered === true;
     return Response.json(await createProductIntake({
       productUrl: product.toString(),
       affiliateUrl,
@@ -39,6 +43,9 @@ export async function POST(request: Request) {
       language,
       sourceKind,
       ownerNotes,
+      targetChannel,
+      trackingLabel,
+      channelRegistered,
       marketplace,
     }), { status: 202 });
   } catch (error) {
@@ -50,6 +57,7 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json() as Record<string, unknown>;
     if (typeof body.productId !== "string" || !body.productId.trim()) throw new Error("Produto inválido");
+    if (body.action === "retry_analysis") return Response.json(await retryProductIntake(body.productId.trim()));
     if (body.action === "prepare_campaign") return Response.json(await prepareCampaignPackage(body.productId.trim()));
     if (body.action === "prepare_organic_brief") return Response.json(await prepareOrganicBrief(body.productId.trim()));
     throw new Error("Ação de campanha inválida");
@@ -68,6 +76,12 @@ function optionalText(value: unknown, label: string, max: number) {
   if (value == null || value === "") return "";
   if (typeof value !== "string" || value.length > max) throw new Error(`${label} inválido`);
   return value.trim();
+}
+
+function trackingLabelValue(value: unknown, fallback: string) {
+  if (value == null || value === "") return fallback;
+  if (typeof value !== "string" || !/^[a-z0-9_-]{2,48}$/i.test(value)) throw new Error("Etiqueta de rastreio inválida");
+  return value;
 }
 
 function publicHttps(value: unknown, label: string) {
