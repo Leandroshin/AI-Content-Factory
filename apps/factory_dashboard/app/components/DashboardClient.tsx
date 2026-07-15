@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { DashboardPayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductResearchMissionItem, ProductResearchMissionPayload, ProductionRequest } from "./types";
+import type { DashboardPayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductResearchMissionItem, ProductResearchMissionPayload, ProductionRequest, TelegramPublication, TelegramPublicationPayload } from "./types";
 import styles from "./dashboard.module.css";
 
 type View = "central" | "products" | "opportunities" | "production" | "channels" | "activity" | "settings";
@@ -49,6 +49,13 @@ type ProductFormInput = {
   channelRegistered: boolean;
 };
 type ResearchMissionFormInput = { goal: string; marketplaces: string[]; category: string; maxPrice: string; timeframe: string; resultLimit: number; targetChannel: string };
+type CommercialFormInput = {
+  currentPrice: string;
+  oldPrice: string;
+  commissionConfirmed: boolean;
+  channelRegistered: boolean;
+  creativeReviewStatus: "official_link_preview" | "custom_creative_approved";
+};
 
 const fallback: DashboardPayload = {
   metrics: { pending: 2, inProduction: 1, ready: 0, blocked: 1 },
@@ -151,6 +158,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
   const [data, setData] = useState<DashboardPayload>(fallback);
   const [products, setProducts] = useState<ProductIntakeItem[]>([]);
   const [researchMissions, setResearchMissions] = useState<ProductResearchMissionItem[]>([]);
+  const [telegramPublications, setTelegramPublications] = useState<TelegramPublication[]>([]);
   const [view, setView] = useState<View>("central");
   const [theme, setTheme] = useState<Theme>("operational");
   const [selectedId, setSelectedId] = useState(fallback.opportunities[0].id);
@@ -185,6 +193,10 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
     fetch("/api/research-missions")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((payload: ProductResearchMissionPayload) => setResearchMissions(payload.missions ?? []))
+      .catch(() => undefined);
+    fetch("/api/telegram-publications")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((payload: TelegramPublicationPayload) => setTelegramPublications(payload.publications ?? []))
       .catch(() => undefined);
     return () => window.cancelAnimationFrame(themeFrame);
   }, []);
@@ -455,6 +467,76 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
     }
   }
 
+  async function completeCommercial(productId: string, input: CommercialFormInput) {
+    setBusy(`commercial-${productId}`);
+    setNotice("");
+    try {
+      const response = await fetch("/api/products", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "complete_commercial",
+          productId,
+          currentPrice: input.currentPrice,
+          oldPrice: input.oldPrice || null,
+          commissionConfirmed: input.commissionConfirmed,
+          channelRegistered: input.channelRegistered,
+          creativeReviewStatus: input.creativeReviewStatus,
+        }),
+      });
+      const payload = await response.json() as ProductIntakePayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Não foi possível confirmar os dados comerciais");
+      setProducts(payload.items ?? []);
+      setNotice("Dados comerciais confirmados e prévia do Telegram atualizada. Nada foi publicado.");
+      return true;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível confirmar os dados comerciais.");
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function queueTelegramPublication(productId: string) {
+    setBusy(`telegram-${productId}`);
+    setNotice("");
+    try {
+      const response = await fetch("/api/telegram-publications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, confirmation: "PUBLICAR NO TELEGRAM" }),
+      });
+      const payload = await response.json() as TelegramPublicationPayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Não foi possível autorizar a publicação");
+      setTelegramPublications(payload.publications ?? []);
+      setNotice("Publicação autorizada e colocada na fila do Telegram. O worker fará um único envio e registrará o resultado.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível autorizar a publicação.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function retryTelegramPublication(requestId: string) {
+    setBusy(`telegram-retry-${requestId}`);
+    setNotice("");
+    try {
+      const response = await fetch("/api/telegram-publications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId }),
+      });
+      const payload = await response.json() as TelegramPublicationPayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Não foi possível reenviar para a fila");
+      setTelegramPublications(payload.publications ?? []);
+      setNotice("Publicação devolvida à fila. Não haverá duplicação de uma mensagem já enviada.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível reenviar para a fila.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   return (
     <div className={styles.shell} data-theme={theme}>
       {theme === "matrix" && <div className={styles.matrixRain} aria-hidden="true">{Array.from({ length: 14 }, (_, index) => <span key={index}>0100110101101001010011010010110100101101</span>)}</div>}
@@ -501,7 +583,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
         {notice && <div className={styles.notice} role="status"><CircleAlert size={16} /> {notice}<button aria-label="Fechar aviso" onClick={() => setNotice("")}><X size={15} /></button></div>}
 
         {view === "central" && <CentralView data={data} pending={pending} onOpenOpportunity={openOpportunity} onMetric={openMetric} onView={changeView} />}
-        {view === "products" && <ProductsView items={products} missions={researchMissions} busy={busy} onSubmit={addProduct} onSubmitMission={addResearchMission} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} onRetryAnalysis={retryProductAnalysis} />}
+        {view === "products" && <ProductsView items={products} missions={researchMissions} publications={telegramPublications} busy={busy} onSubmit={addProduct} onSubmitMission={addResearchMission} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} onRetryAnalysis={retryProductAnalysis} onCompleteCommercial={completeCommercial} onQueueTelegram={queueTelegramPublication} onRetryTelegram={retryTelegramPublication} />}
         {view === "opportunities" && <OpportunitiesView
           visible={visible}
           selected={selected}
@@ -565,7 +647,7 @@ function CentralView({ data, pending, onOpenOpportunity, onMetric, onView }: { d
   </>;
 }
 
-function ProductsView({ items, missions, busy, onSubmit, onSubmitMission, onPrepareCampaign, onPrepareBrief, onRetryAnalysis }: { items: ProductIntakeItem[]; missions: ProductResearchMissionItem[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onSubmitMission: (input: ResearchMissionFormInput) => Promise<boolean>; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void; onRetryAnalysis: (productId: string) => void }) {
+function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitMission, onPrepareCampaign, onPrepareBrief, onRetryAnalysis, onCompleteCommercial, onQueueTelegram, onRetryTelegram }: { items: ProductIntakeItem[]; missions: ProductResearchMissionItem[]; publications: TelegramPublication[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onSubmitMission: (input: ResearchMissionFormInput) => Promise<boolean>; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void; onRetryAnalysis: (productId: string) => void; onCompleteCommercial: (productId: string, input: CommercialFormInput) => Promise<boolean>; onQueueTelegram: (productId: string) => void; onRetryTelegram: (requestId: string) => void }) {
   const [productUrl, setProductUrl] = useState("");
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
@@ -606,7 +688,7 @@ function ProductsView({ items, missions, busy, onSubmit, onSubmitMission, onPrep
           <label><span>Idioma</span><select value={language} onChange={(event) => setLanguage(event.target.value)}><option value="pt-BR">Português</option><option value="en">Inglês</option><option value="es">Espanhol</option><option value="unknown">Não sei</option></select></label>
         </div>
         <div className={styles.formSplit}>
-          <label><span>Canal da oferta</span><select value={targetChannel} onChange={(event) => { const next = event.target.value; setTargetChannel(next); setTrackingLabel(next); }}><option value="telegram_public">Telegram público</option><option value="whatsapp_public">WhatsApp público</option><option value="instagram_public">Instagram público</option></select></label>
+          <label><span>Canal da oferta</span><select value={targetChannel} onChange={(event) => { const next = event.target.value; setTargetChannel(next); setTrackingLabel(next); }}><option value="telegram_public">Telegram público</option></select><small>WhatsApp fica fora desta fase.</small></label>
           <label><span>Etiqueta no Mercado Livre</span><input value={trackingLabel} maxLength={48} onChange={(event) => setTrackingLabel(event.target.value)} placeholder="telegram_public" /><small>Use esta etiqueta ao gerar o link no painel oficial.</small></label>
         </div>
         {detectedMarketplace === "Mercado Livre" && <label className={styles.channelConfirmation}><input type="checkbox" checked={channelRegistered} onChange={(event) => setChannelRegistered(event.target.checked)} /><span>Este canal público já está cadastrado no meu perfil de afiliado do Mercado Livre.</span></label>}
@@ -619,7 +701,7 @@ function ProductsView({ items, missions, busy, onSubmit, onSubmitMission, onPrep
     <div className={styles.productQueue}>
       <SectionHead kicker="ACOMPANHAMENTO" title="Produtos e pacotes" />
       {items.some((item) => item.campaignPackage) && <CampaignComparison items={items.filter((item) => item.campaignPackage)} busy={busy} onPrepareBrief={onPrepareBrief} />}
-      {items.length ? <div className={styles.productList}>{items.map((item) => <ProductIntakeRow key={item.id} item={item} busy={busy} onPrepareCampaign={onPrepareCampaign} onPrepareBrief={onPrepareBrief} onRetryAnalysis={onRetryAnalysis} />)}</div> : <div className={styles.empty}>Nenhum produto enviado ainda.</div>}
+      {items.length ? <div className={styles.productList}>{items.map((item) => <ProductIntakeRow key={item.id} item={item} publication={publications.find((entry) => entry.productId === item.id)} busy={busy} onPrepareCampaign={onPrepareCampaign} onPrepareBrief={onPrepareBrief} onRetryAnalysis={onRetryAnalysis} onCompleteCommercial={onCompleteCommercial} onQueueTelegram={onQueueTelegram} onRetryTelegram={onRetryTelegram} />)}</div> : <div className={styles.empty}>Nenhum produto enviado ainda.</div>}
     </div>
     </section>
   </>;
@@ -651,7 +733,7 @@ function ResearchMissionPanel({ missions, busy, onSubmit }: { missions: ProductR
           <label><span>Preço máximo</span><input type="number" min="1" step="1" value={maxPrice} onChange={(event) => setMaxPrice(event.target.value)} placeholder="Sem limite" /></label>
           <label><span>Resultados</span><select value={resultLimit} onChange={(event) => setResultLimit(Number(event.target.value))}>{[3, 5, 8, 10].map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
           <label><span>Categoria <small>opcional</small></span><input value={category} maxLength={80} onChange={(event) => setCategory(event.target.value)} placeholder="Ex: games, casa" /></label>
-          <label><span>Canal pensado</span><select value={targetChannel} onChange={(event) => setTargetChannel(event.target.value)}><option value="telegram_public">Telegram público</option><option value="whatsapp_public">WhatsApp público</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option></select></label>
+          <label><span>Canal pensado</span><select value={targetChannel} onChange={(event) => setTargetChannel(event.target.value)}><option value="telegram_public">Telegram público</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option></select></label>
         </div>
         <button className={styles.submitProduct} disabled={busy === "research-mission"}><Sparkles size={17} />{busy === "research-mission" ? "Registrando..." : "Iniciar pesquisa"}</button>
         <p className={styles.formSafety}><ShieldCheck size={15} /> Pesquisa somente leitura. O resultado pede sua confirmação do link monetizado antes de qualquer produção.</p>
@@ -678,9 +760,22 @@ function ResearchMissionCard({ mission }: { mission: ProductResearchMissionItem 
   </article>;
 }
 
-function ProductIntakeRow({ item, busy, onPrepareCampaign, onPrepareBrief, onRetryAnalysis }: { item: ProductIntakeItem; busy: string | null; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void; onRetryAnalysis: (productId: string) => void }) {
+function ProductIntakeRow({ item, publication, busy, onPrepareCampaign, onPrepareBrief, onRetryAnalysis, onCompleteCommercial, onQueueTelegram, onRetryTelegram }: { item: ProductIntakeItem; publication?: TelegramPublication; busy: string | null; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void; onRetryAnalysis: (productId: string) => void; onCompleteCommercial: (productId: string, input: CommercialFormInput) => Promise<boolean>; onQueueTelegram: (productId: string) => void; onRetryTelegram: (requestId: string) => void }) {
   const stage = item.status === "queued" ? 1 : item.status === "analyzing" ? 2 : item.status === "needs_input" ? 4 : item.status === "completed" ? 5 : 2;
   const status = item.status === "queued" ? "Recebido" : item.status === "analyzing" ? "Analisando" : item.status === "needs_input" ? "Precisa de você" : item.status === "completed" ? "Pronto para decisão" : "Bloqueado";
+  const [currentPrice, setCurrentPrice] = useState(item.currentPrice ? String(item.currentPrice).replace(".", ",") : "");
+  const [oldPrice, setOldPrice] = useState(item.oldPrice ? String(item.oldPrice).replace(".", ",") : "");
+  const [commissionConfirmed, setCommissionConfirmed] = useState(item.commissionConfirmed);
+  const [channelRegistered, setChannelRegistered] = useState(item.channelRegistered);
+  const [creativeReviewStatus, setCreativeReviewStatus] = useState<CommercialFormInput["creativeReviewStatus"]>(item.creativeReviewStatus === "custom_creative_approved" ? "custom_creative_approved" : "official_link_preview");
+  const [finalApproval, setFinalApproval] = useState(false);
+  const publishBlockers = item.campaignPackage?.missingToPublish.filter((field) => field !== "aprovação final do owner") ?? [];
+
+  async function submitCommercial(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await onCompleteCommercial(item.id, { currentPrice, oldPrice, commissionConfirmed, channelRegistered, creativeReviewStatus });
+  }
+
   return <article className={styles.productRow}>
     <div className={styles.productIdentity}>
       {item.imageUrl ? <Image unoptimized src={item.imageUrl} alt="Imagem coletada do produto" width={54} height={54} /> : <span><ShoppingBag size={20} /></span>}
@@ -701,7 +796,7 @@ function ProductIntakeRow({ item, busy, onPrepareCampaign, onPrepareBrief, onRet
     <div className={styles.productMeta}>
       <span>{item.sourceKind === "sales_page" ? "Página de venda" : "Produto físico"}</span>
       <span>{item.language === "en" ? "Inglês" : item.language === "es" ? "Espanhol" : item.language === "pt-BR" ? "Português" : "Idioma indefinido"}</span>
-      <span>{item.targetChannel === "whatsapp_public" ? "WhatsApp público" : item.targetChannel === "instagram_public" ? "Instagram público" : "Telegram público"} · etiqueta {item.trackingLabel}</span>
+      <span>Telegram público · etiqueta {item.trackingLabel}</span>
       {item.evidenceUrl && <a href={item.evidenceUrl} target="_blank" rel="noreferrer">Abrir evidência <ExternalLink size={12} /></a>}
     </div>
     {item.ownerNotes && <blockquote className={styles.ownerNotes}>{item.ownerNotes}</blockquote>}
@@ -710,17 +805,46 @@ function ProductIntakeRow({ item, busy, onPrepareCampaign, onPrepareBrief, onRet
     {item.marketplace === "Mercado Livre" && !item.channelRegistered && <div className={styles.affiliatePending}><CircleAlert size={14} /> Confirme o cadastro deste canal público no programa do Mercado Livre antes de publicar.</div>}
     {(item.status === "needs_input" || item.status === "blocked") && <button className={styles.prepareCampaign} disabled={busy === `retry-${item.id}`} onClick={() => onRetryAnalysis(item.id)}><RefreshCw size={15} /> {busy === `retry-${item.id}` ? "Reenviando..." : "Reanalisar página"}</button>}
     {(item.status === "completed" || item.status === "needs_input") && !item.campaignPackage && <button className={styles.prepareCampaign} disabled={busy === `campaign-${item.id}`} onClick={() => onPrepareCampaign(item.id)}><Sparkles size={15} /> {busy === `campaign-${item.id}` ? "Preparando..." : "Preparar pacote sem gasto"}</button>}
+    {(item.status === "completed" || item.status === "needs_input") && item.affiliateProvided && <form className={styles.commercialConfirmation} onSubmit={submitCommercial}>
+      <div className={styles.commercialHeading}><span><BadgeDollarSign size={16} /><strong>Confirmação comercial</strong></span><small>Dados conferidos por você na página oficial</small></div>
+      <div className={styles.commercialGrid}>
+        <label><span>Preço atual</span><input required inputMode="decimal" value={currentPrice} onChange={(event) => setCurrentPrice(event.target.value)} placeholder="Ex: 69,90" /></label>
+        <label><span>Preço anterior <small>opcional</small></span><input inputMode="decimal" value={oldPrice} onChange={(event) => setOldPrice(event.target.value)} placeholder="Ex: 99,90" /></label>
+        <label><span>Imagem para a postagem</span><select value={creativeReviewStatus} onChange={(event) => setCreativeReviewStatus(event.target.value as CommercialFormInput["creativeReviewStatus"])}><option value="official_link_preview">Usar prévia oficial do link</option><option value="custom_creative_approved">Criativo próprio já revisado</option></select></label>
+      </div>
+      <label className={styles.confirmationCheck}><input type="checkbox" checked={commissionConfirmed} onChange={(event) => setCommissionConfirmed(event.target.checked)} /><span>Este link foi gerado no meu programa oficial de afiliados.</span></label>
+      <label className={styles.confirmationCheck}><input type="checkbox" checked={channelRegistered} onChange={(event) => setChannelRegistered(event.target.checked)} /><span>O canal Telegram está cadastrado como canal público no Mercado Livre.</span></label>
+      <button className={styles.prepareCampaign} disabled={busy === `commercial-${item.id}`}><Check size={15} /> {busy === `commercial-${item.id}` ? "Salvando..." : "Salvar e atualizar a prévia"}</button>
+    </form>}
     {item.campaignPackage && <div className={styles.campaignPackageDetail}>
       <strong>Pacote de campanha</strong>
       <span><b>Canal</b>{item.campaignPackage.channel}</span>
-      <span><b>Copy segura</b>{item.campaignPackage.copy}</span>
       <span><b>Custo</b>{item.campaignPackage.estimatedCost}</span>
       <span><b>Risco</b>{item.campaignPackage.risk}</span>
+      <div className={styles.telegramPreview}><b>Prévia exata no Telegram</b><pre>{item.campaignPackage.copy}</pre></div>
       <small><ShieldCheck size={13} /> Publicação bloqueada até resolver {item.campaignPackage.missingToPublish.length} pendência(s).</small>
       {!item.campaignPackage.organicBrief && <button className={styles.prepareCampaign} disabled={busy === `brief-${item.id}`} onClick={() => onPrepareBrief(item.id)}><Sparkles size={15} /> {busy === `brief-${item.id}` ? "Criando briefing..." : "Transformar em briefing orgânico"}</button>}
       {item.campaignPackage.organicBrief && <OrganicBriefCard brief={item.campaignPackage.organicBrief} />}
+      {!publication && <div className={styles.telegramApproval}>
+        <div><Send size={17} /><span><strong>Envio final para @achadosbaratosBrasil</strong><small>Será uma única mensagem. O resultado volta com o ID oficial do Telegram.</small></span></div>
+        {publishBlockers.length > 0 && <p><CircleAlert size={14} /> Resolva antes: {publishBlockers.join(", ")}.</p>}
+        <label className={styles.confirmationCheck}><input type="checkbox" checked={finalApproval} onChange={(event) => setFinalApproval(event.target.checked)} /><span>Revisei o texto acima e autorizo esta publicação no Telegram.</span></label>
+        <button className={styles.telegramPublishButton} disabled={!finalApproval || publishBlockers.length > 0 || busy === `telegram-${item.id}`} onClick={() => onQueueTelegram(item.id)}><Send size={15} /> {busy === `telegram-${item.id}` ? "Autorizando..." : "Autorizar publicação no Telegram"}</button>
+      </div>}
+      {publication && <TelegramPublicationStatus publication={publication} busy={busy} onRetry={onRetryTelegram} />}
     </div>}
   </article>;
+}
+
+function TelegramPublicationStatus({ publication, busy, onRetry }: { publication: TelegramPublication; busy: string | null; onRetry: (requestId: string) => void }) {
+  const label = publication.status === "queued" ? "Na fila segura" : publication.status === "publishing" ? "Enviando" : publication.status === "sent" ? "Publicado" : publication.status === "failed" ? "Falhou" : "Cancelado";
+  return <div className={`${styles.telegramStatus} ${publication.status === "sent" ? styles.telegramSent : publication.status === "failed" ? styles.telegramFailed : ""}`}>
+    <div><Radio size={17} /><span><strong>{label}</strong><small>{publication.chatId}</small></span></div>
+    {publication.status === "sent" && <p><Check size={14} /> Mensagem #{publication.telegramMessageId} enviada em {publication.sentAt ? new Date(publication.sentAt).toLocaleString("pt-BR") : "horário registrado"}.</p>}
+    {publication.status === "queued" && <p><Clock3 size={14} /> Aguardando o worker local autorizado. Nenhum segundo envio será criado.</p>}
+    {publication.status === "publishing" && <p><RefreshCw size={14} /> O worker reservou esta mensagem e está aguardando a confirmação do Telegram.</p>}
+    {publication.status === "failed" && <><p><CircleAlert size={14} /> {publication.error || "O Telegram não confirmou o envio."}</p><button className={styles.prepareCampaign} disabled={busy === `telegram-retry-${publication.id}`} onClick={() => onRetry(publication.id)}><RefreshCw size={14} /> {busy === `telegram-retry-${publication.id}` ? "Reenfileirando..." : "Tentar novamente"}</button></>}
+  </div>;
 }
 
 function CampaignComparison({ items, busy, onPrepareBrief }: { items: ProductIntakeItem[]; busy: string | null; onPrepareBrief: (productId: string) => void }) {
@@ -902,8 +1026,7 @@ function ChannelsView() {
     <div className={styles.channelGrid}>
       <Channel image="/brands/fase-nova-games.png" name="Fase Nova Games" meta="TikTok + YouTube" state="Preparando conteúdo" tone="cyan" description="Notícias, lançamentos e oportunidades editoriais de games." />
       <Channel image="/brands/achados-baratos.png" name="Achados Baratos BR" meta="Facebook + Instagram" state="Orgânico conectado" tone="green" description="Curadoria de produtos, ofertas e links afiliados aprovados." />
-      <Channel name="Telegram" meta="@achadosbaratosBrasil" state="Operacional" tone="green" description="Primeiro canal de publicação real com aprovação humana." />
-      <Channel name="WhatsApp" meta="Canal administrativo" state="Planejado · manual" tone="cyan" description="Histórico multiloja de ofertas. Publicação automática permanece bloqueada até existir integração oficial compatível." />
+      <Channel name="Telegram" meta="@achadosbaratosBrasil" state="Publicação controlada" tone="green" description="Primeiro canal real: prévia exata, aprovação humana, envio único e confirmação por message_id." />
       <Channel name="Shopee Afiliados" meta="Cadastro pendente" state="Aguardando telefone" tone="amber" description="Pesquisa pública é possível; comissão depende do onboarding." />
     </div>
     <div className={styles.explainerBand}><Sparkles size={20} /><div><strong>Novos canais não serão criados por impulso</strong><p>Quando o radar encontrar um nicho recorrente e forte, a fábrica propõe marca, público, formato e rotina antes de você abrir uma nova conta.</p></div></div>

@@ -134,10 +134,31 @@ export type ProductIntakeItem = {
   funnelSuggestion: string;
   affiliateReadiness: string;
   campaignPackage: CampaignPackage | null;
+  currentPrice: number | null;
+  oldPrice: number | null;
+  commissionConfirmed: boolean;
+  creativeReviewStatus: string;
   missingFields: string[];
   submittedAt: string;
   updatedAt: string;
 };
+
+export type TelegramPublication = {
+  id: string;
+  productId: string;
+  status: "queued" | "publishing" | "sent" | "failed" | "cancelled";
+  chatId: string;
+  messageText: string;
+  imageUrl: string;
+  linkPreviewEnabled: boolean;
+  telegramMessageId: number | null;
+  error: string;
+  approvedAt: string;
+  sentAt: string | null;
+  updatedAt: string;
+};
+
+export type TelegramPublicationPayload = { publications: TelegramPublication[] };
 
 export type ProductIntakePayload = { items: ProductIntakeItem[] };
 

@@ -51,6 +51,14 @@ export type CampaignPackage = {
   organicBrief?: OrganicCampaignBrief;
 };
 
+export type CommercialConfirmation = {
+  currentPrice: number;
+  oldPrice: number | null;
+  commissionConfirmed: boolean;
+  creativeReviewStatus: "official_link_preview" | "approved_custom";
+  channelRegistered: boolean;
+};
+
 export type OrganicCampaignBrief = {
   status: "ready_for_owner_review" | "blocked";
   goal: string;
@@ -93,6 +101,10 @@ export async function createProductIntake(input: ProductIntakeInput) {
       ? `Aguardando coleta segura. Contexto do owner: ${input.ownerNotes}`
       : "Aguardando coleta segura dos dados do produto.",
     campaignPackage: null,
+    currentPriceCents: existing[0]?.currentPriceCents ?? null,
+    oldPriceCents: existing[0]?.oldPriceCents ?? null,
+    commissionConfirmed: existing[0]?.commissionConfirmed ?? 0,
+    creativeReviewStatus: existing[0]?.creativeReviewStatus ?? "",
     missingFields: "[]",
     submittedAt: existing[0]?.submittedAt ?? now,
     updatedAt: now,
@@ -161,7 +173,13 @@ export async function prepareCampaignPackage(productId: string) {
   if (!["completed", "needs_input"].includes(item.status)) throw new Error("A análise precisa terminar antes do pacote de campanha");
 
   const now = new Date().toISOString();
-  const missing = parseMissingFields(item.missingFields);
+  const missing = parseMissingFields(item.missingFields).filter((field) => {
+    const normalized = field.replaceAll("_", " ").toLowerCase();
+    if (item.currentPriceCents && normalized === "current price") return false;
+    if (item.commissionConfirmed && normalized === "comissao confirmada") return false;
+    if (item.creativeReviewStatus && normalized === "revisao criativa da imagem") return false;
+    return true;
+  });
   if (!item.affiliateUrl) missing.push("link afiliado validado");
   if (item.marketplace === "Mercado Livre" && !item.channelRegistered) {
     missing.push("canal público cadastrado no programa de afiliados do Mercado Livre");
@@ -170,13 +188,20 @@ export async function prepareCampaignPackage(productId: string) {
   const missingToPublish = [...new Set(missing.map((field) => field.replaceAll("_", " ")))];
   const isSalesPage = (item.sourceKind ?? "product_page") === "sales_page";
   const product = item.productName || `Produto em ${item.marketplace}`;
+  const price = item.currentPriceCents ? formatBrl(item.currentPriceCents) : "preço a confirmar";
+  const oldPrice = item.oldPriceCents && item.oldPriceCents > (item.currentPriceCents ?? 0)
+    ? `De ${formatBrl(item.oldPriceCents)} por ${price}`
+    : `Por ${price}`;
+  const link = item.affiliateUrl || item.productUrl;
   const campaignPackage: CampaignPackage = {
     status: missingToPublish.length > 1 ? "blocked" : "draft_ready",
     product,
     promise: item.promiseReview || "Promessa ainda não confirmada pela análise.",
-    creative: item.creativeRecommendation || "Criativo ainda depende de revisão visual.",
+    creative: item.creativeReviewStatus === "official_link_preview"
+      ? "Prévia oficial do link do Mercado Livre, sem alterar a imagem do vendedor."
+      : item.creativeRecommendation || "Criativo ainda depende de revisão visual.",
     channel: isSalesPage ? "Landing própria + Telegram" : channelName(item.targetChannel),
-    copy: `${product}. Confira preço, disponibilidade e condições na página oficial. Como afiliado, posso receber comissão por compras feitas pelo link, sem custo extra para você.${item.trackingLabel ? ` Etiqueta de rastreio: ${item.trackingLabel}.` : ""}`,
+    copy: `🔎 OFERTA ENCONTRADA\n\n${product}\n\n💰 ${oldPrice}\n\nConfira preço, estoque e condições no Mercado Livre:\n${link}\n\n🔗 Link de afiliado. Posso receber comissão pela compra, sem custo extra para você.`,
     risk: missingToPublish.length > 3
       ? "Alto: existem pendências comerciais ou de evidência antes de publicar."
       : "Médio: conferir rastreamento, condições da oferta e revisão final.",
@@ -190,6 +215,28 @@ export async function prepareCampaignPackage(productId: string) {
     updatedAt: now,
   }).where(eq(productIntakeRequests.id, productId));
   return productIntakeState();
+}
+
+export async function completeCommercialData(productId: string, input: CommercialConfirmation) {
+  const db = getDb();
+  await ensureProductSchema();
+  const existing = await db.select().from(productIntakeRequests).where(eq(productIntakeRequests.id, productId)).limit(1);
+  if (!existing[0]) throw new Error("Produto não encontrado");
+  if (!(input.currentPrice > 0 && input.currentPrice <= 10_000_000)) throw new Error("Informe um preço atual válido");
+  if (input.oldPrice != null && (input.oldPrice <= 0 || input.oldPrice > 10_000_000)) throw new Error("Informe um preço anterior válido");
+  if (!input.commissionConfirmed) throw new Error("Confirme que o link foi gerado no programa de afiliados");
+  if (!input.channelRegistered) throw new Error("Confirme o cadastro do canal Telegram no Mercado Livre");
+  const now = new Date().toISOString();
+  await db.update(productIntakeRequests).set({
+    currentPriceCents: Math.round(input.currentPrice * 100),
+    oldPriceCents: input.oldPrice == null ? null : Math.round(input.oldPrice * 100),
+    commissionConfirmed: 1,
+    creativeReviewStatus: input.creativeReviewStatus,
+    channelRegistered: 1,
+    campaignPackage: null,
+    updatedAt: now,
+  }).where(eq(productIntakeRequests.id, productId));
+  return prepareCampaignPackage(productId);
 }
 
 export async function retryProductIntake(productId: string) {
@@ -316,6 +363,10 @@ async function ensureProductSchema() {
   await addColumnIfMissing("product_intake_requests", "funnel_suggestion", "TEXT");
   await addColumnIfMissing("product_intake_requests", "affiliate_readiness", "TEXT");
   await addColumnIfMissing("product_intake_requests", "campaign_package", "TEXT");
+  await addColumnIfMissing("product_intake_requests", "current_price_cents", "INTEGER");
+  await addColumnIfMissing("product_intake_requests", "old_price_cents", "INTEGER");
+  await addColumnIfMissing("product_intake_requests", "commission_confirmed", "INTEGER NOT NULL DEFAULT 0");
+  await addColumnIfMissing("product_intake_requests", "creative_review_status", "TEXT NOT NULL DEFAULT ''");
   await env.DB.prepare("CREATE INDEX IF NOT EXISTS product_intake_status_idx ON product_intake_requests(status)").run();
 }
 
@@ -355,10 +406,18 @@ function publicItem(item: typeof productIntakeRequests.$inferSelect) {
     funnelSuggestion: item.funnelSuggestion ?? "",
     affiliateReadiness: item.affiliateReadiness ?? "",
     campaignPackage,
+    currentPrice: item.currentPriceCents == null ? null : item.currentPriceCents / 100,
+    oldPrice: item.oldPriceCents == null ? null : item.oldPriceCents / 100,
+    commissionConfirmed: Boolean(item.commissionConfirmed),
+    creativeReviewStatus: item.creativeReviewStatus ?? "",
     missingFields,
     submittedAt: item.submittedAt,
     updatedAt: item.updatedAt,
   };
+}
+
+function formatBrl(cents: number) {
+  return `R$ ${(cents / 100).toFixed(2).replace(".", ",")}`;
 }
 
 function parseMissingFields(value: string) {

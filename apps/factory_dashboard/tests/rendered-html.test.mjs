@@ -184,3 +184,22 @@ test("selected campaign package becomes an organic brief without execution", asy
   assert.match(store, /publicationStatus: "blocked"/);
   assert.doesNotMatch(`${ownerRoute}\n${store}`, /fetch\(|axios|http:\/\//);
 });
+
+test("Telegram publication requires exact owner approval and returns delivery evidence", async () => {
+  const client = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/DashboardClient.tsx", import.meta.url), "utf8"));
+  const ownerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/telegram-publications/route.ts", import.meta.url), "utf8"));
+  const workerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/intake/telegram-publications/route.ts", import.meta.url), "utf8"));
+  const store = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/telegram-publications/store.ts", import.meta.url), "utf8"));
+  assert.match(client, /Prévia exata no Telegram/);
+  assert.match(client, /Autorizar publicação no Telegram/);
+  assert.match(client, /WhatsApp fica fora desta fase/);
+  assert.match(client, /Mensagem #.*enviada em/s);
+  assert.match(ownerRoute, /PUBLICAR NO TELEGRAM/);
+  assert.match(workerRoute, /requireDashboardIntake/);
+  assert.match(store, /@achadosbaratosBrasil/);
+  assert.match(store, /ownerApproved: 1/);
+  assert.match(store, /ownerApproved: Boolean\(item\.ownerApproved\)/);
+  assert.match(store, /telegramMessageId/);
+  assert.match(store, /ACTIVE_STATUSES/);
+  assert.doesNotMatch(`${ownerRoute}\n${store}`, /api\.telegram\.org|bot_token/);
+});

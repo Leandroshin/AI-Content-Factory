@@ -1,4 +1,4 @@
-import { createProductIntake, prepareCampaignPackage, prepareOrganicBrief, productIntakeState, retryProductIntake } from "./store";
+import { completeCommercialData, createProductIntake, prepareCampaignPackage, prepareOrganicBrief, productIntakeState, retryProductIntake } from "./store";
 
 const MAX_BODY_BYTES = 8_000;
 const MARKETPLACES = [
@@ -60,10 +60,23 @@ export async function PATCH(request: Request) {
     if (body.action === "retry_analysis") return Response.json(await retryProductIntake(body.productId.trim()));
     if (body.action === "prepare_campaign") return Response.json(await prepareCampaignPackage(body.productId.trim()));
     if (body.action === "prepare_organic_brief") return Response.json(await prepareOrganicBrief(body.productId.trim()));
+    if (body.action === "complete_commercial") return Response.json(await completeCommercialData(body.productId.trim(), {
+      currentPrice: finiteNumber(body.currentPrice, "Preço atual"),
+      oldPrice: body.oldPrice == null || body.oldPrice === "" ? null : finiteNumber(body.oldPrice, "Preço anterior"),
+      commissionConfirmed: body.commissionConfirmed === true,
+      creativeReviewStatus: body.creativeReviewStatus === "approved_custom" ? "approved_custom" : "official_link_preview",
+      channelRegistered: body.channelRegistered === true,
+    }));
     throw new Error("Ação de campanha inválida");
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Dados inválidos" }, { status: 400 });
   }
+}
+
+function finiteNumber(value: unknown, label: string) {
+  const number = typeof value === "number" ? value : Number(String(value).replace(",", "."));
+  if (!Number.isFinite(number)) throw new Error(`${label} inválido`);
+  return number;
 }
 
 function enumValue(value: unknown, allowed: Set<string>, label: string, fallback: string) {

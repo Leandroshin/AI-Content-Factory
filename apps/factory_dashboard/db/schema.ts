@@ -55,8 +55,31 @@ export const productIntakeRequests = sqliteTable("product_intake_requests", {
   funnelSuggestion: text("funnel_suggestion"),
   affiliateReadiness: text("affiliate_readiness"),
   campaignPackage: text("campaign_package"),
+  currentPriceCents: integer("current_price_cents"),
+  oldPriceCents: integer("old_price_cents"),
+  commissionConfirmed: integer("commission_confirmed").notNull().default(0),
+  creativeReviewStatus: text("creative_review_status").notNull().default(""),
   missingFields: text("missing_fields").notNull(),
   submittedAt: text("submitted_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+export const telegramPublicationRequests = sqliteTable("telegram_publication_requests", {
+  id: text("id").primaryKey(),
+  productId: text("product_id").notNull(),
+  status: text("status").notNull(),
+  chatId: text("chat_id").notNull(),
+  messageText: text("message_text").notNull(),
+  affiliateUrl: text("affiliate_url").notNull(),
+  imageUrl: text("image_url").notNull(),
+  ownerApproved: integer("owner_approved").notNull(),
+  linkPreviewEnabled: integer("link_preview_enabled").notNull(),
+  telegramMessageId: integer("telegram_message_id"),
+  error: text("error").notNull(),
+  approvedAt: text("approved_at").notNull(),
+  claimedAt: text("claimed_at"),
+  sentAt: text("sent_at"),
+  createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
 
