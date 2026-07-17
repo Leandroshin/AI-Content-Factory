@@ -3,6 +3,7 @@
 import {
   Activity,
   BadgeDollarSign,
+  BookOpenCheck,
   Check,
   ChevronRight,
   CircleAlert,
@@ -31,10 +32,11 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { DashboardPayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductResearchMissionItem, ProductResearchMissionPayload, ProductionRequest, TelegramPublication, TelegramPublicationPayload } from "./types";
+import type { DashboardPayload, LearningSourceItem, LearningSourcePayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductResearchMissionItem, ProductResearchMissionPayload, ProductionRequest, TelegramPublication, TelegramPublicationPayload } from "./types";
+import { LearningInboxView, type LearningAuditForm, type LearningSourceForm } from "./LearningInboxView";
 import styles from "./dashboard.module.css";
 
-type View = "central" | "products" | "opportunities" | "production" | "channels" | "activity" | "settings";
+type View = "central" | "products" | "learning" | "opportunities" | "production" | "channels" | "activity" | "settings";
 type Theme = "operational" | "matrix";
 type CategoryFilter = "all" | "Notícia" | "Oferta" | "Vídeo curto" | "Integração";
 type ProductFormInput = {
@@ -147,6 +149,7 @@ const statusLabel: Record<OpportunityStatus, string> = {
 const viewMeta: Record<View, { title: string; eyebrow: string; description: string }> = {
   central: { title: "Central de comando", eyebrow: "OPERAÇÃO AO VIVO", description: "O que precisa da sua atenção agora, sem misturar configuração técnica." },
   products: { title: "Produtos", eyebrow: "ENTRADA COMERCIAL", description: "Envie uma página de produto e acompanhe cada validação antes de decidir." },
+  learning: { title: "Aprendizado", eyebrow: "INTELIGÊNCIA CONTROLADA", description: "Receba fontes, acompanhe evidências e decida o que merece virar conhecimento da fábrica." },
   opportunities: { title: "Oportunidades", eyebrow: "DECISÃO HUMANA", description: "Insights dos funcionários, evidências e riscos antes de qualquer produção." },
   production: { title: "Produção", eyebrow: "ESTEIRA DA FÁBRICA", description: "Onde cada trabalho está, o que já terminou e o que está impedindo o avanço." },
   channels: { title: "Canais", eyebrow: "DISTRIBUIÇÃO", description: "Marcas, redes e integrações preparadas para receber conteúdo aprovado." },
@@ -157,6 +160,7 @@ const viewMeta: Record<View, { title: string; eyebrow: string; description: stri
 export function DashboardClient({ operator, authenticated }: { operator: string; authenticated: boolean }) {
   const [data, setData] = useState<DashboardPayload>(fallback);
   const [products, setProducts] = useState<ProductIntakeItem[]>([]);
+  const [learningSources, setLearningSources] = useState<LearningSourceItem[]>([]);
   const [researchMissions, setResearchMissions] = useState<ProductResearchMissionItem[]>([]);
   const [telegramPublications, setTelegramPublications] = useState<TelegramPublication[]>([]);
   const [view, setView] = useState<View>("central");
@@ -189,6 +193,10 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
     fetch("/api/products")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((payload: ProductIntakePayload) => setProducts(payload.items ?? []))
+      .catch(() => undefined);
+    fetch("/api/learning-sources")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((payload: LearningSourcePayload) => setLearningSources(payload.items ?? []))
       .catch(() => undefined);
     fetch("/api/research-missions")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
@@ -385,6 +393,52 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
     }
   }
 
+  async function addLearningSource(input: LearningSourceForm) {
+    setBusy("learning-source");
+    setNotice("");
+    try {
+      const response = await fetch("/api/learning-sources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      const payload = await response.json() as LearningSourcePayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Não foi possível registrar a fonte");
+      setLearningSources(payload.items ?? []);
+      setNotice(input.transcript.trim()
+        ? "Fonte e transcrição recebidas. Auditoria, experimento e aprendizado oficial continuam bloqueados."
+        : "Fonte registrada. Ela ficará aguardando transcrição; nenhuma API foi chamada.");
+      return true;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível registrar a fonte.");
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function auditLearningSource(sourceId: string, input: LearningAuditForm) {
+    setBusy(`learning-audit-${sourceId}`);
+    setNotice("");
+    try {
+      const response = await fetch("/api/learning-sources", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "audit_transcript", sourceId, ...input }),
+      });
+      const payload = await response.json() as LearningSourcePayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Não foi possível registrar a evidência");
+      setLearningSources(payload.items ?? []);
+      setNotice("Evidência vinculada à transcrição. Veredito parcial: experimento, memória e publicação continuam bloqueados.");
+      return true;
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível registrar a evidência.");
+      return false;
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function addResearchMission(input: ResearchMissionFormInput) {
     setBusy("research-mission");
     setNotice("");
@@ -551,6 +605,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
         <nav aria-label="Navegação principal">
           <NavButton active={view === "central"} icon={<LayoutDashboard />} label="Central" onClick={() => changeView("central")} />
           <NavButton active={view === "products"} icon={<ShoppingBag />} label="Produtos" badge={products.length} onClick={() => changeView("products")} />
+          <NavButton active={view === "learning"} icon={<BookOpenCheck />} label="Aprendizado" badge={learningSources.length} onClick={() => changeView("learning")} />
           <NavButton active={view === "opportunities"} icon={<FileSearch />} label="Oportunidades" badge={data.opportunities.length} onClick={() => changeView("opportunities")} />
           <NavButton active={view === "production"} icon={<Cpu />} label="Produção" badge={data.productions.length} onClick={() => changeView("production")} />
           <NavButton active={view === "channels"} icon={<Radio />} label="Canais" onClick={() => changeView("channels")} />
@@ -559,7 +614,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
         <button className={styles.sideStatus} onClick={() => changeView("activity")} title="Verificações automáticas que protegem a arquitetura da fábrica">
           <span><i className={styles.pulse} /> Operação segura</span>
           <strong>Fábrica estável</strong>
-          <small>111 demonstrações técnicas aprovadas</small>
+          <small>117 demonstrações técnicas aprovadas</small>
         </button>
         <NavButton className={styles.settingsButton} active={view === "settings"} icon={<Settings2 />} label="Configurações" onClick={() => changeView("settings")} />
       </aside>
@@ -584,6 +639,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
 
         {view === "central" && <CentralView data={data} pending={pending} onOpenOpportunity={openOpportunity} onMetric={openMetric} onView={changeView} />}
         {view === "products" && <ProductsView items={products} missions={researchMissions} publications={telegramPublications} busy={busy} onSubmit={addProduct} onSubmitMission={addResearchMission} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} onRetryAnalysis={retryProductAnalysis} onCompleteCommercial={completeCommercial} onQueueTelegram={queueTelegramPublication} onRetryTelegram={retryTelegramPublication} />}
+          {view === "learning" && <LearningInboxView items={learningSources} busy={busy} onSubmit={addLearningSource} onAudit={auditLearningSource} />}
         {view === "opportunities" && <OpportunitiesView
           visible={visible}
           selected={selected}
@@ -1036,7 +1092,7 @@ function ChannelsView() {
 function ActivityView({ activity }: { activity: DashboardPayload["activity"] }) {
   return <section className={styles.historyLayout}>
     <div className={styles.activityPanel}><SectionHead kicker="REGISTRO OPERACIONAL" title="Atividade recente" />{activity.map((item) => <div className={styles.activityRow} key={item.id}><span className={`${styles.activityDot} ${styles[item.tone]}`} /><div><strong>{item.label}</strong><small>{item.detail}</small></div><time>{item.time}</time></div>)}</div>
-    <div className={styles.healthPanel}><SectionHead kicker="SAÚDE TÉCNICA" title="Por que existem 111 demonstrações?" /><div className={styles.healthValue}>111/111</div><p>São cenários automáticos do sistema, não trabalhos dos funcionários. Juntos, eles executaram 1.817 verificações explícitas sobre departamentos, aprovações, custos e adapters.</p><span><Check size={16} /> Nenhuma falha na última regressão</span></div>
+    <div className={styles.healthPanel}><SectionHead kicker="SAÚDE TÉCNICA" title="Por que existem 117 demonstrações?" /><div className={styles.healthValue}>117/117</div><p>São cenários automáticos do sistema, não trabalhos dos funcionários. Juntos, eles executaram 1.884 verificações explícitas sobre departamentos, aprovações, custos e adapters.</p><span><Check size={16} /> Nenhuma falha na última regressão</span></div>
   </section>;
 }
 

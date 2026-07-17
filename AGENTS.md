@@ -153,7 +153,12 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Narration-to-Evidence Visual Sync:** beats editoriais agora registram finalidade visual, aderencia a narracao e proveniencia; captura de tela, demonstracao de navegador e evidencia que nao corresponde a fala falham no quality gate
 - **OmniRoute Quarantine Audit:** OmniRoute 3.8.48 foi instalado fora do projeto, limitado a `127.0.0.1`, com autenticacao obrigatoria e sem contas conectadas; o catalogo keyless OpenCode Free declara `tos: avoid` e permanece proibido
 - **Affiliate Network Portfolio:** Strategy Intelligence separa redes digitais/CPA de alta comissao de marketplaces fisicos complementares; Digistore24 e o primeiro onboarding, seguido de Braip e ClickBank, sem excluir Amazon/Mercado Livre dos testes organicos
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **114/114 demos, 0 falhas** em 2026-07-15; 57 demos reportaram numericamente 1844 assertions, 57 nao emitem total comparavel
+- **Learning Source Inbox:** area `Aprendizado` no dashboard recebe uma URL do YouTube e transcricao opcional, preserva custo zero, mostra `Fonte -> Transcricao -> Evidencias -> Auditoria -> Conhecimento` e bloqueia provider, publicacao e promocao automatica
+- **Transcript Evidence Audit Gate:** `TranscriptEvidenceAuditWorkflow` transforma somente trechos exatos aprovados da transcricao em EvidenceRef, SourceArtifact, ClaimRecord, ClaimAudit parcial e KnowledgeCardDraft pendente; hash de conteudo invalida auditorias antigas quando a transcricao muda
+- **Archify Visual Documentation Candidate:** transcricao e repositorio oficial auditados; candidato somente a camada explicativa/auditoria visual, com experimento isolado e sem substituir contratos, dashboard ou execucao
+- **External LLM Continuity Handoff:** GPT Web e DeepSeek leem `CURRENT_HANDOFF.md`, `DECISION_LEDGER.md` e `STATUS_TAXONOMY.md`; DeepSeek carrega o estado em toda sessao e produz handoff isolado, sem editar a arquitetura oficial
+- **Day Trade Paper Lab:** arquitetura documental somente para simulacao, importacao de relatorios e avaliacao walk-forward; nenhuma credencial de corretora, `order_send`, Expert Advisor, clique automatizado ou operacao REAL e permitida
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **117/117 demos, 0 falhas** em 2026-07-17; 59 demos reportaram numericamente 1884 assertions, 58 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -185,11 +190,14 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 6. **Landing page e compliance** — dominio, privacidade, termos, disclosure e eventos de conversao
 7. **Aprovar voz editorial** — Kokoro local e gratuito e o baseline atual; ElevenLabs permanece opcional apos regularizar `payment_issue` e comparar qualidade/custo
 8. **Imagem provider real** — escolher por custo, qualidade e licenca antes de texto-para-video
-9. **2.5D operacional** — visualizar uma operacao real ja funcional, sem substituir o dashboard
+9. **Market Intelligence manual** — testar uma transcricao real no novo gate, auditar alegacoes e promover somente evidencias aprovadas
+10. **Day Trade Paper Lab** — implementar primeiro o importador read-only de relatorios Strategy Tester/CSV e scorecard fora da amostra; nenhuma execucao de ordens
+11. **2.5D operacional** — visualizar uma operacao real ja funcional, sem substituir o dashboard
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **114/114 demos, 0 falhas**; 1844 assertions explicitamente reportadas por 57 demos
+- **Regressão atual**: **117/117 demos, 0 falhas**; 1884 assertions explicitamente reportadas por 59 demos
+- **Prova do gate de transcricao:** `demo_transcript_evidence_audit.py` valida 13 assertions: hash/excerto exato, IDs deterministicos, auditoria parcial, Knowledge Card pendente e ausencia de provider, experimento, memoria ou publicacao
 - **Prova da fila de producao:** `demo_dashboard_production_worker.py` valida 20 assertions: opt-in, autenticacao, modo MOCK, evidencia preservada, Script Department real, rascunho para revisao e ausencia de chamadas de audio, video ou publicacao
 - **Prova do dashboard**: lint, build vinext, teste Node, D1 local, GET da API, sincronizacao, filtros, menu mobile e QA visual em 1440x900 e 390x844 passaram; Sites privado, D1 hospedado e intake secreto foram publicados em 2026-07-13
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas

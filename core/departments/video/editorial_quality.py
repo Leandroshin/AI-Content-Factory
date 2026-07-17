@@ -16,6 +16,8 @@ class EditorialBeat:
     visual_source: str = ""
     source_verified: bool = False
     camera_change: str = "none"
+    visual_purpose: str = ""
+    matches_narration: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +47,7 @@ class EditorialEditingProfile:
     require_overflow_check: bool = True
     require_occlusion_check: bool = True
     require_preview_review: bool = True
+    require_narration_visual_sync: bool = True
     require_clean_audio_priority: bool = True
 
 
@@ -151,9 +154,16 @@ class EditorialQualityValidator:
                 self._add(issues, corrections, "visual_hold_too_long", "Add a purposeful visual change within six seconds.")
             if beat.visual_kind in {"broll", "source_card", "split_screen", "motion_graphic"}:
                 broll_count += 1
+            if self._profile.require_narration_visual_sync and not beat.matches_narration:
+                self._add(
+                    issues,
+                    corrections,
+                    "narration_visual_mismatch",
+                    "Replace the visual with direct evidence, a product demonstration, or contextual B-roll for this narration beat.",
+                )
             if (
                 self._profile.require_source_provenance
-                and beat.visual_kind in {"source_card", "news_screenshot"}
+                and beat.visual_kind in {"source_card", "news_screenshot", "browser_demo", "screen_recording"}
                 and (not beat.visual_source or not beat.source_verified)
             ):
                 self._add(issues, corrections, "unverified_source_visual", "Attach and verify the original source URL.")

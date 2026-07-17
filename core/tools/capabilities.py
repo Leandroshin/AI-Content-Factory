@@ -22,6 +22,7 @@ class Capability(StrEnum):
     VOICE_CLONE = "voice_clone"
     IMAGE_GENERATION = "image_generation"
     IMAGE_EDITING = "image_editing"
+    VIDEO_GENERATION = "video_generation"
     VIDEO_EDITING = "video_editing"
     VIDEO_RENDERING = "video_rendering"
     BROWSER_NAVIGATION = "browser_navigation"

@@ -87,6 +87,39 @@ def _sources() -> tuple[StrategySource, ...]:
             ),
             tags=("thumbnail", "creative"),
         ),
+        StrategySource(
+            title="TikTok Shop eight-second Omni Flash notes",
+            creator="youtube_notes",
+            source_url="https://www.youtube.com/watch/HQ1F5jzAiss",
+            transcript_text=(
+                "TikTok Shop strategy with Google Flow and Gemini Omni Flash. Generate two 8 segundos "
+                "image-to-video variants, add a CapCut textual hook, and measure conversao. The tutorial "
+                "uses a rosto de mulher from Pinterest and shows faturamento and saque por semana."
+            ),
+            tags=("tiktok_shop", "omni_flash", "short_video", "claims"),
+        ),
+        StrategySource(
+            title="OmniRoute gateway and visual demonstration notes",
+            creator="youtube_notes",
+            source_url="https://www.youtube.com/watch/example-omniroute",
+            transcript_text=(
+                "OmniRoute is an OpenAI compatible gateway. The navegador mostra and exibe the dashboard, "
+                "provider page, API endpoint, and each tela while the video explains the related step. "
+                "Free provider quotas and terms still require independent verification."
+            ),
+            tags=("provider_gateway", "video_editorial"),
+        ),
+        StrategySource(
+            title="Affiliate network portfolio notes",
+            creator="youtube_notes",
+            source_url="https://www.youtube.com/watch/IdLbwCypSx4",
+            transcript_text=(
+                "Compare Amazon and Mercado Livre with ClickBank, Digistore24, BuyGoods, MaxWeb, "
+                "Media Scalers and Braip. Evaluate tempo de cookie, comissao, CPA, saque, payout limits, "
+                "refunds, paid traffic permissions and net conversion instead of copying a tier list."
+            ),
+            tags=("affiliate_networks", "offer_economics"),
+        ),
     )
 
 
@@ -121,7 +154,7 @@ def main() -> None:
             "objective": "Turn YouTube strategy notes into reusable operating knowledge.",
             "focus_areas": ("affiliate", "product_research", "creative", "digital_product"),
             "sources": _sources(),
-            "max_patterns": 8,
+            "max_patterns": 12,
         },
     )
 
@@ -143,14 +176,18 @@ def main() -> None:
     patterns = {pattern["pattern_id"] for pattern in output["patterns"]}
 
     _check(result.success, "Strategy intelligence pipeline succeeded")
-    _check(output["sources_analyzed"] == 5, "Five sources analyzed")
-    _check({"Keepa", "Divulga Ninja", "Cakto", "Kalodata"} <= tools, "Key tools detected")
-    _check({"trend_growth_graph", "buy_box_share", "average_ticket"} <= metrics, "Decision metrics detected")
+    _check(output["sources_analyzed"] == 8, "Eight sources analyzed")
+    _check({"Keepa", "Divulga Ninja", "Cakto", "Kalodata", "Google Flow", "Gemini Omni Flash", "OmniRoute", "Digistore24"} <= tools, "Key tools detected")
+    _check({"trend_growth_graph", "buy_box_share", "average_ticket", "short_completion_hypothesis", "conversion_signal", "cookie_window", "payout_friction", "fixed_cpa"} <= metrics, "Decision metrics detected")
     _check("tiktok_shop_pov_ai_video" in patterns, "TikTok Shop POV pattern extracted")
     _check("amazon_keepa_product_analysis" in patterns, "Amazon Keepa pattern extracted")
     _check("affiliate_post_automation" in patterns, "Affiliate automation pattern extracted")
     _check("ai_infoproduct_to_checkout" in patterns, "Original infoproduct pattern extracted")
     _check("thumbnail_money_proof_pattern" in patterns, "Thumbnail formula pattern extracted")
+    _check("tiktok_shop_8s_commerce_test" in patterns, "Eight-second commerce experiment extracted")
+    _check("audited_llm_gateway" in patterns, "Audited LLM gateway pattern extracted")
+    _check("affiliate_network_portfolio" in patterns, "Affiliate network portfolio pattern extracted")
+    _check("narration_evidence_visual_sync" in patterns, "Narration-to-evidence visual pattern extracted")
 
     print("\n" + "-" * 70)
     print("Step 3: Guardrails and handoff")
@@ -159,9 +196,11 @@ def main() -> None:
     next_actions = output["next_actions"]
     _check(any("original" in warning.lower() for warning in warnings), "Original-content guardrail present")
     _check(any("guarantees" in warning.lower() for warning in warnings), "No guaranteed earnings guardrail present")
+    _check(any("pinterest" in warning.lower() for warning in warnings), "Likeness-rights guardrail present")
+    _check(any("selected marketing evidence" in warning.lower() for warning in warnings), "Revenue-proof warning present")
     _check(any("CreativeReviewEmployee" in action for action in next_actions), "Handoff points to CreativeReviewEmployee")
     _check(any("ProductResearchEmployee" in action for action in next_actions), "Handoff points to ProductResearchEmployee")
-    _check(employee.production_metrics.sources_analyzed == 5, "Metrics count sources")
+    _check(employee.production_metrics.sources_analyzed == 8, "Metrics count sources")
     _check(employee.production_metrics.patterns_extracted >= 5, "Metrics count patterns")
 
     needs = employee.analyze_capability_needs()
@@ -175,7 +214,7 @@ def main() -> None:
     snap = observer.snapshot
     _check(snap.strategy_intelligence_production.pipeline_stage == "completed", "Strategy production completed")
     _check(snap.strategy_intelligence_department.successful_productions == 1, "Strategy success projected")
-    _check(snap.strategy_intelligence_metrics.sources_analyzed == 5, "Sources projected")
+    _check(snap.strategy_intelligence_metrics.sources_analyzed == 8, "Sources projected")
     _check(snap.strategy_intelligence_metrics.patterns_extracted >= 5, "Patterns projected")
     _check(any("dept=strategy_intelligence" in event for event in snap.events), "Strategy events logged")
 

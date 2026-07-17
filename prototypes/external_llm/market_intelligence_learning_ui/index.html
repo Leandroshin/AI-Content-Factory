@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Market Intelligence — AI Content Factory</title>
+<!-- MARKET-INTELLIGENCE-INTERACTION-UNDERSTAND -->
+<script src="narration.js?v=interaction-understand"></script>
+<script src="security.js?v=interaction-understand"></script>
+<script src="i18n_states.js?v=interaction-understand"></script>
+<script src="storage.js?v=interaction-understand"></script>
+<script src="charts.js?v=interaction-understand"></script>
+<script src="source_scoring.js?v=interaction-understand"></script>
+<script src="transcript_parser.js?v=interaction-understand"></script>
+<script src="visual_cue_detector.js?v=interaction-understand"></script>
+<script src="extraction_engine.js?v=interaction-understand"></script>
+<script src="claim_auditor.js?v=interaction-understand"></script>
+<script src="knowledge_engine.js?v=interaction-understand"></script>
+<script src="experiment_engine.js?v=interaction-understand"></script>
+<script src="pattern_engine.js?v=interaction-understand"></script>
+<script src="software_opportunity_engine.js?v=interaction-understand"></script>
+<script src="capital_allocator.js?v=interaction-understand"></script>
+<script src="mock_data.js?v=interaction-understand"></script>
+<script src="app.js?v=interaction-understand"></script>
+<link rel="stylesheet" href="styles.css?v=interaction-understand">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='28' font-size='28'>🧠</text></svg>">
+</head>
+<body>
+<div id="appLayout" class="app-layout">
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar" role="navigation" aria-label="Navegacao principal">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">Market Intel</div>
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir/fechar sidebar" onclick="App.toggleSidebar()">◀</button>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <div class="sidebar-group-label">ENTRADA</div>
+      <button class="sidebar-btn active" data-view="overview" onclick="App.navigate('overview')"><span class="sidebar-icon">📊</span><span class="sidebar-text">Visao Geral</span></button>
+      <button class="sidebar-btn" data-view="inbox" onclick="App.navigate('inbox')"><span class="sidebar-icon">📥</span><span class="sidebar-text">Caixa de Entrada</span></button>
+      <button class="sidebar-btn" data-view="new_source" onclick="App.navigate('new_source')"><span class="sidebar-icon">➕</span><span class="sidebar-text">Nova Fonte</span></button>
+
+      <div class="sidebar-group-label">ANALISE</div>
+      <button class="sidebar-btn" data-view="transcripts" onclick="App.navigate('transcripts')"><span class="sidebar-icon">📝</span><span class="sidebar-text">Transcricao</span></button>
+      <button class="sidebar-btn" data-view="visual_evidence" onclick="App.navigate('visual_evidence')"><span class="sidebar-icon">👁️</span><span class="sidebar-text">Evidencia Visual</span></button>
+      <button class="sidebar-btn" data-view="extractions" onclick="App.navigate('extractions')"><span class="sidebar-icon">🔍</span><span class="sidebar-text">Extracees</span></button>
+      <button class="sidebar-btn" data-view="audit" onclick="App.navigate('audit')"><span class="sidebar-icon">⚖️</span><span class="sidebar-text">Auditoria</span></button>
+
+      <div class="sidebar-group-label">CONHECIMENTO</div>
+      <button class="sidebar-btn" data-view="knowledge" onclick="App.navigate('knowledge')"><span class="sidebar-icon">🧠</span><span class="sidebar-text">Knowledge Cards</span></button>
+      <button class="sidebar-btn" data-view="experiments" onclick="App.navigate('experiments')"><span class="sidebar-icon">🔬</span><span class="sidebar-text">Experimentos</span></button>
+      <button class="sidebar-btn" data-view="patterns" onclick="App.navigate('patterns')"><span class="sidebar-icon">📈</span><span class="sidebar-text">Padroes de Mercado</span></button>
+      <button class="sidebar-btn" data-view="tools" onclick="App.navigate('tools')"><span class="sidebar-icon">🛠️</span><span class="sidebar-text">Ferramentas</span></button>
+      <button class="sidebar-btn" data-view="software" onclick="App.navigate('software')"><span class="sidebar-icon">💡</span><span class="sidebar-text">Oportunidades</span></button>
+
+      <div class="sidebar-group-label">OPERACAO</div>
+      <button class="sidebar-btn" data-view="learning" onclick="App.navigate('learning')"><span class="sidebar-icon">✅</span><span class="sidebar-text">Aprendizados</span></button>
+      <button class="sidebar-btn" data-view="employees" onclick="App.navigate('employees')"><span class="sidebar-icon">👥</span><span class="sidebar-text">Funcionarios</span></button>
+      <button class="sidebar-btn" data-view="capital" onclick="App.navigate('capital')"><span class="sidebar-icon">💰</span><span class="sidebar-text">Alocacao de Capital</span></button>
+      <button class="sidebar-btn" data-view="history" onclick="App.navigate('history')"><span class="sidebar-icon">📜</span><span class="sidebar-text">Historico</span></button>
+      <button class="sidebar-btn" data-view="settings" onclick="App.navigate('settings')"><span class="sidebar-icon">⚙️</span><span class="sidebar-text">Configuracoes</span></button>
+    </nav>
+  </aside>
+
+  <!-- Main content area -->
+  <div class="main-area">
+    <!-- Top bar -->
+    <header id="topBar" class="top-bar">
+      <button class="menu-btn" id="menuBtn" aria-label="Abrir menu" onclick="App.openDrawer()">☰</button>
+      <div class="top-bar-title" id="topBarTitle">Visao Geral</div>
+      <div class="top-bar-actions">
+        <button class="btn btn-sm btn-ghost explain-this-btn" id="explainThisBtn" onclick="App.startTour()" title="Tour guiado por esta tela">Explicar esta tela</button>
+        <span class="top-bar-mode" id="topBarMode" onclick="App.toggleMode()" title="Clique para alternar modo">Entender</span>
+        <span class="top-bar-mock">MOCK</span>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main id="mainContent" class="main-content"></main>
+  </div>
+</div>
+
+<!-- Mobile drawer overlay -->
+<div id="drawerOverlay" class="drawer-overlay hidden" onclick="App.closeDrawer()"></div>
+
+<!-- Modal - MARKET-INTELLIGENCE-MODALFIX-3 -->
+<div id="app-modal-overlay"
+     class="modal-overlay"
+     hidden
+     aria-hidden="true"
+     inert
+     onclick="App.closeModal()">
+  <div id="app-modal"
+       class="modal"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="app-modal-title"
+       onclick="event.stopPropagation()">
+  </div>
+</div>
+
+<!-- Hidden file input for data load -->
+<input id="workspace-import-input" type="file" accept="application/json,.json" hidden>
+
+<!-- Fake data disclaimer - MARKET-INTELLIGENCE-INTERACTION-UNDERSTAND -->
+<div id="disclaimerBar" class="disclaimer-bar">Todos os nomes, resultados, ferramentas e declaracoes desta demonstracao sao ficticios. Build: v3.2 — INTERACTION-UNDERSTAND</div>
+</body>
+</html>

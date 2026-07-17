@@ -312,6 +312,104 @@ class ProviderControlCenter:
         )
         return self.register_profile(profile)
 
+    def register_mercado_livre(
+        self,
+        *,
+        max_requests: int = 100,
+        execution_mode: ExecutionMode = ExecutionMode.MOCK,
+        site_id: str = "MLB",
+    ) -> ProviderControlProfile:
+        """Register the strictly read-only Mercado Livre catalog profile."""
+        provider = "mercado_livre"
+        budget = ProviderBudget(
+            provider=provider,
+            owner_approved=False,
+            max_cost_usd=0.0,
+            max_units=max(0, int(max_requests)),
+            max_requests=max(0, int(max_requests)),
+            notes="Owner approval and request cap required for REAL catalog reads.",
+        )
+        pricing = tuple(
+            ProviderPricing(
+                provider=provider,
+                operation=operation,
+                unit_name="requests",
+                unit_cost_usd=0.0,
+                pricing_note="Read-only catalog request; no sale or listing action is available.",
+            )
+            for operation in ("get_item", "search_items", "multiget_items", "get_category")
+        )
+        profile = ProviderControlProfile(
+            provider=provider,
+            display_name="Mercado Livre Catalog",
+            category="commerce_research",
+            execution_mode=execution_mode,
+            budget=budget,
+            pricing=pricing,
+            secret_slots=(ProviderSecretSlot(
+                key="mercado_livre_access_token",
+                label="Mercado Livre OAuth Access Token",
+                required=True,
+            ),),
+            metadata={
+                "capabilities": ("web_search", "catalog_read"),
+                "read_only": True,
+                "site_id": site_id,
+                "write_actions_available": False,
+            },
+        )
+        return self.register_profile(profile)
+
+    def register_gemini_omni(
+        self,
+        *,
+        unit_cost_usd: float = 0.10,
+        max_cost_usd: float = 0.0,
+        max_seconds: int = 0,
+        max_requests: int = 0,
+        execution_mode: ExecutionMode = ExecutionMode.MOCK,
+    ) -> ProviderControlProfile:
+        """Register the paid Gemini Omni Flash video provider profile."""
+        provider = "gemini_omni_flash"
+        budget = ProviderBudget(
+            provider=provider,
+            owner_approved=False,
+            max_cost_usd=max(0.0, float(max_cost_usd)),
+            max_units=max(0, int(max_seconds)),
+            max_requests=max(0, int(max_requests)),
+            notes="Owner approval required before paid REAL video generation.",
+        )
+        pricing = (ProviderPricing(
+            provider=provider,
+            operation="generate_video",
+            unit_name="seconds",
+            unit_cost_usd=max(0.0, float(unit_cost_usd)),
+            pricing_note="Estimated effective 720p preview video output price.",
+        ),)
+        profile = ProviderControlProfile(
+            provider=provider,
+            display_name="Gemini Omni Flash",
+            category="video",
+            execution_mode=execution_mode,
+            budget=budget,
+            pricing=pricing,
+            secret_slots=(ProviderSecretSlot(
+                key="api_key",
+                label="Google AI Studio API Key",
+                required=True,
+            ),),
+            metadata={
+                "capabilities": ("video_generation", "video_editing"),
+                "model": "gemini-omni-flash-preview",
+                "preview": True,
+                "free_tier": False,
+                "resolution": "720p",
+                "frame_rate": 24,
+                "duration_seconds": (3, 10),
+            },
+        )
+        return self.register_profile(profile)
+
     def set_execution_mode(self, provider: str, mode: ExecutionMode) -> ProviderControlProfile:
         """Switch provider mode for the future settings panel."""
         profile = self._require_profile(provider)
@@ -401,6 +499,22 @@ class ProviderControlCenter:
     def apply_to_meta_ads(self, adapter: Any) -> None:
         """Apply read-only Meta provider controls to an adapter instance."""
         profile = self._require_profile("meta_marketing")
+        adapter.set_execution_mode(profile.execution_mode)
+        adapter.set_budget_guard(self._budget_guard)
+        if self._secret_provider is not None:
+            adapter.set_secret_provider(self._secret_provider)
+
+    def apply_to_mercado_livre(self, adapter: Any) -> None:
+        """Apply read-only Mercado Livre controls to an adapter instance."""
+        profile = self._require_profile("mercado_livre")
+        adapter.set_execution_mode(profile.execution_mode)
+        adapter.set_budget_guard(self._budget_guard)
+        if self._secret_provider is not None:
+            adapter.set_secret_provider(self._secret_provider)
+
+    def apply_to_gemini_omni(self, adapter: Any) -> None:
+        """Apply paid Gemini video controls to an adapter instance."""
+        profile = self._require_profile("gemini_omni_flash")
         adapter.set_execution_mode(profile.execution_mode)
         adapter.set_budget_guard(self._budget_guard)
         if self._secret_provider is not None:

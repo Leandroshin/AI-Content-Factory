@@ -63,5 +63,21 @@ Start from one of the templates in this folder:
 - `EMPLOYEE_SPEC_TEMPLATE.md`
 - `DEPARTMENT_SPEC_TEMPLATE.md`
 - `PROMPT_FOR_EXTERNAL_IDEA_LLMS.md` for LLMs that cannot access GitHub
+- `GPT_WEB_START_HERE.md` for GPT Web with GitHub access
+- `CURRENT_HANDOFF.md` for the compact official state
+- `DECISION_LEDGER.md` and `STATUS_TAXONOMY.md` before proposing changes
 
 Codex will treat files in this inbox as proposals, not accepted source of truth.
+
+## Local LLMs with workspace access
+
+OpenCode, DeepSeek and other local models use a stricter corridor:
+
+- read `LOCAL_LLM_WORK_PROTOCOL.md` before doing any work;
+- start from `PROMPT_FOR_OPENCODE_DEEPSEEK.md`;
+- write only under `docs/external_llm_inbox/deepseek/` or in the isolated
+  prototype location allowed by that protocol;
+- never treat a local-model proposal as implemented until Codex has reviewed,
+  tested and explicitly accepted it.
+- finish each session with `deepseek/SESSION_HANDOFF_TEMPLATE.md` and the
+  root `HANDOFF_VALIDATION_CHECKLIST.md`.

@@ -196,3 +196,44 @@ export type ProductResearchMissionItem = {
 };
 
 export type ProductResearchMissionPayload = { missions: ProductResearchMissionItem[] };
+
+export type LearningSourceStatus = "transcription_pending" | "ready_for_audit" | "knowledge_candidate" | "blocked";
+
+export type LearningAuditPacket = {
+  schemaVersion: "1.0";
+  evidence: { evidenceId: string; excerpt: string; locator: string; contentSha256: string; independentSource: false };
+  claim: { claimId: string; text: string };
+  audit: { auditId: string; verdict: "partial"; rationale: string; missingEvidence: string[] };
+  knowledgeDraft: { cardId: string; statement: string; applicability: string; risks: string[]; status: "pending_audit" };
+  safety: { providerCalled: false; providerCostUsd: 0; experimentStarted: false; memoryPromoted: false; publicationAttempted: false };
+  auditedAt: string;
+};
+
+export type LearningSourceItem = {
+  id: string;
+  sourceUrl: string;
+  canonicalUrl: string;
+  externalId: string;
+  platform: "youtube";
+  title: string;
+  ownerNotes: string;
+  language: string;
+  status: LearningSourceStatus;
+  transcriptStatus: "pending" | "attached";
+  transcriptCharacters: number;
+  thumbnailUrl: string;
+  evidenceStatus: "pending" | "recorded";
+  auditStatus: "pending" | "partial";
+  experimentStatus: "not_started";
+  knowledgeStatus: "blocked" | "candidate";
+  providerStatus: "not_called";
+  publicationStatus: "blocked";
+  estimatedCostUsd: 0;
+  missingRequirements: string[];
+  auditPacket: LearningAuditPacket | null;
+  auditSubmittedAt: string;
+  submittedAt: string;
+  updatedAt: string;
+};
+
+export type LearningSourcePayload = { items: LearningSourceItem[] };

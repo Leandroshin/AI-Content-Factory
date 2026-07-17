@@ -193,6 +193,10 @@ class StrategyIntelligencePipeline(ProductionPipeline):
             warnings.append("When learning from courses, extract structure and checkpoints, not copied lessons or rewritten text.")
         if _any_terms(self._sources, ("whatsapp", "telegram", "instagram", "post automatico", "postagem automatica")):
             warnings.append("Automation for messaging channels must include disclosure, rate limits, and opt-in rules.")
+        if _any_terms(self._sources, ("pinterest", "rosto de mulher", "rosto de homem", "pessoa real")):
+            warnings.append("Do not copy a stranger's face or likeness from Pinterest/social media; use a consented actor, licensed stock, or an original synthetic identity.")
+        if _any_terms(self._sources, ("faturamento", "saque", "por semana", "resultado")):
+            warnings.append("Creator revenue screenshots and member testimonials are selected marketing evidence, not a forecast; require our own spend, output, click, conversion, refund, and net-commission data.")
         self._warnings = tuple(dict.fromkeys(warnings))
         return StageResult(
             stage=PipelineStage.BUILDING_GUARDRAILS.value,
@@ -214,6 +218,8 @@ class StrategyIntelligencePipeline(ProductionPipeline):
             actions.append("Evaluate whether to integrate official APIs or use manual/exported research first.")
         if any(pattern.pattern_id == "ai_infoproduct_to_checkout" for pattern in self._patterns):
             actions.append("Use original curriculum planning for infoproducts; do not rewrite third-party course content.")
+        if any(pattern.pattern_id == "tiktok_shop_8s_commerce_test" for pattern in self._patterns):
+            actions.append("Run the 8-second format as a two-variant organic experiment only after product eligibility and rights checks; promote it only from measured retention and conversion.")
         self._next_actions = tuple(dict.fromkeys(actions))
         return StageResult(
             stage=PipelineStage.HANDOFF_PLANNING.value,
@@ -267,10 +273,23 @@ _TOOL_RULES: tuple[tuple[str, str, str, str], ...] = (
     ("kalodata", "Kalodata", "tiktok_shop_research", "TikTok Shop product, creator, and trend research."),
     ("caloda", "Kalodata", "tiktok_shop_research", "TikTok Shop product, creator, and trend research."),
     ("capcut", "CapCut", "video_editing", "Short-form video editing and template production."),
+    ("google flow", "Google Flow", "generative_video", "Google creative workspace for image/video generation and scene workflows."),
+    ("omni flash", "Gemini Omni Flash", "generative_video", "Short image-to-video generation and editing inside Google Flow."),
+    ("omniflash", "Gemini Omni Flash", "generative_video", "Short image-to-video generation and editing inside Google Flow."),
     ("canva", "Canva", "creative_design", "Static creative and thumbnail design."),
     ("gamma", "Gamma", "document_generation", "Fast document/course/ebook layout generation."),
     ("gama", "Gamma", "document_generation", "Fast document/course/ebook layout generation."),
     ("aliexpress api", "AliExpress API", "affiliate_api", "Official affiliate data source for AliExpress."),
+    ("omni router", "OmniRoute", "llm_gateway", "OpenAI-compatible local gateway; provider terms and quotas must be audited separately."),
+    ("omniroute", "OmniRoute", "llm_gateway", "OpenAI-compatible local gateway; provider terms and quotas must be audited separately."),
+    ("clickbank", "ClickBank", "affiliate_network", "International affiliate marketplace with payment eligibility requirements."),
+    ("digistore24", "Digistore24", "affiliate_network", "International affiliate marketplace with direct promotion links and payout configuration."),
+    ("digistore", "Digistore24", "affiliate_network", "International affiliate marketplace with direct promotion links and payout configuration."),
+    ("buygoods", "BuyGoods", "affiliate_network", "Curated international affiliate network with manual approval."),
+    ("maxweb", "MaxWeb", "affiliate_network", "CPA affiliate network with application review and payout threshold."),
+    ("media scalers", "MediaScalers", "affiliate_network", "CPA affiliate network with application review and weekly payouts."),
+    ("mediascalers", "MediaScalers", "affiliate_network", "CPA affiliate network with application review and weekly payouts."),
+    ("braip", "Braip", "affiliate_network", "Brazilian affiliate platform for digital and physical offers."),
     ("tiktok shop", "TikTok Shop", "marketplace", "Marketplace and affiliate content channel."),
     ("shopee", "Shopee", "marketplace", "Marketplace and affiliate content channel."),
     ("amazon", "Amazon", "marketplace", "Marketplace and affiliate content channel."),
@@ -291,6 +310,11 @@ _METRIC_RULES: tuple[tuple[tuple[str, ...], str, str, str], ...] = (
     (("reviews",), "reviews_rating", "Use rating and review count to assess trust.", "reviews"),
     (("preco historico",), "historical_price", "Avoid fake discounts by checking historical price.", "historical price"),
     (("constancia",), "posting_consistency", "Content distribution needs repeated posting, not one isolated creative.", "posting consistency"),
+    (("8 segundos",), "short_completion_hypothesis", "Treat eight seconds as a completion-rate hypothesis and compare it with other durations.", "8-second duration"),
+    (("conversao",), "conversion_signal", "Measure clicks, checkout starts, sales, refunds, and net commission instead of relying on creator claims.", "conversion"),
+    (("tempo de cookie",), "cookie_window", "Compare attribution windows before investing in acquisition or creative production.", "cookie window"),
+    (("saque",), "payout_friction", "Model threshold, hold period, fees, currency conversion, and payment method before selecting a network.", "payout friction"),
+    (("cpa",), "fixed_cpa", "Compare fixed CPA with revenue share using refund risk and traffic cost.", "CPA"),
 )
 
 
@@ -345,6 +369,26 @@ def _extract_patterns(
                 "Route winners into script, visual, and affiliate offer production.",
             ),
             guardrails=("Verify product rights, affiliate terms, and claim accuracy before publishing.",),
+        ))
+
+    if "tiktok shop" in text and ("8 segundos" in text or "oito segundos" in text) and ("omni flash" in text or "omniflash" in text):
+        patterns.append(StrategyPattern(
+            pattern_id="tiktok_shop_8s_commerce_test",
+            title="Eight-second commerce creative as a measured experiment",
+            category="commerce_content",
+            confidence=0.86,
+            routes_to=("product_research", "creative_review", "image", "video", "affiliate_deals", "hitl_approval"),
+            evidence_points=(
+                "Validate the product and account eligibility before generating creative.",
+                "Create an original or consented presenter identity and preserve product appearance.",
+                "Generate two 4-10 second variants, add one readable hook, then review hands, fabric, product details, text, and disclosure.",
+                "Compare hold rate, completion, product clicks, sales, refunds, provider cost, and net commission against a baseline.",
+            ),
+            guardrails=(
+                "Eight seconds is a testable hypothesis, not a universal winning duration.",
+                "Do not use a stranger's Pinterest face, fake testimonials, fake scarcity, or unverified earnings claims.",
+                "Do not imply the generated garment or product behaves differently from the item actually sold.",
+            ),
         ))
 
     if {"trend_growth_graph", "decline_risk"} & metric_names:
@@ -429,6 +473,60 @@ def _extract_patterns(
                 "The factory should test/manual-import first, then build adapters only for proven value.",
             ),
             guardrails=("Avoid cloning proprietary products; implement our own workflow around public data and user-provided exports.",),
+        ))
+
+    if "OmniRoute" in tool_names:
+        patterns.append(StrategyPattern(
+            pattern_id="audited_llm_gateway",
+            title="Audited local gateway for authorized LLM providers",
+            category="provider_strategy",
+            confidence=0.91,
+            routes_to=("provider_control", "quality", "observability"),
+            evidence_points=(
+                "Run the gateway only on loopback with authentication and isolated storage.",
+                "Treat free capacity as each upstream provider's quota, never as unlimited capacity created by the gateway.",
+                "Record provider, model, request count, latency, quota, and estimated cost for every execution.",
+            ),
+            guardrails=(
+                "Connect only documented API keys or OAuth flows allowed by the upstream provider.",
+                "Reject session-cookie extraction, anti-ban rotation, account pooling, and providers marked caution or avoid.",
+                "A text-model gateway does not replace licensed voice, image, or video providers.",
+            ),
+        ))
+
+    affiliate_networks = {"ClickBank", "Digistore24", "BuyGoods", "MaxWeb", "MediaScalers", "Braip"} & tool_names
+    if affiliate_networks:
+        patterns.append(StrategyPattern(
+            pattern_id="affiliate_network_portfolio",
+            title="Two-track affiliate network portfolio",
+            category="affiliate_strategy",
+            confidence=0.9,
+            routes_to=("strategy_intelligence", "product_research", "affiliate_deals", "hitl_approval"),
+            evidence_points=(
+                "Prioritize accessible digital or CPA networks by commission economics, payout friction, compliance, and offer evidence.",
+                "Keep physical marketplaces as an organic testing and audience utility channel instead of the main paid-acquisition engine.",
+                "Promote one validated offer at a time and measure clicks, checkout starts, approved sales, refunds, net commission, and acquisition cost.",
+            ),
+            guardrails=(
+                "A creator's revenue screenshot or tier list is not proof that a network or offer will be profitable for us.",
+                "Do not fund paid traffic until the offer permits the channel and a small test has a written loss limit.",
+                "Health and finance offers require strict claim review and approved creative assets.",
+            ),
+        ))
+
+    if "navegador" in text and ("mostra" in text or "exibe" in text) and ("video" in text or "tela" in text):
+        patterns.append(StrategyPattern(
+            pattern_id="narration_evidence_visual_sync",
+            title="Synchronize every narration claim with visual evidence",
+            category="video_editorial",
+            confidence=0.88,
+            routes_to=("script", "video", "creative_review"),
+            evidence_points=(
+                "Break narration into timed beats before editing.",
+                "Show the exact website, product, source, demo, or interface while the related claim is spoken.",
+                "Use contextual B-roll only when direct evidence is unavailable, and preserve source provenance.",
+            ),
+            guardrails=("Reject unrelated slideshow images, hidden technical identifiers, and unverified screen evidence.",),
         ))
 
     return tuple(patterns)

@@ -30,10 +30,31 @@ class ContentBrief:
 
 
 @dataclass(frozen=True, slots=True)
+class ApprovedScriptDraft:
+    """Owner-approved script used by the asset-production half of the workflow."""
+
+    hook: str
+    script_text: str
+    call_to_action: str
+    script_task_id: UUID = field(default_factory=uuid4)
+    asset_plan: tuple[str, ...] = field(default_factory=tuple)
+    source_references: tuple[dict[str, str], ...] = field(default_factory=tuple)
+
+
+@dataclass(frozen=True, slots=True)
 class ContentWorkflowEmployees:
     """Employees required by the minimum content workflow."""
 
     script_writer: ScriptWriterEmployee
+    audio_engineer: AudioEngineerEmployee
+    image_designer: ImageDesignerEmployee
+    video_editor: VideoEditorEmployee
+
+
+@dataclass(frozen=True, slots=True)
+class ContentAssetEmployees:
+    """Employees required after the owner approves a script draft."""
+
     audio_engineer: AudioEngineerEmployee
     image_designer: ImageDesignerEmployee
     video_editor: VideoEditorEmployee

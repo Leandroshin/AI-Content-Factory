@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offer Intelligence — AI Content Factory</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar" role="complementary" aria-label="Navegacao principal">
+    <div class="sidebar-header">
+      <div class="logo" role="img" aria-label="Offer Intelligence logo">
+        <span class="logo-icon">OI</span>
+        <div class="logo-text">
+          <strong>Offer Intel</strong>
+          <small>v1.0 MOCK</small>
+        </div>
+      </div>
+    </div>
+    <nav id="nav" role="navigation" aria-label="Menu de navegacao">
+      <button class="nav-item active" data-view="dashboard" title="Visao Geral" aria-label="Visao Geral">
+        <span class="nav-icon">DG</span>
+        <span class="nav-label">Visao Geral</span>
+      </button>
+      <button class="nav-item" data-view="radar" title="Radar de Ofertas" aria-label="Radar de Ofertas">
+        <span class="nav-icon">RO</span>
+        <span class="nav-label">Radar</span>
+      </button>
+      <button class="nav-item" data-view="detail" title="Detalhe da Oferta" aria-label="Detalhe da Oferta">
+        <span class="nav-icon">DE</span>
+        <span class="nav-label">Detalhe</span>
+      </button>
+      <button class="nav-item" data-view="comparator" title="Comparador" aria-label="Comparador">
+        <span class="nav-icon">CO</span>
+        <span class="nav-label">Comparador</span>
+      </button>
+      <button class="nav-item" data-view="analysis" title="Analise IA" aria-label="Analise IA">
+        <span class="nav-icon">IA</span>
+        <span class="nav-label">Analise IA</span>
+      </button>
+      <button class="nav-item" data-view="sources" title="Fontes e Evidencias" aria-label="Fontes e Evidencias">
+        <span class="nav-icon">FE</span>
+        <span class="nav-label">Fontes</span>
+      </button>
+      <button class="nav-item" data-view="monitoring" title="Monitoramento" aria-label="Monitoramento">
+        <span class="nav-icon">MO</span>
+        <span class="nav-label">Monitoramento</span>
+      </button>
+      <button class="nav-item" data-view="academia" title="Academia Offer Intelligence" aria-label="Academia Offer Intelligence">
+        <span class="nav-icon">AC</span>
+        <span class="nav-label">Academia</span>
+      </button>
+      <button class="nav-item" data-view="settings" title="Configuracoes" aria-label="Configuracoes">
+        <span class="nav-icon">CF</span>
+        <span class="nav-label">Config</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <span class="mock-badge">MOCK</span>
+      <small class="version">offer-score-v1.0</small>
+    </div>
+  </aside>
+
+  <main id="main" role="main" aria-label="Conteudo principal">
+    <header id="topbar" role="banner" aria-label="Barra superior">
+      <button id="menu-toggle" title="Menu" aria-label="Abrir menu">&equiv;</button>
+      <h1 id="view-title">Visao Geral</h1>
+      <div class="topbar-actions">
+        <span id="offer-count" class="badge" aria-live="polite">0 ofertas</span>
+        <div class="search-box">
+          <input type="text" id="global-search" placeholder="Buscar ofertas..." aria-label="Buscar ofertas" />
+        </div>
+      </div>
+    </header>
+
+    <div id="content" role="region" aria-label="Area de conteudo">
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="view active">
+        <div class="dashboard-grid">
+          <div class="card" id="stats-summary">
+            <div class="card-header"><h2>Resumo</h2></div>
+            <div class="stats-grid" id="stats-container"></div>
+          </div>
+          <div class="card" id="top-offers-card">
+            <div class="card-header"><h2>Top Ofertas</h2></div>
+            <div id="top-offers-container"></div>
+          </div>
+          <div class="card" id="alerts-card">
+            <div class="card-header"><h2>Alertas</h2></div>
+            <div id="alerts-container"></div>
+          </div>
+          <div class="card" id="trends-card">
+            <div class="card-header"><h2>Tendencias</h2></div>
+            <div id="trends-container"></div>
+          </div>
+          <div class="card" id="niches-card">
+            <div class="card-header"><h2>Nichos</h2></div>
+            <div id="niches-container"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RADAR -->
+      <section id="view-radar" class="view">
+        <div class="card">
+          <div class="card-header">
+            <h2>Radar de Ofertas</h2>
+            <div class="radar-controls">
+              <select id="filter-niche"><option value="">Todos Nichos</option></select>
+              <select id="filter-platform"><option value="">Todas Plataformas</option></select>
+              <select id="filter-status"><option value="">Todos Status</option></select>
+              <select id="filter-score-range"><option value="">Todas Classes</option></select>
+              <button id="reset-filters" class="btn-sm">Limpar</button>
+            </div>
+          </div>
+          <div class="radar-toolbar">
+            <span id="radar-count"></span>
+            <div class="sort-group">
+              <label>Ordenar:</label>
+              <select id="sort-by">
+                <option value="score_total">Score</option>
+                <option value="growth_90d">Crescimento 90d</option>
+                <option value="search_volume">Volume Busca</option>
+                <option value="commission_percent">Comissao</option>
+                <option value="current_price">Preco</option>
+              </select>
+              <button id="sort-order" class="btn-sm" title="Alternar ordem">↓</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table id="radar-table">
+              <thead>
+                <tr>
+                  <th>Score</th>
+                  <th>Produto</th>
+                  <th>Plataforma</th>
+                  <th>Nicho</th>
+                  <th>Preco</th>
+                  <th>Comissao</th>
+                  <th>Cookie</th>
+                  <th>Volume</th>
+                  <th>Cresc 90d</th>
+                  <th>Status</th>
+                  <th>Confianca</th>
+                </tr>
+              </thead>
+              <tbody id="radar-body"></tbody>
+            </table>
+          </div>
+          <div id="radar-empty" class="empty-state hidden">Nenhuma oferta encontrada.</div>
+        </div>
+      </section>
+
+      <!-- DETAIL -->
+      <section id="view-detail" class="view">
+        <div class="card">
+          <div class="card-header">
+            <h2>Detalhe da Oferta</h2>
+            <select id="detail-select"><option value="">Selecione uma oferta...</option></select>
+          </div>
+          <div id="detail-content" class="detail-layout">
+            <div class="empty-state">Selecione uma oferta para ver detalhes.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COMPARATOR -->
+      <section id="view-comparator" class="view">
+        <div class="card">
+          <div class="card-header">
+            <h2>Comparador de Ofertas</h2>
+            <div class="comp-controls">
+              <button id="comp-clear" class="btn-sm">Limpar</button>
+            </div>
+          </div>
+          <div class="comp-selector">
+            <select class="comp-select" data-idx="0"><option value="">-- Oferta 1 --</option></select>
+            <select class="comp-select" data-idx="1"><option value="">-- Oferta 2 --</option></select>
+            <select class="comp-select" data-idx="2"><option value="">-- Oferta 3 (opcional) --</option></select>
+            <select class="comp-select" data-idx="3"><option value="">-- Oferta 4 (opcional) --</option></select>
+          </div>
+          <div id="comp-results"></div>
+        </div>
+      </section>
+
+      <!-- ANALYSIS -->
+      <section id="view-analysis" class="view">
+        <div class="card">
+          <div class="card-header">
+            <h2>Analise IA</h2>
+            <select id="analysis-select"><option value="">Selecione uma oferta...</option></select>
+            <span class="mock-badge">MOCK - nenhum LLM chamado</span>
+          </div>
+          <div id="analysis-content" class="empty-state">Selecione uma oferta para analisar.</div>
+        </div>
+      </section>
+
+      <!-- SOURCES -->
+      <section id="view-sources" class="view">
+        <div class="card">
+          <div class="card-header"><h2>Fontes e Evidencias</h2></div>
+          <div id="sources-content">
+            <p class="text-muted">Cada dado do score tem origem, data e confianca registrados. Abaixo o detalhamento por oferta.</p>
+            <select id="sources-select"><option value="">Selecione uma oferta...</option></select>
+            <div id="sources-detail" class="sources-grid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MONITORING -->
+      <section id="view-monitoring" class="view">
+        <div class="card">
+          <div class="card-header"><h2>Monitoramento</h2></div>
+          <div class="alert-filters">
+            <select id="alert-severity">
+              <option value="">Todas severidades</option>
+              <option value="critical">Critico</option>
+              <option value="warning">Alerta</option>
+              <option value="positive">Positivo</option>
+              <option value="info">Info</option>
+            </select>
+          </div>
+          <div id="monitoring-list"></div>
+        </div>
+      </section>
+
+      <!-- ACADEMIA -->
+      <section id="view-academia" class="view" role="region" aria-label="Academia Offer Intelligence">
+        <div id="academia-main">
+          <div class="academia-header">
+            <div>
+              <h2>Academia Offer Intelligence</h2>
+              <p class="text-muted">Aprenda a interpretar ofertas, graficos, riscos e decisoes passo a passo.</p>
+            </div>
+            <div class="academia-header-actions">
+              <span id="academia-timer" class="badge">~45 min total</span>
+              <span class="mock-badge">MOCK</span>
+            </div>
+          </div>
+          <div id="academia-progress-bar-container">
+            <div id="academia-progress-bar" class="academia-progress-fill" style="width:0%"></div>
+          </div>
+          <div id="academia-progress-info" class="academia-progress-info">
+            <span id="academia-progress-text">0 de 26 aulas concluidas</span>
+            <span id="academia-percentage">0%</span>
+          </div>
+          <div id="academia-controls" class="academia-controls">
+            <button id="academia-continue" class="btn academia-btn-primary">Comecar aprender</button>
+            <button id="academia-restart" class="btn">Comecar do inicio</button>
+            <button id="academia-repeat-last" class="btn hidden">Repetir ultima aula</button>
+            <button id="academia-settings-toggle" class="btn btn-sm">Opcoes de aula</button>
+          </div>
+          <div id="academia-settings-panel" class="academia-settings-panel hidden">
+            <div class="setting-item">
+              <label>Narracao</label>
+              <label class="toggle">
+                <input type="checkbox" id="academia-narration-toggle" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="setting-item">
+              <label>Velocidade da voz</label>
+              <select id="academia-speed">
+                <option value="0.75">0.75x (lenta)</option>
+                <option value="1" selected>1x (normal)</option>
+                <option value="1.25">1.25x (rapida)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label>Explicacoes simples sempre</label>
+              <label class="toggle">
+                <input type="checkbox" id="academia-simple-mode" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <p class="text-muted" style="font-size:11px;margin-top:8px">Narracao local do navegador. Nenhum servico externo foi chamado.</p>
+          </div>
+          <div id="academia-modules" class="academia-modules"></div>
+        </div>
+        <div id="academia-info-panel" class="academia-info-panel">
+          <div class="card">
+            <div class="card-header"><h2>Informacoes do Curso</h2></div>
+            <div class="academia-info-content">
+              <p>Todos os dados sao MOCK. Nenhum produto real esta sendo recomendado.</p>
+              <p>Nenhuma campanha real foi analisada. Nenhuma API foi chamada.</p>
+              <p>Nenhuma previsao de lucro foi feita.</p>
+              <p>O curso ensina interpretacao da interface. Decisoes reais exigem evidencias e aprovacao.</p>
+              <hr style="border-color:var(--border-light);margin:8px 0" />
+              <p class="text-muted" style="font-size:11px">offer-academia-v1.0</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><h2>Glossario</h2></div>
+            <div id="academia-glossary-preview"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACADEMIA LESSON VIEW -->
+      <section id="view-academia-lesson" class="view" role="region" aria-label="Aula da Academia">
+        <div id="academia-lesson-topbar">
+          <button id="academia-lesson-back" class="btn btn-sm">&larr; Voltar</button>
+          <span id="academia-lesson-counter" class="badge">Aula 1 de 26</span>
+          <div class="academia-lesson-topbar-actions">
+            <button id="academia-lesson-glossary" class="btn btn-sm" title="Consultar glossario">Glossario</button>
+            <button id="academia-lesson-narration-toggle" class="btn btn-sm" title="Ativar/desativar narracao">Narracao</button>
+            <button id="academia-lesson-restart" class="btn btn-sm" title="Repetir aula">Repetir</button>
+          </div>
+        </div>
+        <div id="academia-lesson-content" class="academia-lesson-content">
+          <div class="empty-state">Carregando aula...</div>
+        </div>
+        <div id="academia-lesson-narration-bar" class="academia-lesson-narration-bar">
+          <span class="text-muted" style="font-size:11px">Narracao local do navegador. Nenhum servico externo foi chamado.</span>
+          <div class="narration-controls">
+            <button id="narration-prev" class="btn-sm" title="Passo anterior">&larr;</button>
+            <button id="narration-play-pause" class="btn-sm" title="Pausar/Continuar">⏸</button>
+            <button id="narration-next" class="btn-sm" title="Proximo passo">&rarr;</button>
+            <button id="narration-skip" class="btn-sm" title="Pular narracao">⏭</button>
+          </div>
+        </div>
+        <div id="academia-exercise-area" class="academia-exercise-area"></div>
+        <div id="academia-visual-diagnosis" class="academia-visual-diagnosis"></div>
+        <div id="academia-lesson-footer">
+          <button id="academia-lesson-prev" class="btn">&larr; Passo anterior</button>
+          <span id="academia-lesson-step-info" class="text-muted">Passo 1 de 1</span>
+          <button id="academia-lesson-next" class="btn academia-btn-primary">Proximo passo &rarr;</button>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="view-settings" class="view">
+        <div class="card">
+          <div class="card-header"><h2>Configuracoes</h2></div>
+          <div class="settings-grid">
+            <div class="setting-item">
+              <label>Tema</label>
+              <select id="set-theme">
+                <option value="dark">Escuro (Operacional)</option>
+                <option value="light">Claro</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label>Densidade</label>
+              <select id="set-density">
+                <option value="comfortable">Confortavel</option>
+                <option value="compact">Compacto</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label>Moeda padrao</label>
+              <select id="set-currency">
+                <option value="BRL">BRL (R$)</option>
+                <option value="USD">USD ($)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label>Linhas por pagina</label>
+              <select id="set-rows">
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label>Confianca minima</label>
+              <input type="range" id="set-confidence" min="0" max="1" step="0.1" value="0" />
+              <span id="confidence-label">0.0</span>
+            </div>
+            <div class="setting-item">
+              <label>Modo avancado</label>
+              <label class="toggle">
+                <input type="checkbox" id="set-advanced" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="setting-actions">
+            <button id="reset-settings" class="btn">Restaurar padroes</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="mock_data.js"></script>
+<script src="scoring.js"></script>
+<script src="comparator.js"></script>
+<script src="charts.js"></script>
+<script src="narration.js"></script>
+<script src="glossary.js"></script>
+<script src="beginner_mode.js"></script>
+<script src="tutorial.js"></script>
+<script src="learning_data.js"></script>
+<script src="progress_tracker.js"></script>
+<script src="quiz_engine.js"></script>
+<script src="lesson_visuals.js"></script>
+<script src="learning_engine.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

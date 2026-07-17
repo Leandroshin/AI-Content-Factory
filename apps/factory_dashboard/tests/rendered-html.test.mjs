@@ -24,10 +24,35 @@ test("factory dashboard source exposes the operational cockpit", async () => {
   assert.match(client, /Digistore24/);
   assert.match(client, /Braip/);
   assert.match(client, /Enviar para análise/);
-  assert.match(client, /111 demonstrações técnicas aprovadas/);
-  assert.match(client, /111\/111/);
-  assert.match(client, /1\.817 verificações explícitas/);
+  assert.match(client, /117 demonstrações técnicas aprovadas/);
+  assert.match(client, /117\/117/);
+  assert.match(client, /1\.884 verificações explícitas/);
   assert.doesNotMatch(client, /window\.print/);
+});
+
+test("learning inbox separates source intake from official knowledge", async () => {
+  const client = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/DashboardClient.tsx", import.meta.url), "utf8"));
+  const view = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/LearningInboxView.tsx", import.meta.url), "utf8"));
+  const route = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/learning-sources/route.ts", import.meta.url), "utf8"));
+  const store = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/learning-sources/store.ts", import.meta.url), "utf8"));
+  assert.match(client, /label="Aprendizado"/);
+  assert.match(client, /\/api\/learning-sources/);
+  assert.match(view, /Uma fonte entra\. O conhecimento só entra depois\./);
+  assert.match(view, /Fonte.*Transcrição.*Evidências.*Auditoria.*Conhecimento/s);
+  assert.match(view, /Provider não chamado/);
+  assert.match(view, /não ensina automaticamente os funcionários/);
+  assert.match(route, /youtube\.com/);
+  assert.match(route, /youtu\.be/);
+  assert.match(route, /A transcrição precisa ter ao menos 200 caracteres/);
+  assert.match(route, /MAX_AUDIT_BODY_BYTES/);
+  assert.match(store, /ready_for_audit/);
+  assert.match(store, /knowledgeStatus: auditStillApplies \? current\.knowledgeStatus : "blocked"/);
+  assert.match(store, /providerStatus: "not_called"/);
+  assert.match(store, /estimatedCostUsdCents: 0/);
+  assert.match(store, /auditStillApplies/);
+  assert.match(store, /current\.transcriptHash === transcriptHash/);
+  assert.match(store, /auditPacket: auditStillApplies \? current\.auditPacket : "\{\}"/);
+  assert.doesNotMatch(`${route}\n${store}`, /fetch\(|axios|knowledge.*approved/i);
 });
 
 test("production approval creates an authenticated MOCK review queue", async () => {

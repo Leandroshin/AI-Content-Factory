@@ -57,6 +57,26 @@ def main() -> None:
     assert strong_result.issues == ()
     assert strong_result.corrections == ()
 
+    mismatched = EditorialVideoPlan(
+        duration_seconds=19,
+        beats=(
+            EditorialBeat(0, 4, "Explain OmniRoute", "broll", matches_narration=False),
+            *beats[1:],
+        ),
+        captions=captions,
+        asset_usage=strong.asset_usage,
+        narration_is_primary=True,
+        background_audio_gain_db=-24,
+        contact_sheet_reviewed=True,
+        overflow_checked=True,
+        occlusion_checked=True,
+        preview_reviewed=True,
+    )
+    mismatch_result = validator.validate(mismatched)
+    assert mismatch_result.passed is False
+    assert "narration_visual_mismatch" in mismatch_result.issues
+    assert any("direct evidence" in correction for correction in mismatch_result.corrections)
+
     adapter = HyperFramesRenderAdapter()
     request = ToolRequest(
         tool_id=uuid4(),
@@ -114,7 +134,7 @@ def main() -> None:
     assert "unknown_source_chapter" in rejected_crop.issues
     assert "short_without_arc" in rejected_crop.issues
     assert "invalid_candidate_score" in rejected_crop.issues
-    print("All 28 assertions passed.")
+    print("All 31 assertions passed.")
 
 
 if __name__ == "__main__":

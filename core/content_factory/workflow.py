@@ -12,7 +12,9 @@ from uuid import uuid4
 
 from core.company.specialist_employee import ReceivedTask, TaskDecision
 from core.content_factory.models import (
+    ApprovedScriptDraft,
     ContentBrief,
+    ContentAssetEmployees,
     ContentProductionPackage,
     ContentWorkflowEmployees,
     ContentWorkflowResult,
@@ -82,6 +84,56 @@ class ContentProductionWorkflow:
                 f"Content package produced: {package.final_format} "
                 f"@ {package.final_resolution}"
             ),
+            error="" if package.quality_passed else "Quality validation failed",
+        )
+
+    def run_approved_script_assets(
+        self,
+        brief: ContentBrief,
+        draft: ApprovedScriptDraft,
+        employees: ContentAssetEmployees,
+    ) -> ContentWorkflowResult:
+        """Run approved Script -> Audio -> Image -> Video without rewriting it.
+
+        This is the second, explicitly owner-approved half of production. Tool
+        execution remains governed by the employees' injected runtimes, so a
+        caller with no providers configured produces deterministic MOCK plans.
+        """
+        script_output: dict[str, Any] = {
+            "task_id": draft.script_task_id,
+            "hook": draft.hook,
+            "script_text": draft.script_text,
+            "call_to_action": draft.call_to_action,
+            "asset_plan": draft.asset_plan,
+            "source_references": draft.source_references,
+            "quality_passed": True,
+        }
+        steps: list[ContentWorkflowStepResult] = []
+
+        audio_step = self._execute(employees.audio_engineer, self._audio_task(brief, script_output))
+        steps.append(audio_step)
+        if not audio_step.success:
+            return self._failed(steps, audio_step.error or "Audio pre-production failed")
+
+        image_step = self._execute(employees.image_designer, self._image_task(brief, script_output))
+        steps.append(image_step)
+        if not image_step.success:
+            return self._failed(steps, image_step.error or "Image pre-production failed")
+
+        video_step = self._execute(
+            employees.video_editor,
+            self._video_task(brief, script_output, audio_step.output, image_step.output),
+        )
+        steps.append(video_step)
+        if not video_step.success:
+            return self._failed(steps, video_step.error or "Video pre-production failed")
+
+        package = self._package(brief, script_output, audio_step.output, image_step.output, video_step.output)
+        return ContentWorkflowResult(
+            success=package.quality_passed,
+            package=package,
+            steps=tuple(steps),
+            summary="Approved script asset package prepared for owner review",
             error="" if package.quality_passed else "Quality validation failed",
         )
 

@@ -42,3 +42,13 @@ session. It must capture at most a small candidate set, must not subscribe,
 like, comment or alter watch history intentionally, and must stop at login,
 CAPTCHA or consent prompts. Transcripts remain local; only derived evidence and
 experiment results enter project knowledge.
+
+## Eight-second commerce example (2026-07-13)
+
+The supplied TikTok Shop/Gemini Omni Flash transcript produced a bounded
+experiment, not a revenue promise. Accepted: product validation, two short
+variants, one textual hook, creative QA and measured conversion. Rejected:
+copying a Pinterest face, treating testimonials as expected income, and
+publishing a generated product that does not faithfully represent the offer.
+
+Detailed handoff: `2026-07-13_tiktok_shop_omni_flash_8s.md`.

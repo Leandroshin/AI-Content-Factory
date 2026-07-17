@@ -64,7 +64,6 @@ def _product_html() -> str:
     """
 
 
-
 def _mercado_livre_short_link_html() -> str:
     return """
     <!doctype html><html><head>
@@ -76,6 +75,7 @@ def _mercado_livre_short_link_html() -> str:
       </script>
     </body></html>
     """
+
 
 def _employees(
     company: CompanyRuntime, event_bus: EventBus
@@ -182,7 +182,6 @@ def main() -> None:
         "Purpose-specific user agent used",
     )
 
-
     print("\nStep 1b: read Mercado Livre price embedded in an affiliate short link")
     short_link_intake = ProductUrlIntake(
         MockHttpClient(default_response=HttpResponse(status_code=200, body=_mercado_livre_short_link_html()))
@@ -193,6 +192,7 @@ def main() -> None:
     _check(short_link.evidence.old_price == 408.0, "Embedded Mercado Livre previous price is extracted")
     _check(short_link.evidence.sku == "MLB3535284749", "Embedded Mercado Livre item ID is preserved")
     _check(short_link.evidence.extractor == "mercado_livre_page_data", "Short link extractor remains auditable")
+
     print("\nStep 2: block unsafe and unsupported URLs before HTTP")
     before = len(http.sent_requests)
     blocked_local = intake.intake("https://127.0.0.1/admin")
@@ -214,6 +214,16 @@ def main() -> None:
         blocked_http.status == ProductUrlIntakeStatus.BLOCKED, "Plain HTTP is blocked"
     )
     _check(len(http.sent_requests) == before, "Blocked URLs never reach HTTP")
+
+    adidas = intake.intake(
+        "https://www.adidas.com.br/tenis/produto-demo.html",
+        overrides=_overrides(),
+    )
+    _check(adidas.status != ProductUrlIntakeStatus.BLOCKED, "Adidas Brazil is allowlisted")
+    _check(
+        adidas.candidate is not None and adidas.candidate.marketplace == "adidas",
+        "Adidas URL keeps its marketplace identity",
+    )
 
     print("\nStep 3: reject unsafe canonical and image metadata")
     poisoned_http = MockHttpClient(

@@ -26,6 +26,15 @@ from .models import (
     PublishingChannel,
     PublishingPlan,
 )
+from .platforms import (
+    AffiliatePlatformEvaluation,
+    AffiliatePlatformProfile,
+    NoSpendAffiliatePlan,
+    build_no_spend_affiliate_plan,
+    default_affiliate_platform_profiles,
+    evaluate_affiliate_platform,
+    rank_affiliate_platforms,
+)
 from .pipeline import AffiliateDealsPipeline, PipelineStage
 
 __all__ = [
@@ -36,6 +45,8 @@ __all__ = [
     "AffiliateDealsEmployee",
     "AffiliateDealsPipeline",
     "AffiliateLink",
+    "AffiliatePlatformEvaluation",
+    "AffiliatePlatformProfile",
     "AudienceGrowthPlan",
     "ComplianceCheck",
     "CouponInfo",
@@ -44,6 +55,7 @@ __all__ = [
     "DealScore",
     "FunnelMetrics",
     "MarketplaceSource",
+    "NoSpendAffiliatePlan",
     "OfferCreative",
     "OfferMessage",
     "PipelineStage",
@@ -51,4 +63,8 @@ __all__ = [
     "ProductOffer",
     "PublishingChannel",
     "PublishingPlan",
+    "build_no_spend_affiliate_plan",
+    "default_affiliate_platform_profiles",
+    "evaluate_affiliate_platform",
+    "rank_affiliate_platforms",
 ]

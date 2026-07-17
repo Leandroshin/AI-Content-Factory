@@ -20,6 +20,21 @@ from core.content_factory.audience_growth import (
     GrowthScore,
     TrendEvidence,
 )
+from core.content_factory.commerce_dashboard_bridge import (
+    CommerceDashboardBridge,
+    CommerceDashboardBridgeResult,
+    CommerceDashboardSubmission,
+)
+from core.content_factory.dashboard_production_worker import (
+    DashboardProductionItem,
+    DashboardProductionResult,
+    DashboardProductionWorker,
+)
+from core.content_factory.dashboard_media_production_worker import (
+    DashboardMediaItem,
+    DashboardMediaProductionWorker,
+    DashboardMediaResult,
+)
 from core.content_factory.gaming_news_desk import (
     GamingNewsDesk,
     GamingNewsDeskResult,
@@ -27,6 +42,11 @@ from core.content_factory.gaming_news_desk import (
     GamingNewsSource,
     GamingNewsState,
     JsonGamingNewsStateStore,
+)
+from core.content_factory.gaming_dashboard_bridge import (
+    DashboardSubmission,
+    GamingDashboardBridge,
+    GamingDashboardBridgeResult,
 )
 from core.content_factory.hotmart_webhook import (
     HotmartCommission,
@@ -39,7 +59,9 @@ from core.content_factory.hotmart_webhook import (
 from core.content_factory.hotmart_webhook_postgres import HotmartPostgresStore
 from core.content_factory.managed_workflow import ManagedContentProductionWorkflow
 from core.content_factory.models import (
+    ApprovedScriptDraft,
     ContentBrief,
+    ContentAssetEmployees,
     ContentManagedWorkflowResult,
     ContentManagementTaskResult,
     ContentProductionPackage,
@@ -56,6 +78,16 @@ from core.content_factory.product_url_intake import (
     ProductUrlIntakeResult,
     ProductUrlIntakeStatus,
 )
+from core.content_factory.product_dashboard_worker import (
+    ProductDashboardWorker,
+    ProductDashboardWorkItem,
+    ProductDashboardWorkResult,
+)
+from core.content_factory.telegram_publication_worker import (
+    TelegramPublicationWorker,
+    TelegramPublicationWorkItem,
+    TelegramPublicationWorkResult,
+)
 from core.content_factory.workflow import ContentProductionWorkflow
 
 __all__ = [
@@ -65,9 +97,11 @@ __all__ = [
     "AffiliateFactoryEmployees",
     "AffiliateFactoryWorkflowResult",
     "AffiliatePublicationPackage",
+    "ApprovedScriptDraft",
     "AudienceGrowthPlan",
     "AudienceGrowthPlanner",
     "ContentBrief",
+    "ContentAssetEmployees",
     "ContentManagedWorkflowResult",
     "ContentManagementTaskResult",
     "ContentProductionPackage",
@@ -75,11 +109,23 @@ __all__ = [
     "ContentWorkflowEmployees",
     "ContentWorkflowResult",
     "ContentWorkflowStepResult",
+    "CommerceDashboardBridge",
+    "CommerceDashboardBridgeResult",
+    "CommerceDashboardSubmission",
+    "DashboardProductionItem",
+    "DashboardProductionResult",
+    "DashboardProductionWorker",
+    "DashboardMediaItem",
+    "DashboardMediaProductionWorker",
+    "DashboardMediaResult",
     "GamingNewsDesk",
     "GamingNewsDeskResult",
     "GamingNewsItem",
     "GamingNewsSource",
     "GamingNewsState",
+    "DashboardSubmission",
+    "GamingDashboardBridge",
+    "GamingDashboardBridgeResult",
     "GrowthCandidate",
     "GrowthDecision",
     "GrowthDecisionStatus",
@@ -99,5 +145,11 @@ __all__ = [
     "ProductUrlIntake",
     "ProductUrlIntakeResult",
     "ProductUrlIntakeStatus",
+    "ProductDashboardWorker",
+    "ProductDashboardWorkItem",
+    "ProductDashboardWorkResult",
+    "TelegramPublicationWorker",
+    "TelegramPublicationWorkItem",
+    "TelegramPublicationWorkResult",
     "TrendEvidence",
 ]

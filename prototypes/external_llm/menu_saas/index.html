@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardapioPro — Prototipo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+  body { background: #0f0f0f; color: #e0e0e0; min-height: 100vh; }
+
+  /* Nav */
+  .nav { display: flex; gap: 4px; background: #1a1a1a; padding: 8px 16px; border-bottom: 1px solid #333; align-items: center; flex-wrap: wrap; }
+  .nav .brand { font-weight: 700; color: #00e676; margin-right: 24px; font-size: 1.1rem; }
+  .nav button { background: #2a2a2a; border: 1px solid #444; color: #ccc; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: .2s; }
+  .nav button:hover { background: #333; color: #fff; }
+  .nav button.active { background: #00e676; color: #000; border-color: #00e676; font-weight: 600; }
+  .nav .badge { margin-left: auto; background: #00e67622; color: #00e676; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; border: 1px solid #00e67644; }
+
+  /* Views */
+  .view { display: none; max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+  .view.active { display: block; }
+
+  /* Cards */
+  .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  .card-header { font-size: 1.1rem; font-weight: 600; margin-bottom: 12px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+
+  /* Grid */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  @media (max-width: 700px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  /* Menu item card */
+  .menu-item { background: #222; border: 1px solid #333; border-radius: 8px; padding: 12px; display: flex; gap: 12px; align-items: flex-start; }
+  .menu-item .thumb { width: 64px; height: 64px; border-radius: 8px; background: #333; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+  .menu-item .info { flex: 1; }
+  .menu-item .name { font-weight: 600; color: #fff; }
+  .menu-item .desc { font-size: 0.8rem; color: #999; margin: 2px 0 4px; }
+  .menu-item .price { color: #00e676; font-weight: 700; font-size: 1rem; }
+  .menu-item .original { color: #666; text-decoration: line-through; font-size: 0.8rem; margin-right: 6px; }
+  .menu-item .tag { display: inline-block; background: #00e67622; color: #00e676; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; margin-right: 4px; }
+
+  /* Metrics */
+  .metric { text-align: center; padding: 16px; }
+  .metric .value { font-size: 2rem; font-weight: 700; color: #fff; }
+  .metric .label { font-size: 0.8rem; color: #888; margin-top: 4px; }
+  .metric.up .value { color: #00e676; }
+  .metric.warn .value { color: #ffab00; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th { text-align: left; color: #888; font-weight: 600; padding: 8px 12px; border-bottom: 1px solid #333; }
+  td { padding: 8px 12px; border-bottom: 1px solid #2a2a2a; }
+  .status { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  .status.active { background: #00e67622; color: #00e676; }
+  .status.pending { background: #ffab0022; color: #ffab00; }
+  .status.blocked { background: #ff174422; color: #ff1744; }
+
+  /* QR display */
+  .qr-box { text-align: center; padding: 20px; }
+  .qr-placeholder { width: 160px; height: 160px; background: linear-gradient(135deg, #00e676, #00bcd4); margin: 0 auto; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #fff; }
+
+  /* Category header */
+  .cat-header { font-size: 1rem; font-weight: 600; color: #00e676; margin: 16px 0 8px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* Factory queue */
+  .queue-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a2a; }
+  .queue-item:last-child { border: none; }
+  .queue-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .queue-item .dot.red { background: #ff1744; }
+  .queue-item .dot.yellow { background: #ffab00; }
+  .queue-item .dot.green { background: #00e676; }
+
+  .queue-item .client { flex: 1; }
+  .queue-item .client .name { font-weight: 600; color: #fff; }
+  .queue-item .client .detail { font-size: 0.75rem; color: #888; }
+  .queue-item .action { font-size: 0.75rem; color: #00e676; cursor: pointer; }
+
+  .progress { background: #2a2a2a; height: 4px; border-radius: 2px; margin: 8px 0; overflow: hidden; }
+  .progress .bar { height: 100%; background: #00e676; border-radius: 2px; transition: width .5s; }
+
+  .btn { background: #00e676; color: #000; border: none; padding: 8px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+  .btn:hover { opacity: .9; }
+  .btn-outline { background: transparent; border: 1px solid #00e676; color: #00e676; }
+
+  /* Admin specific */
+  .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .admin-tabs { display: flex; gap: 4px; }
+  .admin-tabs button { background: none; border: none; color: #888; padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; font-size: 0.85rem; }
+  .admin-tabs button.active { color: #00e676; border-bottom-color: #00e676; }
+
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #00e676; color: #000; padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; display: none; animation: slideIn .3s; z-index: 100; }
+  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .factory-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+
+  .pricing-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 24px; text-align: center; }
+  .pricing-card.featured { border-color: #00e676; }
+  .pricing-card .plan-name { font-size: 1.1rem; font-weight: 600; color: #fff; }
+  .pricing-card .plan-price { font-size: 2.5rem; font-weight: 700; color: #00e676; margin: 8px 0; }
+  .pricing-card .plan-price span { font-size: 1rem; color: #888; }
+  .pricing-card .plan-desc { font-size: 0.8rem; color: #888; margin-bottom: 16px; }
+  .pricing-card ul { list-style: none; text-align: left; font-size: 0.85rem; }
+  .pricing-card ul li { padding: 4px 0; color: #ccc; }
+  .pricing-card ul li::before { content: "✓ "; color: #00e676; }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<div class="nav">
+  <span class="brand">CardapioPro</span>
+  <button class="active" onclick="showView('public')">📱 Cardapio</button>
+  <button onclick="showView('admin')">👤 Painel do Cliente</button>
+  <button onclick="showView('factory')">🏭 Fabrica</button>
+  <button onclick="showView('pricing')">💰 Planos</button>
+  <span class="badge">Prototipo — Teste</span>
+</div>
+
+<!-- ==================== PUBLIC VIEW ==================== -->
+<div id="view-public" class="view active">
+  <div style="max-width: 480px; margin: 0 auto;">
+    <div class="card" style="text-align: center;">
+      <div style="font-size: 2rem; margin-bottom: 4px;">🍽️</div>
+      <div style="font-size: 1.3rem; font-weight: 700; color: #fff;">Restaurante do Caio</div>
+      <div style="font-size: 0.8rem; color: #888;">Rua do Caio, 123 • Aberto agora</div>
+      <div style="font-size: 0.75rem; color: #00e676; margin-top: 4px;">★★★★★ 4.8 (120 avaliacoes)</div>
+    </div>
+
+    <div style="position: relative; margin-bottom: 16px;">
+      <input type="text" placeholder="🔍 Buscar no cardapio..." style="width: 100%; padding: 12px 16px; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; color: #fff; font-size: 0.9rem;">
+    </div>
+
+    <div class="cat-header">🍝 Pratos Individuais</div>
+    <div class="grid-4">
+      <div class="menu-item">
+        <div class="thumb">🍝</div>
+        <div class="info">
+          <div class="name">Macarronada</div>
+          <div class="desc">Massa ao molho sugo com carne moida e queijo</div>
+          <div><span class="tag">Destaque</span><span class="tag">Vegano</span></div>
+          <div><span class="original">R$ 14,90</span><span class="price">R$ 9,90</span></div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="thumb">🥗</div>
+        <div class="info">
+          <div class="name">Salada Caesar</div>
+          <div class="desc">Alface, croutons, parmesao e molho caesar</div>
+          <div><span class="tag">Vegano</span></div>
+          <div class="price">R$ 12,90</div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="thumb">🥩</div>
+        <div class="info">
+          <div class="name">Bife a Cavalo</div>
+          <div class="desc">Bife grelhado, ovo, arroz e feijao</div>
+          <div class="price">R$ 18,90</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-header">🥤 Bebidas</div>
+    <div class="grid-4">
+      <div class="menu-item">
+        <div class="thumb">🥤</div>
+        <div class="info">
+          <div class="name">Coca-Cola</div>
+          <div class="desc">Lata 350ml</div>
+          <div class="price">R$ 5,00</div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="thumb">🍺</div>
+        <div class="info">
+          <div class="name">Cerveja Artesanal</div>
+          <div class="desc">IPA 473ml</div>
+          <div><span class="tag">Promocao</span></div>
+          <div><span class="original">R$ 12,00</span><span class="price">R$ 8,00</span></div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="thumb">🧃</div>
+        <div class="info">
+          <div class="name">Suco Natural</div>
+          <div class="desc">Laranja ou acerola 500ml</div>
+          <div class="price">R$ 7,00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-header">🍰 Sobremesas</div>
+    <div class="grid-4">
+      <div class="menu-item">
+        <div class="thumb">🍰</div>
+        <div class="info">
+          <div class="name">Pudim</div>
+          <div class="desc">Pudim de leite com calda de caramelo</div>
+          <div class="price">R$ 8,90</div>
+        </div>
+      </div>
+      <div class="menu-item">
+        <div class="thumb">🍨</div>
+        <div class="info">
+          <div class="name">Acai na Tigela</div>
+          <div class="desc">Acai, granola, banana e leite em po</div>
+          <div><span class="tag">Destaque</span></div>
+          <div class="price">R$ 11,90</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="text-align: center; margin-top: 24px;">
+      <div style="font-size: 0.85rem; color: #888; margin-bottom: 8px;">Pelo celular, escaneie o QR code na mesa</div>
+      <button class="btn" onclick="showToast('Pedido enviado via WhatsApp!')">🛒 Fazer Pedido via WhatsApp</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== ADMIN VIEW ==================== -->
+<div id="view-admin" class="view">
+  <div class="admin-header">
+    <div>
+      <div style="font-size: 1.3rem; font-weight: 700; color: #fff;">Bem-vindo, Caio 👋</div>
+      <div style="font-size: 0.8rem; color: #888;">Plano Pro • R$ 97/mes • Proximo pagamento: 14/08</div>
+    </div>
+    <div>
+      <button class="btn-outline" style="margin-right: 8px; padding: 6px 12px;">QR Code</button>
+      <button class="btn" onclick="showToast('Cardapio publicado com sucesso!')">Publicar</button>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom: 20px;">
+    <div class="card metric up">
+      <div class="value">47</div>
+      <div class="label">Views hoje</div>
+    </div>
+    <div class="card metric up">
+      <div class="value">1.230</div>
+      <div class="label">Views este mes</div>
+    </div>
+    <div class="card metric warn">
+      <div class="value">25%</div>
+      <div class="label">Taxa de conversao</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span>📊 Itens mais vistos (7 dias)</span>
+      <span style="font-size: 0.75rem; color: #888;">Atualizado a cada 1h</span>
+    </div>
+    <table>
+      <tr><th>Item</th><th>Categoria</th><th>Views</th><th>Vendas est.</th></tr>
+      <tr><td>🍝 Macarronada</td><td>Pratos</td><td>230</td><td>47</td></tr>
+      <tr><td>🥤 Coca-Cola</td><td>Bebidas</td><td>180</td><td>52</td></tr>
+      <tr><td>🥗 Salada Caesar</td><td>Pratos</td><td>145</td><td>28</td></tr>
+      <tr><td>🍰 Pudim</td><td>Sobremesas</td><td>98</td><td>31</td></tr>
+    </table>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">📱 Cardapio</div>
+      <div style="margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #2a2a2a;">
+          <span style="font-weight: 600; color: #fff;">Macarronada</span>
+          <span style="color: #00e676;">R$ 9,90</span>
+          <span style="cursor: pointer; color: #00e676; font-size: 0.8rem;">✏️</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #2a2a2a;">
+          <span style="font-weight: 600; color: #fff;">Salada Caesar</span>
+          <span style="color: #00e676;">R$ 12,90</span>
+          <span style="cursor: pointer; color: #00e676; font-size: 0.8rem;">✏️</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0;">
+          <span style="font-weight: 600; color: #fff;">Coca-Cola</span>
+          <span style="color: #00e676;">R$ 5,00</span>
+          <span style="cursor: pointer; color: #00e676; font-size: 0.8rem;">✏️</span>
+        </div>
+      </div>
+      <button class="btn-outline" style="width: 100%;">+ Adicionar Item</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">🏷️ QR Codes</div>
+      <div class="qr-box">
+        <div class="qr-placeholder">QR</div>
+        <div style="margin-top: 12px; font-size: 0.8rem; color: #888;">cardapiopro.com.br/restaurante-do-caio</div>
+        <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center;">
+          <button class="btn" onclick="showToast('QR code baixado!')">📥 Download PNG</button>
+          <button class="btn-outline" onclick="showToast('QR code copiado!')">📋 Copiar SVG</button>
+        </div>
+        <div style="margin-top: 16px; font-size: 0.75rem; color: #888; border-top: 1px solid #2a2a2a; padding-top: 12px;">
+          <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+            <span>QR da Mesa 1</span><span style="color: #00e676;">Ativo</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+            <span>QR da Mesa 2</span><span style="color: #00e676;">Ativo</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; padding: 4px 0;">
+            <span>QR da Mesa 3</span><span style="color: #888;">Nao gerado</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FACTORY VIEW ==================== -->
+<div id="view-factory" class="view">
+  <div class="factory-header">
+    <div>
+      <div style="font-size: 1.3rem; font-weight: 700; color: #fff;">🏭 Central de Cardapios</div>
+      <div style="font-size: 0.8rem; color: #888;">47 cardapios ativos • 3 pendentes • R$ 3.859 MRR</div>
+    </div>
+    <div>
+      <span class="status active" style="margin-right: 8px;">🟢 Operando</span>
+      <button class="btn" onclick="simulateNewClient()">+ Novo Cliente</button>
+    </div>
+  </div>
+
+  <div class="grid-3" style="margin-bottom: 20px;">
+    <div class="card metric up">
+      <div class="value">47</div>
+      <div class="label">Cardapios ativos</div>
+    </div>
+    <div class="card metric up">
+      <div class="value">R$ 3.859</div>
+      <div class="label">MRR (Receita Recorrente)</div>
+    </div>
+    <div class="card metric warn">
+      <div class="value">6 min</div>
+      <div class="label">Tempo medio de operacao</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header">
+        <span>🔴 Fila de Operacao (3)</span>
+        <span style="font-size: 0.75rem; color: #888;">Ordenado por prioridade</span>
+      </div>
+
+      <div class="queue-item">
+        <div class="dot red"></div>
+        <div class="client">
+          <div class="name">KiDelicia Restaurante</div>
+          <div class="detail">Plano Pro • R$ 97 • Pendente: fotos (ha 2h)</div>
+          <div class="progress"><div class="bar" style="width: 60%;"></div></div>
+        </div>
+        <div class="action">Assumir →</div>
+      </div>
+
+      <div class="queue-item">
+        <div class="dot yellow"></div>
+        <div class="client">
+          <div class="name">Acai da Maria</div>
+          <div class="detail">Plano Pro • R$ 97 • Pendente: publicar</div>
+          <div class="progress"><div class="bar" style="width: 85%;"></div></div>
+        </div>
+        <div class="action">Assumir →</div>
+      </div>
+
+      <div class="queue-item">
+        <div class="dot yellow"></div>
+        <div class="client">
+          <div class="name">Bar do Ze</div>
+          <div class="detail">Plano Starter • R$ 47 • Pendente: criar categorias</div>
+          <div class="progress"><div class="bar" style="width: 25%;"></div></div>
+        </div>
+        <div class="action">Assumir →</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span>🟢 Clientes Ativos (44)</span>
+        <span style="font-size: 0.75rem; color: #888;">Ordenado por views</span>
+      </div>
+      <table>
+        <tr><th>Cliente</th><th>Plano</th><th>Views</th><th>Status</th></tr>
+        <tr>
+          <td>Restaurante do Caio</td>
+          <td>Pro</td>
+          <td>1.230</td>
+          <td><span class="status active">Ativo</span></td>
+        </tr>
+        <tr>
+          <td>Pizzaria Napoli</td>
+          <td>Multi</td>
+          <td>892</td>
+          <td><span class="status active">Ativo</span></td>
+        </tr>
+        <tr>
+          <td>Lanchonete do Ze</td>
+          <td>Starter</td>
+          <td>445</td>
+          <td><span class="status active">Ativo</span></td>
+        </tr>
+        <tr>
+          <td>Sushi House</td>
+          <td>Pro</td>
+          <td>312</td>
+          <td><span class="status active">Ativo</span></td>
+        </tr>
+        <tr>
+          <td>Bar do Joao</td>
+          <td>Starter</td>
+          <td>198</td>
+          <td><span class="status active">Ativo</span></td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 16px;">
+    <div class="card-header">
+      <span>📈 Operacoes recentes (ultimas 24h)</span>
+    </div>
+    <table>
+      <tr><th>Horario</th><th>Cliente</th><th>Operacao</th><th>Duracao</th><th>Status</th></tr>
+      <tr><td>23:15</td><td>Restaurante do Caio</td><td>Atualizar precos (3 itens)</td><td>12s</td><td><span class="status active">OK</span></td></tr>
+      <tr><td>22:30</td><td>Pizzaria Napoli</td><td>Adicionar promoção (5 itens)</td><td>18s</td><td><span class="status active">OK</span></td></tr>
+      <tr><td>21:45</td><td>Bar do Ze</td><td>Criar cardapio (etapa 3/8)</td><td>45s</td><td><span class="status pending">Pendente</span></td></tr>
+      <tr><td>20:00</td><td>Acai da Maria</td><td>Upload de fotos (8 imagens)</td><td>30s</td><td><span class="status active">OK</span></td></tr>
+      <tr><td>19:15</td><td>KiDelicia</td><td>Onboarding inicial</td><td>2min</td><td><span class="status pending">Aguardando</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== PRICING VIEW ==================== -->
+<div id="view-pricing" class="view">
+  <div style="text-align: center; margin-bottom: 32px;">
+    <div style="font-size: 1.8rem; font-weight: 700; color: #fff;">Planos para seu negocio</div>
+    <div style="color: #888; margin-top: 8px;">Cardapio digital profissional com suporte da fabrica</div>
+  </div>
+
+  <div class="grid-3" style="max-width: 900px; margin: 0 auto;">
+    <div class="pricing-card">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price">R$47<span>/mes</span></div>
+      <div class="plan-desc">Para comecar com cardapio digital</div>
+      <ul>
+        <li>1 cardapio digital</li>
+        <li>10 categorias</li>
+        <li>30 itens</li>
+        <li>QR code estatico</li>
+        <li>Link publico</li>
+        <li>Suporte via WhatsApp</li>
+      </ul>
+      <br>
+      <button class="btn-outline" style="width: 100%;" onclick="showToast('Redirecionando para checkout...')">Assinar</button>
+    </div>
+
+    <div class="pricing-card featured" style="border-color: #00e676; position: relative;">
+      <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #00e676; color: #000; padding: 2px 12px; border-radius: 4px; font-size: 0.7rem; font-weight: 700;">MAIS POPULAR</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">R$97<span>/mes</span></div>
+      <div class="plan-desc">Para restaurantes que querem destaque</div>
+      <ul>
+        <li>1 cardapio digital</li>
+        <li>Categorias ilimitadas</li>
+        <li>Itens ilimitados</li>
+        <li>Fotos profissionais via fabrica</li>
+        <li>QR code por mesa</li>
+        <li>Pedidos via WhatsApp</li>
+        <li>Relatorios de views</li>
+        <li>Atualizacoes via WhatsApp</li>
+      </ul>
+      <br>
+      <button class="btn" style="width: 100%;" onclick="showToast('Redirecionando para checkout...')">Assinar Pro</button>
+    </div>
+
+    <div class="pricing-card">
+      <div class="plan-name">Multi</div>
+      <div class="plan-price">R$197<span>/mes</span></div>
+      <div class="plan-desc">Para grupos e redes de restaurantes</div>
+      <ul>
+        <li>3 cardapios digitais</li>
+        <li>Tudo do plano Pro</li>
+        <li>Dominio personalizado</li>
+        <li>Integracao iFood (2026)</li>
+        <li>Relatorios avancados</li>
+        <li>Suporte prioritario</li>
+        <li>Auditoria de compliance</li>
+      </ul>
+      <br>
+      <button class="btn-outline" style="width: 100%;" onclick="showToast('Redirecionando para checkout...')">Assinar</button>
+    </div>
+  </div>
+
+  <div class="card" style="max-width: 600px; margin: 32px auto 0; text-align: center;">
+    <div style="font-size: 0.9rem; color: #888; margin-bottom: 8px;">📸 O restaurante tira foto do cardapio fisico e envia no WhatsApp</div>
+    <div style="font-size: 0.9rem; color: #fff; font-weight: 600;">Nos fazemos todo o resto em ate 2 horas 🚀</div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  const buttons = document.querySelectorAll('.nav button');
+  const idx = ['public','admin','factory','pricing'].indexOf(id);
+  if (idx >= 0 && buttons[idx]) buttons[idx].classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  setTimeout(() => { t.style.display = 'none'; }, 2500);
+}
+
+function simulateNewClient() {
+  const names = ['Padaria Sao Jorge', 'Empadao da Tia', 'Pastel do Gordo', 'Churrascaria Gaucha', 'Cantina Italiana', 'Dogao do Ze'];
+  const name = names[Math.floor(Math.random() * names.length)];
+  const cards = ['Starter', 'Pro', 'Pro', 'Pro', 'Multi'];
+  const card = cards[Math.floor(Math.random() * cards.length)];
+  const prices = {'Starter': 47, 'Pro': 97, 'Multi': 197};
+  const price = prices[card];
+
+  const queue = document.querySelector('#view-factory .queue-item:first-child');
+  if (queue) {
+    const newItem = queue.cloneNode(true);
+    newItem.querySelector('.dot').className = 'dot yellow';
+    newItem.querySelector('.name').textContent = name;
+    newItem.querySelector('.detail').textContent = `Plano ${card} • R$ ${price} • Pendente: onboarding inicial`;
+    newItem.querySelector('.bar').style.width = '5%';
+    queue.parentNode.insertBefore(newItem, queue);
+  }
+  showToast(`🎉 Novo cliente: ${name} (${card} — R$ ${price}/mes)`);
+  updateFactoryMetrics();
+}
+
+function updateFactoryMetrics() {
+  const activeEl = document.querySelector('#view-factory .metric.up .value');
+  const mrrEl = document.querySelectorAll('#view-factory .metric.up .value')[1];
+  if (activeEl && mrrEl) {
+    const active = parseInt(activeEl.textContent) + 1;
+    activeEl.textContent = active;
+    const mrr = active * 82;
+    mrrEl.textContent = 'R$ ' + mrr.toLocaleString('pt-BR');
+  }
+}
+</script>
+
+</body>
+</html>

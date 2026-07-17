@@ -11,9 +11,11 @@ from .base import AbstractToolAdapter
 from .elevenlabs_adapter import ElevenLabsAdapter
 from .ffmpeg_adapter import FFmpegRenderAdapter
 from .github_adapter import GitHubAdapter
+from .gemini_omni_video_adapter import GeminiOmniVideoAdapter
 from .hyperframes_adapter import HyperFramesRenderAdapter
 from .kokoro_adapter import KokoroTTSAdapter
 from .meta_ads_adapter import MetaAdsAnalyticsAdapter
+from .mercado_livre_adapter import MercadoLivreCatalogAdapter
 from .models import (
     AdapterConfigStatus,
     AdapterExecutionResult,
@@ -38,9 +40,11 @@ __all__ = [
     "ExecutionMode",
     "FFmpegRenderAdapter",
     "GitHubAdapter",
+    "GeminiOmniVideoAdapter",
     "HyperFramesRenderAdapter",
     "KokoroTTSAdapter",
     "MetaAdsAnalyticsAdapter",
+    "MercadoLivreCatalogAdapter",
     "OwnerGuidance",
     "PlaywrightAdapter",
     "TelegramAdapter",
