@@ -509,6 +509,74 @@ Nova secao 35: Interacao e Modo Entender (Fase 2.2) — 45+ testes especificos.
 
 ---
 
+## Sessao 2026-07-17b — Ethical Offer Intelligence Candidate
+
+### O que foi feito
+- Lida transcricao de ~25 min ("COMO MINERAR OFERTAS ESCALADAS E CLONAR EM MINUTOS") — 723 linhas, 37.311 bytes
+- SHA-256 registrado: `B8FE57E9B08364167D35DD931723A84C890471C0A5016847E63517EC052E4C97`
+- Criado `docs/external_llm_inbox/deepseek/ideas/2026-07-17_ethical_offer_intelligence_candidate.md` (333 linhas, 11 secoes):
+  - 10 metodos legitimos de inteligencia competitiva etica (M01-M10)
+  - 2 alegacoes rastreaveis (multiplus fontes + persistencia temporal)
+  - 10 Knowledge Cards candidatos
+  - 19 praticas rejeitadas (PR-01 a PR-19)
+  - 5 experimentos MOCK
+  - MVP de 10 passos para Codex
+  - Mapeamento para 8 componentes existentes
+- Criado `docs/external_llm_inbox/deepseek/ideas/2026-07-17_ethical_offer_intelligence_CODEX_HANDOFF.md`
+- Criado handoff de sessao
+- Atualizado `INDEX.md` com as 3 novas entradas
+
+### O que o Codex deve revisar
+- **Proposta principal:** `ideas/2026-07-17_ethical_offer_intelligence_candidate.md`
+- **Separacao etico vs rejeitado:** 10 metodos aproveitaveis vs 19 praticas proibidas
+- **Compatibilidade com Offer Intelligence existente** (proposta anterior)
+- **Nenhum recurso de clonagem deve ser criado**
+
+### Decisoes pendentes de Shin/Codex
+- Autorizar a fonte na Caixa de Aprendizado
+- Usar as duas alegacoes (priorizar Alegacao B)
+- Manter as 19 praticas rejeitadas
+
+---
+
+## Sessao 2026-07-17 — Low Ticket Validation Playbook Candidate
+
+### O que foi feito
+- Lida transcricao real de ~2h20 ("Eu Documentei a Criacao de um Low Ticket do Zero a Escala", Guia Manuel) — 4.019 linhas, 208.467 bytes
+- SHA-256 registrado: `8132b2619e04c0fe4eb8593318784b693bb044d2770f5041a81393dcb4aa319d`
+- Criado `docs/external_llm_inbox/deepseek/ideas/2026-07-17_low_ticket_validation_playbook_candidate.md` (917 linhas, 18 secoes):
+  - Linha do tempo dos 17 dias (24/fev a 12/mar) com 23 eventos
+  - 16 Knowledge Cards candidatos (KC-01 a KC-16) com timestamp, trecho exato, categoria, confianca, risco
+  - 2 alegacoes rastreaveis (MVP validation + bumps convertem) com auditoria parcial
+  - Auditoria cetica com 14 achados
+  - 7 praticas rejeitadas (PR-01 a PR-07) com justificativa
+  - 7 experimentos MOCK propostos com orcamento e criterio de parada
+  - Score de utilidade operacional (64/100)
+  - Alternativas de playbook (recomendada: composicao de Knowledge Cards sem novo contrato)
+  - MVP de 10 passos para o Codex implementar
+  - 27 decisoes pendentes de Leandro em 7 categorias
+- Criado `docs/external_llm_inbox/deepseek/ideas/2026-07-17_low_ticket_validation_playbook_CODEX_HANDOFF.md`
+- Criado `docs/external_llm_inbox/deepseek/2026-07-17_low_ticket_handoff.md` (handoff de sessao)
+- Atualizado `INDEX.md` com as 2 novas entradas
+
+### O que o Codex deve revisar
+- **Proposta principal:** `ideas/2026-07-17_low_ticket_validation_playbook_candidate.md`
+- **Handoff:** `ideas/2026-07-17_low_ticket_validation_playbook_CODEX_HANDOFF.md`
+- **Compatibilidade** com TranscriptEvidenceAuditWorkflow existente
+- **PlaybookDraft** e necessario ou composicao de Knowledge Cards e suficiente?
+- **Praticas rejeitadas** merecem regra no QualityRuntime?
+- **MVP de 10 passos** esta alinhado com arquitetura atual?
+
+### Decisoes pendentes de Shin/Codex
+- Autorizar insercao da transcricao na Caixa de Aprendizado (painel)
+- Escolher entre Alegacao A (MVP validation) e B (bumps convertem) para primeiro teste
+- Nivel de autonomia para experimentos low ticket
+- Interesse em mercado Latan (espanhol)
+- Orcamento para anuncios (R$90/dia)
+- Se alguma pratica rejeitada vira regra de QualityRuntime
+
+---
+
 ### Checklist pessoal
 - [x] Li `AGENTS.md`, README da caixa de entrada e protocolo local
 - [x] Alterei somente os caminhos autorizados
