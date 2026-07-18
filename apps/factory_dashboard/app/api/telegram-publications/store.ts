@@ -3,12 +3,22 @@ import { getDb } from "../../../db";
 import { productIntakeRequests, telegramPublicationRequests } from "../../../db/schema";
 
 const DEFAULT_CHAT_ID = "@achadosbaratosBrasil";
-const ACTIVE_STATUSES = ["queued", "publishing", "sent"];
+const ACTIVE_STATUSES = ["pending_approval", "queued", "publishing", "sent"];
+const EDITORIAL_PRODUCT_ID = "editorial-welcome-achados-baratos-v1";
+const EDITORIAL_MESSAGE = "Olá! Este é o canal Achados Baratos Brasil.\n\nAqui você encontrará uma curadoria de ofertas conferidas antes da publicação. Preços e disponibilidade serão informados em cada postagem e podem mudar.\n\nAcompanhe o canal para receber as próximas seleções.";
 
-type CampaignPackage = {
-  copy: string;
-  missingToPublish: string[];
-  generatedAt: string;
+type CampaignPackage = { copy: string; missingToPublish: string[]; generatedAt: string };
+type CandidateMetadata = {
+  internalTitle: string;
+  objective: string;
+  audience: string;
+  callToAction: string;
+  origin: string;
+  risks: string[];
+  validUntil: string;
+  idempotencyKey: string;
+  publicationMode: string;
+  isAffiliate: boolean;
 };
 
 const MAX_PACKAGE_AGE_MS = 2 * 60 * 60 * 1000;
@@ -16,8 +26,7 @@ const MAX_PHOTO_CAPTION_LENGTH = 1024;
 
 export async function telegramPublicationState() {
   await ensureTelegramPublicationSchema();
-  const db = getDb();
-  const rows = await db.select().from(telegramPublicationRequests)
+  const rows = await getDb().select().from(telegramPublicationRequests)
     .orderBy(asc(telegramPublicationRequests.createdAt)).limit(100);
   return { publications: rows.map(publicPublication) };
 }
@@ -25,30 +34,25 @@ export async function telegramPublicationState() {
 export async function queueTelegramPublication(productId: string) {
   await ensureTelegramPublicationSchema();
   const db = getDb();
-  const products = await db.select().from(productIntakeRequests)
+  const [product] = await db.select().from(productIntakeRequests)
     .where(eq(productIntakeRequests.id, productId)).limit(1);
-  const product = products[0];
   if (!product) throw new Error("Produto não encontrado");
   if (product.targetChannel !== "telegram_public") throw new Error("Este pacote não está destinado ao Telegram público");
-  if (!product.affiliateUrl) throw new Error("Confirme o link afiliado antes de publicar");
-  if (!product.currentPriceCents) throw new Error("Confirme o preço atual antes de publicar");
+  if (!product.affiliateUrl) throw new Error("Confirme o link afiliado antes de preparar o candidato");
+  if (!product.currentPriceCents) throw new Error("Confirme o preço atual antes de preparar o candidato");
   if (!product.commissionConfirmed) throw new Error("Confirme que o link veio do programa oficial de afiliados");
   if (!product.channelRegistered) throw new Error("Confirme o cadastro do canal público no programa de afiliados");
-  if (!product.creativeReviewStatus) throw new Error("Conclua a revisão visual antes de publicar");
+  if (!product.creativeReviewStatus) throw new Error("Conclua a revisão visual antes de preparar o candidato");
 
   let campaignPackage: CampaignPackage;
-  try {
-    campaignPackage = JSON.parse(product.campaignPackage || "") as CampaignPackage;
-  } catch {
-    throw new Error("Prepare novamente o pacote antes de publicar");
-  }
-  const blockers = (campaignPackage.missingToPublish ?? [])
-    .filter((field) => field !== "aprovação final do owner");
-  if (blockers.length) throw new Error(`Resolva antes de publicar: ${blockers.join(", ")}`);
+  try { campaignPackage = JSON.parse(product.campaignPackage || "") as CampaignPackage; }
+  catch { throw new Error("Prepare novamente o pacote antes de criar o candidato"); }
+  const blockers = (campaignPackage.missingToPublish ?? []).filter((field) => field !== "aprovação final do owner");
+  if (blockers.length) throw new Error(`Resolva antes de preparar: ${blockers.join(", ")}`);
   const generatedAt = Date.parse(campaignPackage.generatedAt ?? "");
   const packageAge = Date.now() - generatedAt;
   if (!Number.isFinite(generatedAt) || packageAge < -5 * 60 * 1000 || packageAge > MAX_PACKAGE_AGE_MS) {
-    throw new Error("Preço e pacote estão antigos. Confirme os dados comerciais novamente antes de publicar");
+    throw new Error("Preço e pacote estão antigos. Confirme os dados comerciais novamente");
   }
   const imageUrl = publicHttpsImageUrl(product.imageUrl) ? product.imageUrl : "";
   const message = String(campaignPackage.copy ?? "").trim();
@@ -56,36 +60,72 @@ export async function queueTelegramPublication(productId: string) {
   if (!message || message.length > maxLength || !message.includes(product.affiliateUrl) || !message.includes("#publi")) {
     throw new Error("A prévia do Telegram está inválida ou não contém o link afiliado confirmado");
   }
+  const metadata: CandidateMetadata = {
+    internalTitle: product.productName || "Oferta para revisão",
+    objective: "Apresentar uma oferta verificada ao público do canal.",
+    audience: "Pessoas interessadas em ofertas e economia nas compras.",
+    callToAction: "Conferir a oferta no link informado.",
+    origin: "Pacote comercial preparado pela AI Content Factory a partir de dados confirmados pelo owner.",
+    risks: ["Preço e disponibilidade podem mudar", "O link e os dados comerciais devem permanecer válidos"],
+    validUntil: new Date(generatedAt + MAX_PACKAGE_AGE_MS).toISOString(),
+    idempotencyKey: `telegram-product-${productId}-${simpleHash(message)}`,
+    publicationMode: "REAL CONTROLADO - OPT-IN E APROVACAO",
+    isAffiliate: true,
+  };
+  return insertPendingCandidate({ productId, message, affiliateUrl: product.affiliateUrl, imageUrl, metadata });
+}
 
+export async function prepareEditorialTelegramCandidate() {
+  const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const metadata: CandidateMetadata = {
+    internalTitle: "Boas-vindas ao canal Achados Baratos Brasil",
+    objective: "Apresentar o propósito editorial do canal antes das primeiras ofertas.",
+    audience: "Pessoas interessadas em ofertas selecionadas e economia nas compras.",
+    callToAction: "Acompanhar o canal para receber as próximas seleções.",
+    origin: "Conteúdo editorial original da AI Content Factory.",
+    risks: ["Não prometer preço ou disponibilidade permanentes", "Não confundir a mensagem editorial com uma oferta comercial"],
+    validUntil,
+    idempotencyKey: `telegram-editorial-${EDITORIAL_PRODUCT_ID}-${simpleHash(EDITORIAL_MESSAGE)}`,
+    publicationMode: "REAL CONTROLADO - OPT-IN E APROVACAO",
+    isAffiliate: false,
+  };
+  return insertPendingCandidate({ productId: EDITORIAL_PRODUCT_ID, message: EDITORIAL_MESSAGE, affiliateUrl: "", imageUrl: "", metadata });
+}
+
+async function insertPendingCandidate(input: { productId: string; message: string; affiliateUrl: string; imageUrl: string; metadata: CandidateMetadata }) {
+  await ensureTelegramPublicationSchema();
+  const db = getDb();
   const existing = await db.select().from(telegramPublicationRequests)
-    .where(eq(telegramPublicationRequests.productId, productId));
-  const active = existing.find((row) => ACTIVE_STATUSES.includes(row.status));
-  if (active) return telegramPublicationState();
-  const sameLink = await db.select().from(telegramPublicationRequests)
-    .where(eq(telegramPublicationRequests.affiliateUrl, product.affiliateUrl));
-  if (sameLink.some((row) => row.status === "sent")) {
-    throw new Error("Este link afiliado já foi publicado no Telegram");
+    .where(eq(telegramPublicationRequests.productId, input.productId));
+  if (existing.some((row) => ACTIVE_STATUSES.includes(row.status))) return telegramPublicationState();
+  if (input.affiliateUrl) {
+    const sameLink = await db.select().from(telegramPublicationRequests)
+      .where(eq(telegramPublicationRequests.affiliateUrl, input.affiliateUrl));
+    if (sameLink.some((row) => row.status === "sent")) throw new Error("Este link afiliado já foi publicado no Telegram");
   }
-
   const now = new Date().toISOString();
   await db.insert(telegramPublicationRequests).values({
-    id: crypto.randomUUID(),
-    productId,
-    status: "queued",
-    chatId: DEFAULT_CHAT_ID,
-    messageText: message,
-    affiliateUrl: product.affiliateUrl,
-    imageUrl,
-    ownerApproved: 1,
-    linkPreviewEnabled: 1,
-    telegramMessageId: null,
-    error: "",
-    approvedAt: now,
-    claimedAt: null,
-    sentAt: null,
-    createdAt: now,
-    updatedAt: now,
+    id: crypto.randomUUID(), productId: input.productId, status: "pending_approval",
+    chatId: DEFAULT_CHAT_ID, messageText: input.message, affiliateUrl: input.affiliateUrl,
+    imageUrl: input.imageUrl, ownerApproved: 0, linkPreviewEnabled: 1,
+    telegramMessageId: null, error: "", approvedAt: "", claimedAt: null, sentAt: null,
+    candidateMetadata: JSON.stringify(input.metadata), createdAt: now, updatedAt: now,
   });
+  return telegramPublicationState();
+}
+
+export async function approveTelegramPublication(requestId: string) {
+  await ensureTelegramPublicationSchema();
+  const db = getDb();
+  const [item] = await db.select().from(telegramPublicationRequests)
+    .where(eq(telegramPublicationRequests.id, requestId)).limit(1);
+  if (!item || item.status !== "pending_approval") throw new Error("Somente candidatos pendentes podem ser aprovados");
+  const metadata = parseMetadata(item.candidateMetadata);
+  if (!metadata.validUntil || Date.parse(metadata.validUntil) < Date.now()) throw new Error("O candidato expirou e precisa ser preparado novamente");
+  const now = new Date().toISOString();
+  await db.update(telegramPublicationRequests).set({
+    status: "queued", ownerApproved: 1, approvedAt: now, error: "", claimedAt: null, updatedAt: now,
+  }).where(eq(telegramPublicationRequests.id, requestId));
   return telegramPublicationState();
 }
 
@@ -97,55 +137,38 @@ export async function claimTelegramPublication() {
     .orderBy(asc(telegramPublicationRequests.createdAt)).limit(100);
   let item: typeof telegramPublicationRequests.$inferSelect | undefined;
   for (const candidate of rows) {
+    const metadata = parseMetadata(candidate.candidateMetadata);
     const approvedAt = Date.parse(candidate.approvedAt);
-    const approvalAge = Date.now() - approvedAt;
-    if (Number.isFinite(approvedAt) && approvalAge >= -5 * 60 * 1000 && approvalAge <= MAX_PACKAGE_AGE_MS) {
-      item = candidate;
-      break;
-    }
+    const freshApproval = candidate.ownerApproved === 1 && Number.isFinite(approvedAt)
+      && Date.now() - approvedAt >= -5 * 60 * 1000 && Date.now() - approvedAt <= MAX_PACKAGE_AGE_MS;
+    const validCandidate = Boolean(metadata.validUntil) && Date.parse(metadata.validUntil) >= Date.now();
+    if (freshApproval && validCandidate) { item = candidate; break; }
     await db.update(telegramPublicationRequests).set({
-      status: "failed",
-      error: "Oferta expirada. Confirme o preço e prepare um novo pacote antes de publicar",
+      status: "failed", error: "Aprovação ausente ou candidato expirado. Revise antes de tentar novamente",
       updatedAt: new Date().toISOString(),
     }).where(eq(telegramPublicationRequests.id, candidate.id));
   }
   if (!item) return { items: [] };
   const now = new Date().toISOString();
-  await db.update(telegramPublicationRequests).set({
-    status: "publishing",
-    claimedAt: now,
-    updatedAt: now,
-  }).where(eq(telegramPublicationRequests.id, item.id));
+  await db.update(telegramPublicationRequests).set({ status: "publishing", claimedAt: now, updatedAt: now })
+    .where(eq(telegramPublicationRequests.id, item.id));
   return { items: [{
-    id: item.id,
-    productId: item.productId,
-    chatId: item.chatId,
-    messageText: item.messageText,
-    imageUrl: item.imageUrl,
-    linkPreviewEnabled: Boolean(item.linkPreviewEnabled),
-    ownerApproved: Boolean(item.ownerApproved),
-    approvedAt: item.approvedAt,
+    id: item.id, productId: item.productId, chatId: item.chatId, messageText: item.messageText,
+    affiliateUrl: item.affiliateUrl, imageUrl: item.imageUrl,
+    linkPreviewEnabled: Boolean(item.linkPreviewEnabled), ownerApproved: Boolean(item.ownerApproved), approvedAt: item.approvedAt,
   }] };
 }
 
-export async function applyTelegramPublicationResult(input: {
-  requestId: string;
-  status: "sent" | "failed";
-  messageId: number | null;
-  error: string;
-}) {
+export async function applyTelegramPublicationResult(input: { requestId: string; status: "sent" | "failed"; messageId: number | null; error: string }) {
   await ensureTelegramPublicationSchema();
   const db = getDb();
-  const rows = await db.select().from(telegramPublicationRequests)
+  const [item] = await db.select().from(telegramPublicationRequests)
     .where(eq(telegramPublicationRequests.id, input.requestId)).limit(1);
-  if (!rows[0] || rows[0].status !== "publishing") throw new Error("Solicitação não está reservada para publicação");
+  if (!item || item.status !== "publishing") throw new Error("Solicitação não está reservada para publicação");
   const now = new Date().toISOString();
   await db.update(telegramPublicationRequests).set({
-    status: input.status,
-    telegramMessageId: input.status === "sent" ? input.messageId : null,
-    error: input.status === "failed" ? input.error.slice(0, 500) : "",
-    sentAt: input.status === "sent" ? now : null,
-    updatedAt: now,
+    status: input.status, telegramMessageId: input.status === "sent" ? input.messageId : null,
+    error: input.status === "failed" ? input.error.slice(0, 500) : "", sentAt: input.status === "sent" ? now : null, updatedAt: now,
   }).where(eq(telegramPublicationRequests.id, input.requestId));
   return telegramPublicationState();
 }
@@ -153,11 +176,11 @@ export async function applyTelegramPublicationResult(input: {
 export async function retryTelegramPublication(requestId: string) {
   await ensureTelegramPublicationSchema();
   const db = getDb();
-  const rows = await db.select().from(telegramPublicationRequests)
+  const [item] = await db.select().from(telegramPublicationRequests)
     .where(eq(telegramPublicationRequests.id, requestId)).limit(1);
-  if (!rows[0] || rows[0].status !== "failed") throw new Error("Somente envios com falha podem ser reenviados");
+  if (!item || item.status !== "failed") throw new Error("Somente envios com falha podem voltar para revisão");
   await db.update(telegramPublicationRequests).set({
-    status: "queued", error: "", claimedAt: null, updatedAt: new Date().toISOString(),
+    status: "pending_approval", ownerApproved: 0, approvedAt: "", error: "", claimedAt: null, updatedAt: new Date().toISOString(),
   }).where(eq(telegramPublicationRequests.id, requestId));
   return telegramPublicationState();
 }
@@ -169,40 +192,43 @@ async function ensureTelegramPublicationSchema() {
     message_text TEXT NOT NULL, affiliate_url TEXT NOT NULL, image_url TEXT NOT NULL,
     owner_approved INTEGER NOT NULL, link_preview_enabled INTEGER NOT NULL,
     telegram_message_id INTEGER, error TEXT NOT NULL, approved_at TEXT NOT NULL,
-    claimed_at TEXT, sent_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    claimed_at TEXT, sent_at TEXT, candidate_metadata TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
   )`).run();
+  try { await env.DB.prepare("ALTER TABLE telegram_publication_requests ADD COLUMN candidate_metadata TEXT NOT NULL DEFAULT '{}'").run(); }
+  catch { /* Existing schema already has the additive column. */ }
   await env.DB.prepare("CREATE INDEX IF NOT EXISTS telegram_publication_status_idx ON telegram_publication_requests(status)").run();
   await env.DB.prepare("CREATE INDEX IF NOT EXISTS telegram_publication_product_idx ON telegram_publication_requests(product_id)").run();
 }
 
 function publicPublication(item: typeof telegramPublicationRequests.$inferSelect) {
   return {
-    id: item.id,
-    productId: item.productId,
-    status: item.status,
-    chatId: item.chatId,
-    messageText: item.messageText,
-    imageUrl: item.imageUrl,
-    linkPreviewEnabled: Boolean(item.linkPreviewEnabled),
-    telegramMessageId: item.telegramMessageId,
-    error: item.error,
-    approvedAt: item.approvedAt,
-    sentAt: item.sentAt,
-    updatedAt: item.updatedAt,
+    id: item.id, productId: item.productId, status: item.status, chatId: item.chatId,
+    messageText: item.messageText, affiliateUrl: item.affiliateUrl, imageUrl: item.imageUrl,
+    linkPreviewEnabled: Boolean(item.linkPreviewEnabled), telegramMessageId: item.telegramMessageId,
+    error: item.error, approvedAt: item.approvedAt, sentAt: item.sentAt, updatedAt: item.updatedAt,
+    candidate: parseMetadata(item.candidateMetadata),
   };
+}
+
+function parseMetadata(value: string): CandidateMetadata {
+  try { return JSON.parse(value || "{}") as CandidateMetadata; }
+  catch { return {} as CandidateMetadata; }
+}
+
+function simpleHash(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
+  return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
 function publicHttpsImageUrl(value: string) {
   if (!value || value.length > 2048) return false;
   try {
-    const url = new URL(value);
-    const host = url.hostname.toLowerCase();
+    const url = new URL(value); const host = url.hostname.toLowerCase();
     if (url.protocol !== "https:" || url.username || url.password || !host) return false;
     if (host === "localhost" || host.endsWith(".localhost")) return false;
     if (/^(127\.|10\.|0\.|169\.254\.|192\.168\.)/.test(host)) return false;
     if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
     return true;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }

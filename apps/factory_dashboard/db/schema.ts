@@ -79,6 +79,7 @@ export const telegramPublicationRequests = sqliteTable("telegram_publication_req
   approvedAt: text("approved_at").notNull(),
   claimedAt: text("claimed_at"),
   sentAt: text("sent_at"),
+  candidateMetadata: text("candidate_metadata").notNull().default("{}"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
 });

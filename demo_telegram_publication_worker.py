@@ -46,6 +46,7 @@ class RoutingHttpClient(HttpClient):
                 "productId": "product-1",
                 "chatId": self.chat_id,
                 "messageText": _TEXT,
+                "affiliateUrl": "https://meli.la/teste",
                 "imageUrl": _IMAGE,
                 "linkPreviewEnabled": True,
                 "ownerApproved": True,
@@ -57,6 +58,11 @@ class RoutingHttpClient(HttpClient):
             return HttpResponse(status_code=200, body={
                 "ok": True,
                 "result": {"message_id": 778, "chat": {"id": self.chat_id}},
+            })
+        if "api.telegram.org" in request.url and request.url.endswith("/sendMessage"):
+            return HttpResponse(status_code=200, body={
+                "ok": True,
+                "result": {"message_id": 779, "chat": {"id": self.chat_id}},
             })
         return HttpResponse(status_code=404, body={"ok": False})
 
@@ -142,6 +148,41 @@ def main() -> None:
     _check(stale.received == 1 and stale.failed == 1, "Expired offer is rejected before Telegram")
     _check(all("api.telegram.org" not in request.url for request in stale_client.requests), "Expired price never reaches Telegram")
     _check(stale_client.requests[-1].body["error"] == "telegram_offer_expired", "Expiration reason returns to the dashboard")
+
+    pending_client = RoutingHttpClient()
+    original_pending_send = pending_client.send
+
+    def pending_send(request: HttpRequest) -> HttpResponse:
+        response = original_pending_send(request)
+        if request.url == _ENDPOINT and request.method == HttpMethod.GET and isinstance(response.body, dict):
+            response.body["items"][0]["ownerApproved"] = False
+        return response
+
+    pending_client.send = pending_send  # type: ignore[method-assign]
+    pending = TelegramPublicationWorker(pending_client, _ENDPOINT).run_once(
+        _adapter(pending_client), token="queue-token", enabled=True,
+    )
+    _check(pending.received == 1 and pending.failed == 1, "Missing human approval is rejected")
+    _check(all("api.telegram.org" not in request.url for request in pending_client.requests), "Pending candidate never reaches Telegram")
+    _check(pending_client.requests[-1].body["error"] == "owner_approval_missing", "Approval failure is auditable")
+
+    editorial_client = RoutingHttpClient()
+    original_editorial_send = editorial_client.send
+
+    def editorial_send(request: HttpRequest) -> HttpResponse:
+        response = original_editorial_send(request)
+        if request.url == _ENDPOINT and request.method == HttpMethod.GET and isinstance(response.body, dict):
+            item = response.body["items"][0]
+            item["messageText"] = "Bem-vindo ao canal Achados Baratos Brasil. Acompanhe as próximas seleções."
+            item["affiliateUrl"] = ""
+            item["imageUrl"] = ""
+        return response
+
+    editorial_client.send = editorial_send  # type: ignore[method-assign]
+    editorial = TelegramPublicationWorker(editorial_client, _ENDPOINT).run_once(
+        _adapter(editorial_client), token="queue-token", enabled=True,
+    )
+    _check(editorial.sent == 1, "Approved non-affiliate editorial message does not require #publi")
 
     print(f"\nTelegram publication worker demo passed: {_ASSERTIONS}/{_ASSERTIONS} assertions")
 

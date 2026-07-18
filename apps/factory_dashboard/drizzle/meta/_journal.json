@@ -57,6 +57,13 @@
       "when": 1784340000000,
       "tag": "0007_learning_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1784426400000,
+      "tag": "0008_telegram_candidate_metadata",
+      "breakpoints": true
     }
   ]
 }

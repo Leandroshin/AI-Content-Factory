@@ -285,6 +285,11 @@
 .telegramSent > div, .telegramSent p { color: var(--dash-matrix); }
 .telegramFailed { border-color: var(--dash-red); background: rgba(255, 94, 94, .04); }
 .telegramFailed > div, .telegramFailed p { color: var(--dash-red); }
+.candidateFacts { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px !important; color: var(--dash-text) !important; }
+.candidateFacts span { min-width: 0; display: grid; gap: 3px; padding: 9px; border: 1px solid var(--dash-line); color: var(--dash-muted); font-size: 9px; overflow-wrap: anywhere; }
+.candidateFacts b { color: var(--dash-cyan); font: 700 8px var(--font-geist-mono); text-transform: uppercase; }
+.channelPublicationPanel { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--dash-line); background: var(--dash-panel); }
+.channelPublicationPanel > p { margin: 0; color: var(--dash-muted); font-size: 10px; line-height: 1.55; }
 .selectCampaign { min-height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border: 1px solid var(--dash-cyan); color: var(--dash-cyan); background: rgba(74, 217, 255, .05); border-radius: 4px; cursor: pointer; font-size: 9px; font-weight: 700; }
 .selectCampaign:disabled { opacity: .55; cursor: wait; }
 .briefReady { display: flex; align-items: center; gap: 5px; color: var(--dash-matrix) !important; }
@@ -552,6 +557,7 @@
   .commercialGrid { grid-template-columns: 1fr; }
   .campaignPackageDetail { grid-template-columns: 1fr; }
   .campaignPackageDetail > strong, .campaignPackageDetail > small, .telegramPreview, .telegramApproval, .telegramStatus { grid-column: 1; }
+  .candidateFacts { grid-template-columns: 1fr; }
   .campaignPackageDetail > button, .organicBrief, .organicBrief > div, .organicBrief > small { grid-column: 1; }
   .organicBrief { grid-template-columns: 1fr; }
   .campaignTable { grid-template-columns: 1fr; }

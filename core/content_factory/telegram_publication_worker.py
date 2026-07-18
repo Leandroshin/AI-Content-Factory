@@ -21,6 +21,7 @@ class TelegramPublicationWorkItem:
     product_id: str
     chat_id: str
     message_text: str
+    affiliate_url: str = ""
     image_url: str = ""
     link_preview_enabled: bool = True
     owner_approved: bool = False
@@ -158,7 +159,7 @@ class TelegramPublicationWorker:
             return "telegram_message_invalid"
         if item.image_url and not self._valid_public_image_url(item.image_url):
             return "telegram_image_invalid"
-        if "#publi" not in item.message_text.lower():
+        if item.affiliate_url and "#publi" not in item.message_text.lower():
             return "affiliate_disclosure_missing"
         if not self._approval_is_fresh(item.approved_at):
             return "telegram_offer_expired"
@@ -223,6 +224,7 @@ class TelegramPublicationWorker:
             product_id=product_id,
             chat_id=chat_id,
             message_text=message_text,
+            affiliate_url=str(value.get("affiliateUrl", "")).strip(),
             image_url=image_url,
             link_preview_enabled=bool(value.get("linkPreviewEnabled", True)),
             owner_approved=bool(value.get("ownerApproved", False)),

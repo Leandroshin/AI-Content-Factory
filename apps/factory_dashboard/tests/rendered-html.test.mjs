@@ -212,19 +212,25 @@ test("selected campaign package becomes an organic brief without execution", asy
   assert.doesNotMatch(`${ownerRoute}\n${store}`, /fetch\(|axios|http:\/\//);
 });
 
-test("Telegram publication requires exact owner approval and returns delivery evidence", async () => {
+test("Telegram candidate preparation stays separate from approval and delivery", async () => {
   const client = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/DashboardClient.tsx", import.meta.url), "utf8"));
   const ownerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/telegram-publications/route.ts", import.meta.url), "utf8"));
   const workerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/intake/telegram-publications/route.ts", import.meta.url), "utf8"));
   const store = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/telegram-publications/store.ts", import.meta.url), "utf8"));
   assert.match(client, /Prévia exata no Telegram/);
-  assert.match(client, /Autorizar publicação no Telegram/);
+  assert.match(client, /Preparar candidato para aprovação/);
+  assert.match(client, /PENDING HUMAN APPROVAL/);
+  assert.match(client, /Aprovar e colocar na fila/);
+  assert.match(client, /PUBLICAÇÃO:.*NÃO EXECUTADA/s);
   assert.match(client, /WhatsApp fica fora desta fase/);
   assert.match(client, /Mensagem #.*enviada em/s);
-  assert.match(ownerRoute, /PUBLICAR NO TELEGRAM/);
+  assert.match(ownerRoute, /PREPARAR CANDIDATO/);
+  assert.match(ownerRoute, /APROVAR PUBLICACAO TELEGRAM/);
   assert.match(workerRoute, /requireDashboardIntake/);
   assert.match(store, /@achadosbaratosBrasil/);
-  assert.match(store, /ownerApproved: 1/);
+  assert.match(store, /status: "pending_approval"/);
+  assert.match(store, /ownerApproved: 0/);
+  assert.match(store, /approveTelegramPublication/);
   assert.match(store, /ownerApproved: Boolean\(item\.ownerApproved\)/);
   assert.match(store, /telegramMessageId/);
   assert.match(store, /ACTIVE_STATUSES/);
@@ -232,6 +238,10 @@ test("Telegram publication requires exact owner approval and returns delivery ev
   assert.match(store, /MAX_PHOTO_CAPTION_LENGTH/);
   assert.match(store, /imageUrl: item\.imageUrl/);
   assert.match(store, /message\.includes\("#publi"\)/);
+  assert.match(store, /candidateMetadata/);
+  assert.match(store, /idempotencyKey/);
+  assert.match(store, /REAL CONTROLADO - OPT-IN E APROVACAO/);
+  assert.match(store, /Conteúdo editorial original/);
   assert.match(store, /Este link afiliado já foi publicado no Telegram/);
   assert.match(store, /publicHttpsImageUrl/);
   assert.doesNotMatch(`${ownerRoute}\n${store}`, /api\.telegram\.org|bot_token/);

@@ -146,9 +146,10 @@ export type ProductIntakeItem = {
 export type TelegramPublication = {
   id: string;
   productId: string;
-  status: "queued" | "publishing" | "sent" | "failed" | "cancelled";
+  status: "pending_approval" | "queued" | "publishing" | "sent" | "failed" | "cancelled";
   chatId: string;
   messageText: string;
+  affiliateUrl: string;
   imageUrl: string;
   linkPreviewEnabled: boolean;
   telegramMessageId: number | null;
@@ -156,6 +157,18 @@ export type TelegramPublication = {
   approvedAt: string;
   sentAt: string | null;
   updatedAt: string;
+  candidate: {
+    internalTitle: string;
+    objective: string;
+    audience: string;
+    callToAction: string;
+    origin: string;
+    risks: string[];
+    validUntil: string;
+    idempotencyKey: string;
+    publicationMode: string;
+    isAffiliate: boolean;
+  };
 };
 
 export type TelegramPublicationPayload = { publications: TelegramPublication[] };

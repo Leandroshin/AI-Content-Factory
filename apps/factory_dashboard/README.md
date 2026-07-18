@@ -13,6 +13,16 @@ O menu troca entre areas independentes. A lupa abre uma busca global, enquanto a
 
 Uma aprovacao neste painel **nao publica, nao anuncia e nao gera custo**. Publicacao e gasto continuam em gates separados.
 
+## Fluxos controlados
+
+- **Caixa de Aprendizado:** recebe fonte e transcricao, preserva evidencias e exige auditoria humana antes de qualquer conhecimento oficial.
+- **Fila Telegram:** preparar registra a mensagem exata como `PENDING HUMAN APPROVAL`; uma segunda aprovacao coloca o candidato na fila local.
+- **Publicacao real controlada:** o envio continua separado, exige worker local com opt-in, credenciais fora do Git e devolucao auditavel de `message_id`.
+
+Em todas essas etapas, preparar ou aprovar no painel nao executa automaticamente
+providers externos. O candidato mostra destino, validade, riscos e chave de
+idempotencia antes de qualquer envio.
+
 ## Desenvolvimento
 
 Requer Node.js `>=22.13.0`.
