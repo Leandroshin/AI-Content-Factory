@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { DashboardPayload, LearningSourceItem, LearningSourcePayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductResearchMissionItem, ProductResearchMissionPayload, ProductionRequest, TelegramPublication, TelegramPublicationPayload } from "./types";
+import type { DashboardPayload, LearningSourceItem, LearningSourcePayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductResearchCandidate, ProductResearchMissionItem, ProductResearchMissionPayload, ProductionRequest, TelegramPublication, TelegramPublicationPayload } from "./types";
 import { LearningInboxView, type LearningAuditForm, type LearningSourceForm } from "./LearningInboxView";
 import styles from "./dashboard.module.css";
 
@@ -752,11 +752,36 @@ function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitM
   const [targetChannel, setTargetChannel] = useState("telegram_public");
   const [trackingLabel, setTrackingLabel] = useState("telegram_public");
   const [channelRegistered, setChannelRegistered] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<ProductResearchCandidate | null>(null);
+  const [submissionMessage, setSubmissionMessage] = useState("");
+  const productFormRef = useRef<HTMLFormElement>(null);
+  const productUrlInputRef = useRef<HTMLInputElement>(null);
   const detectedMarketplace = useMemo(() => marketplaceFromUrl(productUrl), [productUrl]);
+  const meliLinkRecognized = useMemo(() => isMeliShortUrl(productUrl), [productUrl]);
+
+  function selectCandidate(candidate: ProductResearchCandidate) {
+    setSelectedCandidate(candidate);
+    setProductUrl("");
+    setAffiliateUrl("");
+    setEvidenceUrl(candidate.source_url);
+    setLanguage("pt-BR");
+    setSourceKind("product_page");
+    setOwnerNotes(`Selecionado na pesquisa: ${candidate.product_name}. Score ${candidate.score_total}. ${candidate.reasons.join(" ")}`.slice(0, 800));
+    setTargetChannel("telegram_public");
+    setTrackingLabel("telegram_public");
+    setSubmissionMessage("");
+    window.setTimeout(() => {
+      productFormRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      productUrlInputRef.current?.focus();
+    }, 0);
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (await onSubmit({ productUrl, affiliateUrl, evidenceUrl, language, sourceKind, ownerNotes, targetChannel, trackingLabel, channelRegistered })) {
+      setSubmissionMessage(meliLinkRecognized
+        ? "Link Mercado Livre recebido e preservado como link monetizado. Agora ele entrou na análise; nada foi publicado."
+        : "Produto recebido para análise. Nada foi publicado.");
       setProductUrl("");
       setAffiliateUrl("");
       setEvidenceUrl("");
@@ -766,17 +791,24 @@ function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitM
       setTargetChannel("telegram_public");
       setTrackingLabel("telegram_public");
       setChannelRegistered(false);
+      setSelectedCandidate(null);
     }
   }
 
   return <>
-    <ResearchMissionPanel missions={missions} busy={busy} onSubmit={onSubmitMission} />
+    <ResearchMissionPanel missions={missions} busy={busy} onSubmit={onSubmitMission} onSelectCandidate={selectCandidate} />
     <section className={styles.productWorkspace}>
-    <form className={styles.productForm} onSubmit={submit}>
+    <form ref={productFormRef} className={styles.productForm} onSubmit={submit}>
       <SectionHead kicker="NOVA ANÁLISE" title="Adicionar produto" />
       <div className={styles.formBody}>
-        <label><span>Página de venda ou produto</span><div><ExternalLink size={16} /><input type="url" required value={productUrl} onChange={(event) => setProductUrl(event.target.value)} placeholder="https://produto.mercadolivre.com.br/... ou https://shopee.com.br/..." /></div><small>Para Mercado Livre, o link oficial <code>meli.la</code> também é aceito.</small></label>
-        <label><span>Link afiliado <small>opcional</small></span><div><BadgeDollarSign size={16} /><input type="url" value={affiliateUrl} onChange={(event) => setAffiliateUrl(event.target.value)} placeholder="Cole aqui se já tiver" /></div><small>Se o link <code>meli.la</code> já estiver no primeiro campo, ele é preservado como link afiliado para conferência.</small></label>
+        {selectedCandidate && <div className={styles.selectedCandidate}>
+          <span><Check size={15} /></span>
+          <div><small>PRODUTO ESCOLHIDO NA PESQUISA</small><strong>{selectedCandidate.product_name}</strong><p>Agora cole abaixo o link <code>meli.la</code> gerado no Mercado Livre. A fonte da pesquisa já foi anexada como evidência.</p></div>
+          <button type="button" onClick={() => setSelectedCandidate(null)} aria-label="Remover seleção"><X size={15} /></button>
+        </div>}
+        <label><span>Link do produto ou link <code>meli.la</code></span><div><ExternalLink size={16} /><input ref={productUrlInputRef} type="url" required value={productUrl} onChange={(event) => { setProductUrl(event.target.value); setSubmissionMessage(""); }} placeholder="Cole aqui o link meli.la gerado no Mercado Livre" /></div><small>Se você já gerou o link <code>meli.la</code>, cole somente aqui.</small></label>
+        {meliLinkRecognized && <div className={styles.recognizedLink}><Check size={15} /><span><strong>Link monetizado reconhecido</strong>Não precisa repetir no campo seguinte.</span></div>}
+        <label><span>Link afiliado separado <small>opcional</small></span><div><BadgeDollarSign size={16} /><input type="url" disabled={meliLinkRecognized} value={meliLinkRecognized ? "" : affiliateUrl} onChange={(event) => setAffiliateUrl(event.target.value)} placeholder={meliLinkRecognized ? "Já reconhecido no campo acima" : "Use apenas se for diferente do primeiro link"} /></div><small>Deixe vazio quando o primeiro campo já contém <code>meli.la</code>.</small></label>
         <label><span>Evidência ou página de suporte <small>opcional</small></span><div><FileSearch size={16} /><input type="url" value={evidenceUrl} onChange={(event) => setEvidenceUrl(event.target.value)} placeholder="Página de suporte, print hospedado, termos ou review" /></div></label>
         <div className={styles.formSplit}>
           <label><span>Tipo</span><select value={sourceKind} onChange={(event) => setSourceKind(event.target.value)}><option value="product_page">Produto físico</option><option value="sales_page">Página de venda</option></select></label>
@@ -790,6 +822,7 @@ function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitM
         <label><span>Contexto para os funcionários <small>opcional</small></span><textarea value={ownerNotes} onChange={(event) => setOwnerNotes(event.target.value)} maxLength={800} placeholder="Ex: vi essa oferta na Digistore, comissão boa, mas ainda falta PayPal. Quero avaliar promessa, público e risco." /></label>
         <div className={styles.acceptedMarkets} aria-label="Plataformas reconhecidas">{["Amazon Brasil", "Mercado Livre", "Shopee", "Adidas", "Digistore24", "Braip"].map((marketplace) => <span key={marketplace} className={detectedMarketplace === marketplace ? styles.marketActive : ""}>{marketplace}</span>)}</div>
         <button className={styles.submitProduct} disabled={busy === "product"}><PackagePlus size={17} /> {busy === "product" ? "Enviando..." : "Enviar para análise"}</button>
+        {submissionMessage && <div className={styles.submissionConfirmation} role="status"><Check size={16} /><span><strong>Envio concluído</strong>{submissionMessage}</span></div>}
         <p className={styles.formSafety}><ShieldCheck size={15} /> Gere o link no painel oficial com a etiqueta acima. A fábrica preserva, analisa e prepara a copy; nenhum anúncio, compra ou publicação começa aqui.</p>
       </div>
     </form>
@@ -802,7 +835,7 @@ function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitM
   </>;
 }
 
-function ResearchMissionPanel({ missions, busy, onSubmit }: { missions: ProductResearchMissionItem[]; busy: string | null; onSubmit: (input: ResearchMissionFormInput) => Promise<boolean> }) {
+function ResearchMissionPanel({ missions, busy, onSubmit, onSelectCandidate }: { missions: ProductResearchMissionItem[]; busy: string | null; onSubmit: (input: ResearchMissionFormInput) => Promise<boolean>; onSelectCandidate: (candidate: ProductResearchCandidate) => void }) {
   const [goal, setGoal] = useState("");
   const [marketplace, setMarketplace] = useState("mercado_livre");
   const [category, setCategory] = useState("");
@@ -836,21 +869,22 @@ function ResearchMissionPanel({ missions, busy, onSubmit }: { missions: ProductR
     </form>
     <div className={styles.researchMissionResults}>
       <SectionHead kicker="RETORNO VISUAL" title="Pesquisas e shortlist" />
-      {missions.length ? missions.map((mission) => <ResearchMissionCard key={mission.id} mission={mission} />) : <div className={styles.empty}>Crie uma missão simples. Os funcionários devolverão produtos, evidências, score e pendências aqui.</div>}
+      {missions.length ? missions.map((mission) => <ResearchMissionCard key={mission.id} mission={mission} onSelectCandidate={onSelectCandidate} />) : <div className={styles.empty}>Crie uma missão simples. Os funcionários devolverão produtos, evidências, score e pendências aqui.</div>}
     </div>
   </section>;
 }
 
-function ResearchMissionCard({ mission }: { mission: ProductResearchMissionItem }) {
+function ResearchMissionCard({ mission, onSelectCandidate }: { mission: ProductResearchMissionItem; onSelectCandidate: (candidate: ProductResearchCandidate) => void }) {
   const shortlist = mission.result.shortlisted ?? [];
   const status = mission.status === "queued" ? "Na fila" : mission.status === "researching" ? "Pesquisando" : mission.status === "review" ? "Sua revisão" : mission.status === "needs_input" ? "Precisa de dados" : "Bloqueada";
   return <article className={styles.researchMissionCard}>
     <div className={styles.missionHeader}><span><small>{status}</small><strong>{mission.goal}</strong></span><b>{mission.marketplaces.join(" + ")}</b></div>
     <p>{mission.error || (shortlist.length ? `${shortlist.length} produto(s) selecionado(s) para você comparar.` : "Aguardando o funcionário consultar fontes conectadas.")}</p>
-    {shortlist.length > 0 && <div className={styles.missionShortlist}>{shortlist.map((candidate) => <a key={candidate.candidate_id} href={candidate.source_url} target="_blank" rel="noreferrer">
-      {candidate.image_url ? <Image unoptimized src={candidate.image_url} alt="" width={48} height={48} /> : <span><ShoppingBag size={17} /></span>}
-      <span><strong>{candidate.product_name}</strong><small>R$ {candidate.current_price.toFixed(2).replace(".", ",")} · score {candidate.score_total}</small><em>Link afiliado: confirmar</em></span><ExternalLink size={13} />
-    </a>)}</div>}
+    {shortlist.length > 0 && <div className={styles.missionShortlist}>{shortlist.map((candidate) => <div className={styles.shortlistCandidate} key={candidate.candidate_id}>
+      {candidate.image_url ? <Image unoptimized src={candidate.image_url} alt="" width={48} height={48} /> : <span className={styles.shortlistImage}><ShoppingBag size={17} /></span>}
+      <span><strong>{candidate.product_name}</strong><small>R$ {candidate.current_price.toFixed(2).replace(".", ",")} · score {candidate.score_total}</small><em>Link monetizado: aguardando você</em></span>
+      <div className={styles.shortlistActions}><button type="button" onClick={() => onSelectCandidate(candidate)}><Check size={13} /> Escolher produto</button><a href={candidate.source_url} target="_blank" rel="noreferrer">Abrir fonte <ExternalLink size={12} /></a></div>
+    </div>)}</div>}
     <footer><span>Provider: não chamado</span><span>Publicação: bloqueada</span></footer>
   </article>;
 }
@@ -1187,6 +1221,15 @@ function marketplaceFromUrl(value: string) {
     return "";
   }
   return "";
+}
+
+function isMeliShortUrl(value: string) {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return host === "meli.la" || host.endsWith(".meli.la");
+  } catch {
+    return false;
+  }
 }
 
 function Status({ status }: { status: OpportunityStatus }) {

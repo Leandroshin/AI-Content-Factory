@@ -15,8 +15,10 @@ test("factory dashboard source exposes the operational cockpit", async () => {
   assert.match(client, /Matrix/);
   assert.match(client, /Fontes para conferência/);
   assert.match(client, /Adicionar produto/);
-  assert.match(client, /Página de venda ou produto/);
-  assert.match(client, /Link afiliado/);
+  assert.match(client, /Link do produto ou link/);
+  assert.match(client, /Link afiliado separado/);
+  assert.match(client, /Link monetizado reconhecido/);
+  assert.match(client, /Envio concluído/);
   assert.match(client, /Etiqueta no Mercado Livre/);
   assert.match(client, /canal público já está cadastrado/);
   assert.match(client, /Evidência ou página de suporte/);
@@ -24,6 +26,7 @@ test("factory dashboard source exposes the operational cockpit", async () => {
   assert.match(client, /Digistore24/);
   assert.match(client, /Braip/);
   assert.match(client, /Enviar para análise/);
+  assert.match(client, /Escolher produto/);
   assert.match(client, /greetingForHour/);
   assert.match(client, /Boa madrugada/);
   assert.match(client, /Boa tarde/);
@@ -153,7 +156,8 @@ test("product intake separates owner input from the authenticated worker", async
   assert.match(ownerRoute, /product\.hostname\.toLowerCase\(\) === "meli\.la"/);
   assert.match(ownerRoute, /retry_analysis/);
   assert.match(client, /meli\.la/);
-  assert.match(client, /link afiliado para conferência/);
+  assert.match(client, /preservado como link monetizado/);
+  assert.match(client, /Não precisa repetir no campo seguinte/);
   assert.match(client, /Reanalisar página/);
   assert.match(workerRoute, /requireDashboardIntake/);
   assert.match(workerRoute, /completed.*needs_input.*blocked/s);
@@ -172,7 +176,8 @@ test("research missions stay bounded, read-only and separated from publication",
   assert.match(client, /Pedir pesquisa aos funcionários/);
   assert.match(client, /Mercado Livre conectado/);
   assert.match(client, /Amazon pendente/);
-  assert.match(client, /Link afiliado: confirmar/);
+  assert.match(client, /Link monetizado: aguardando você/);
+  assert.match(client, /Escolher produto/);
   assert.match(client, /Publicação: bloqueada/);
   assert.match(ownerRoute, /resultLimit.*3.*10/s);
   assert.match(workerRoute, /requireDashboardIntake/);
