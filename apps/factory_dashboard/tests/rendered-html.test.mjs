@@ -19,6 +19,10 @@ test("factory dashboard source exposes the operational cockpit", async () => {
   assert.match(client, /Link afiliado separado/);
   assert.match(client, /Link monetizado reconhecido/);
   assert.match(client, /Envio concluído/);
+  assert.match(client, /Enviado para análise · nada publicado/);
+  assert.match(client, /Fonte genérica · escolha um anúncio exato/);
+  assert.match(client, /Buscar produto/);
+  assert.match(client, /window\.scrollTo/);
   assert.match(client, /Etiqueta no Mercado Livre/);
   assert.match(client, /canal público já está cadastrado/);
   assert.match(client, /Evidência ou página de suporte/);
@@ -179,6 +183,10 @@ test("research missions stay bounded, read-only and separated from publication",
   assert.match(client, /Link monetizado: aguardando você/);
   assert.match(client, /Escolher produto/);
   assert.match(client, /Publicação: bloqueada/);
+  assert.match(client, /Arquivar esta pesquisa de teste/);
+  assert.match(ownerRoute, /export async function DELETE/);
+  assert.match(store, /status: "archived"/);
+  assert.match(store, /row\.status !== "archived"/);
   assert.match(ownerRoute, /resultLimit.*3.*10/s);
   assert.match(workerRoute, /requireDashboardIntake/);
   assert.match(workerRoute, /review.*needs_input.*blocked/s);

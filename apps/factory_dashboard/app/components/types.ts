@@ -199,7 +199,7 @@ export type ProductResearchMissionItem = {
   timeframe: string;
   resultLimit: number;
   targetChannel: string;
-  status: "queued" | "researching" | "review" | "needs_input" | "blocked";
+  status: "queued" | "researching" | "review" | "needs_input" | "blocked" | "archived";
   result: { shortlisted?: ProductResearchCandidate[]; next_actions?: string[]; total_candidates?: number };
   error: string;
   providerStatus: "not_called";

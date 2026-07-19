@@ -2,7 +2,7 @@ import { asc, desc, eq, inArray } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { productResearchMissions } from "../../../db/schema";
 
-export type ResearchMissionStatus = "queued" | "researching" | "review" | "needs_input" | "blocked";
+export type ResearchMissionStatus = "queued" | "researching" | "review" | "needs_input" | "blocked" | "archived";
 
 export type ResearchMissionInput = {
   goal: string;
@@ -16,7 +16,7 @@ export type ResearchMissionInput = {
 
 export type ResearchMissionWorkerResult = {
   missionId: string;
-  status: Exclude<ResearchMissionStatus, "queued" | "researching">;
+  status: "review" | "needs_input" | "blocked";
   report: Record<string, unknown>;
   error: string;
 };
@@ -47,7 +47,19 @@ export async function researchMissionState() {
   const db = getDb();
   await ensureSchema();
   const rows = await db.select().from(productResearchMissions).orderBy(desc(productResearchMissions.updatedAt)).limit(30);
-  return { missions: rows.map(publicMission) };
+  return { missions: rows.filter((row) => row.status !== "archived").map(publicMission) };
+}
+
+export async function archiveResearchMission(missionId: string) {
+  const db = getDb();
+  await ensureSchema();
+  const existing = await db.select().from(productResearchMissions).where(eq(productResearchMissions.id, missionId)).limit(1);
+  if (!existing[0]) throw new Error("Research mission was not found");
+  await db.update(productResearchMissions).set({
+    status: "archived",
+    updatedAt: new Date().toISOString(),
+  }).where(eq(productResearchMissions.id, missionId));
+  return researchMissionState();
 }
 
 export async function researchMissionQueue() {

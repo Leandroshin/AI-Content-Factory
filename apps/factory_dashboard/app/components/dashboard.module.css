@@ -182,9 +182,14 @@
 .missionHeader small { margin-bottom: 5px; color: var(--dash-matrix); font: 700 8px var(--font-geist-mono); text-transform: uppercase; }
 .missionHeader strong { font-size: 12px; }
 .missionHeader b { color: var(--dash-cyan); font: 8px var(--font-geist-mono); text-transform: uppercase; }
+.missionHeaderActions { display: flex; align-items: center; gap: 8px; }
+.missionHeaderActions button { width: 28px; height: 28px; display: grid; place-items: center; border: 1px solid var(--dash-line); border-radius: 4px; color: var(--dash-muted); background: transparent; cursor: pointer; }
+.missionHeaderActions button:hover { color: var(--dash-text); border-color: var(--dash-line-bright); }
+.missionHeaderActions button:disabled { opacity: .45; cursor: wait; }
 .researchMissionCard > p { color: var(--dash-muted); font-size: 10px; line-height: 1.5; }
 .missionShortlist { display: grid; gap: 6px; }
 .shortlistCandidate { min-width: 0; display: grid; grid-template-columns: 48px minmax(0, 1fr); align-items: center; gap: 10px; padding: 9px; border: 1px solid var(--dash-line); color: var(--dash-text); background: var(--dash-raised); }
+.shortlistCandidateDone { border-color: rgba(58, 255, 125, .45); background: linear-gradient(90deg, rgba(58, 255, 125, .11), rgba(58, 255, 125, .025)); }
 .missionShortlist img, .shortlistImage { width: 48px; height: 48px; display: grid; place-items: center; object-fit: cover; color: var(--dash-matrix); background: var(--dash-soft); }
 .missionShortlist strong, .missionShortlist small, .missionShortlist em { display: block; }
 .missionShortlist strong { font-size: 10px; }
@@ -193,10 +198,11 @@
 .shortlistActions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
 .shortlistActions button, .shortlistActions a { min-height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border: 1px solid var(--dash-line-bright); border-radius: 4px; font-size: 9px; text-decoration: none; cursor: pointer; }
 .shortlistActions button { color: #06150a; background: var(--dash-matrix); font-weight: 750; }
+.shortlistActions button:disabled { color: var(--dash-matrix); background: rgba(58, 255, 125, .08); cursor: default; }
 .shortlistActions a { color: var(--dash-cyan); background: transparent; }
 .researchMissionCard footer { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .researchMissionCard footer span { padding: 4px 6px; border: 1px solid var(--dash-line); color: var(--dash-muted); font: 8px var(--font-geist-mono); }
-.productForm { position: sticky; top: 20px; }
+.productForm { position: static; }
 .formBody { display: grid; gap: 16px; padding: 18px; }
 .selectedCandidate, .recognizedLink, .submissionConfirmation { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 9px; padding: 11px; border: 1px solid rgba(58, 255, 125, .35); background: rgba(58, 255, 125, .06); }
 .selectedCandidate > span, .recognizedLink > svg, .submissionConfirmation > svg { color: var(--dash-matrix); }

@@ -476,6 +476,26 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
     }
   }
 
+  async function archiveResearchMission(missionId: string) {
+    setBusy(`archive-research-${missionId}`);
+    setNotice("");
+    try {
+      const response = await fetch("/api/research-missions", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ missionId }),
+      });
+      const payload = await response.json() as ProductResearchMissionPayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || "Não foi possível arquivar a pesquisa");
+      setResearchMissions(payload.missions ?? []);
+      setNotice("Pesquisa de teste arquivada. Os dados foram preservados e ela saiu da sua tela.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Não foi possível arquivar a pesquisa.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function prepareCampaign(productId: string) {
     setBusy(`campaign-${productId}`);
     setNotice("");
@@ -677,7 +697,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
         {notice && <div className={styles.notice} role="status"><CircleAlert size={16} /> {notice}<button aria-label="Fechar aviso" onClick={() => setNotice("")}><X size={15} /></button></div>}
 
         {view === "central" && <CentralView data={data} pending={pending} onOpenOpportunity={openOpportunity} onMetric={openMetric} onView={changeView} />}
-        {view === "products" && <ProductsView items={products} missions={researchMissions} publications={telegramPublications} busy={busy} onSubmit={addProduct} onSubmitMission={addResearchMission} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} onRetryAnalysis={retryProductAnalysis} onCompleteCommercial={completeCommercial} onQueueTelegram={queueTelegramPublication} onApproveTelegram={approveTelegramPublication} onRetryTelegram={retryTelegramPublication} />}
+        {view === "products" && <ProductsView items={products} missions={researchMissions} publications={telegramPublications} busy={busy} onSubmit={addProduct} onSubmitMission={addResearchMission} onArchiveMission={archiveResearchMission} onPrepareCampaign={prepareCampaign} onPrepareBrief={prepareOrganicBrief} onRetryAnalysis={retryProductAnalysis} onCompleteCommercial={completeCommercial} onQueueTelegram={queueTelegramPublication} onApproveTelegram={approveTelegramPublication} onRetryTelegram={retryTelegramPublication} />}
           {view === "learning" && <LearningInboxView items={learningSources} busy={busy} onSubmit={addLearningSource} onAudit={auditLearningSource} />}
         {view === "opportunities" && <OpportunitiesView
           visible={visible}
@@ -742,7 +762,7 @@ function CentralView({ data, pending, onOpenOpportunity, onMetric, onView }: { d
   </>;
 }
 
-function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitMission, onPrepareCampaign, onPrepareBrief, onRetryAnalysis, onCompleteCommercial, onQueueTelegram, onApproveTelegram, onRetryTelegram }: { items: ProductIntakeItem[]; missions: ProductResearchMissionItem[]; publications: TelegramPublication[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onSubmitMission: (input: ResearchMissionFormInput) => Promise<boolean>; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void; onRetryAnalysis: (productId: string) => void; onCompleteCommercial: (productId: string, input: CommercialFormInput) => Promise<boolean>; onQueueTelegram: (productId: string) => void; onApproveTelegram: (requestId: string) => void; onRetryTelegram: (requestId: string) => void }) {
+function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitMission, onArchiveMission, onPrepareCampaign, onPrepareBrief, onRetryAnalysis, onCompleteCommercial, onQueueTelegram, onApproveTelegram, onRetryTelegram }: { items: ProductIntakeItem[]; missions: ProductResearchMissionItem[]; publications: TelegramPublication[]; busy: string | null; onSubmit: (input: ProductFormInput) => Promise<boolean>; onSubmitMission: (input: ResearchMissionFormInput) => Promise<boolean>; onArchiveMission: (missionId: string) => void; onPrepareCampaign: (productId: string) => void; onPrepareBrief: (productId: string) => void; onRetryAnalysis: (productId: string) => void; onCompleteCommercial: (productId: string, input: CommercialFormInput) => Promise<boolean>; onQueueTelegram: (productId: string) => void; onApproveTelegram: (requestId: string) => void; onRetryTelegram: (requestId: string) => void }) {
   const [productUrl, setProductUrl] = useState("");
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
@@ -754,16 +774,36 @@ function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitM
   const [channelRegistered, setChannelRegistered] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<ProductResearchCandidate | null>(null);
   const [submissionMessage, setSubmissionMessage] = useState("");
+  const [submittedCandidateIds, setSubmittedCandidateIds] = useState<string[]>([]);
   const productFormRef = useRef<HTMLFormElement>(null);
   const productUrlInputRef = useRef<HTMLInputElement>(null);
   const detectedMarketplace = useMemo(() => marketplaceFromUrl(productUrl), [productUrl]);
   const meliLinkRecognized = useMemo(() => isMeliShortUrl(productUrl), [productUrl]);
 
+  useEffect(() => {
+    const loadSubmittedCandidates = () => {
+      try {
+        const stored = JSON.parse(window.localStorage.getItem("factory-submitted-shortlist-candidates") ?? "[]") as unknown;
+        setSubmittedCandidateIds(Array.isArray(stored) ? stored.filter((value): value is string => typeof value === "string") : []);
+      } catch { setSubmittedCandidateIds([]); }
+    };
+    const timeoutId = window.setTimeout(loadSubmittedCandidates, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
+  function markCandidateSubmitted(candidateId: string) {
+    setSubmittedCandidateIds((current) => {
+      const next = [...new Set([...current, candidateId])];
+      window.localStorage.setItem("factory-submitted-shortlist-candidates", JSON.stringify(next));
+      return next;
+    });
+  }
+
   function selectCandidate(candidate: ProductResearchCandidate) {
     setSelectedCandidate(candidate);
     setProductUrl("");
     setAffiliateUrl("");
-    setEvidenceUrl(candidate.source_url);
+    setEvidenceUrl(isGenericMarketplaceSource(candidate.source_url) ? "" : candidate.source_url);
     setLanguage("pt-BR");
     setSourceKind("product_page");
     setOwnerNotes(`Selecionado na pesquisa: ${candidate.product_name}. Score ${candidate.score_total}. ${candidate.reasons.join(" ")}`.slice(0, 800));
@@ -782,6 +822,7 @@ function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitM
       setSubmissionMessage(meliLinkRecognized
         ? "Link Mercado Livre recebido e preservado como link monetizado. Agora ele entrou na análise; nada foi publicado."
         : "Produto recebido para análise. Nada foi publicado.");
+      if (selectedCandidate) markCandidateSubmitted(selectedCandidate.candidate_id);
       setProductUrl("");
       setAffiliateUrl("");
       setEvidenceUrl("");
@@ -792,11 +833,12 @@ function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitM
       setTrackingLabel("telegram_public");
       setChannelRegistered(false);
       setSelectedCandidate(null);
+      window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
     }
   }
 
   return <>
-    <ResearchMissionPanel missions={missions} busy={busy} onSubmit={onSubmitMission} onSelectCandidate={selectCandidate} />
+    <ResearchMissionPanel missions={missions} busy={busy} submittedCandidateIds={submittedCandidateIds} onSubmit={onSubmitMission} onSelectCandidate={selectCandidate} onArchiveMission={onArchiveMission} />
     <section className={styles.productWorkspace}>
     <form ref={productFormRef} className={styles.productForm} onSubmit={submit}>
       <SectionHead kicker="NOVA ANÁLISE" title="Adicionar produto" />
@@ -835,7 +877,7 @@ function ProductsView({ items, missions, publications, busy, onSubmit, onSubmitM
   </>;
 }
 
-function ResearchMissionPanel({ missions, busy, onSubmit, onSelectCandidate }: { missions: ProductResearchMissionItem[]; busy: string | null; onSubmit: (input: ResearchMissionFormInput) => Promise<boolean>; onSelectCandidate: (candidate: ProductResearchCandidate) => void }) {
+function ResearchMissionPanel({ missions, busy, submittedCandidateIds, onSubmit, onSelectCandidate, onArchiveMission }: { missions: ProductResearchMissionItem[]; busy: string | null; submittedCandidateIds: string[]; onSubmit: (input: ResearchMissionFormInput) => Promise<boolean>; onSelectCandidate: (candidate: ProductResearchCandidate) => void; onArchiveMission: (missionId: string) => void }) {
   const [goal, setGoal] = useState("");
   const [marketplace, setMarketplace] = useState("mercado_livre");
   const [category, setCategory] = useState("");
@@ -869,22 +911,26 @@ function ResearchMissionPanel({ missions, busy, onSubmit, onSelectCandidate }: {
     </form>
     <div className={styles.researchMissionResults}>
       <SectionHead kicker="RETORNO VISUAL" title="Pesquisas e shortlist" />
-      {missions.length ? missions.map((mission) => <ResearchMissionCard key={mission.id} mission={mission} onSelectCandidate={onSelectCandidate} />) : <div className={styles.empty}>Crie uma missão simples. Os funcionários devolverão produtos, evidências, score e pendências aqui.</div>}
+      {missions.length ? missions.map((mission) => <ResearchMissionCard key={mission.id} mission={mission} busy={busy} submittedCandidateIds={submittedCandidateIds} onSelectCandidate={onSelectCandidate} onArchiveMission={onArchiveMission} />) : <div className={styles.empty}>Crie uma missão simples. Os funcionários devolverão produtos, evidências, score e pendências aqui.</div>}
     </div>
   </section>;
 }
 
-function ResearchMissionCard({ mission, onSelectCandidate }: { mission: ProductResearchMissionItem; onSelectCandidate: (candidate: ProductResearchCandidate) => void }) {
+function ResearchMissionCard({ mission, busy, submittedCandidateIds, onSelectCandidate, onArchiveMission }: { mission: ProductResearchMissionItem; busy: string | null; submittedCandidateIds: string[]; onSelectCandidate: (candidate: ProductResearchCandidate) => void; onArchiveMission: (missionId: string) => void }) {
   const shortlist = mission.result.shortlisted ?? [];
   const status = mission.status === "queued" ? "Na fila" : mission.status === "researching" ? "Pesquisando" : mission.status === "review" ? "Sua revisão" : mission.status === "needs_input" ? "Precisa de dados" : "Bloqueada";
   return <article className={styles.researchMissionCard}>
-    <div className={styles.missionHeader}><span><small>{status}</small><strong>{mission.goal}</strong></span><b>{mission.marketplaces.join(" + ")}</b></div>
+    <div className={styles.missionHeader}><span><small>{status}</small><strong>{mission.goal}</strong></span><span className={styles.missionHeaderActions}><b>{mission.marketplaces.join(" + ")}</b><button type="button" disabled={busy === `archive-research-${mission.id}`} onClick={() => onArchiveMission(mission.id)} title="Arquivar esta pesquisa de teste" aria-label={`Arquivar pesquisa ${mission.goal}`}><X size={13} /></button></span></div>
     <p>{mission.error || (shortlist.length ? `${shortlist.length} produto(s) selecionado(s) para você comparar.` : "Aguardando o funcionário consultar fontes conectadas.")}</p>
-    {shortlist.length > 0 && <div className={styles.missionShortlist}>{shortlist.map((candidate) => <div className={styles.shortlistCandidate} key={candidate.candidate_id}>
+    {shortlist.length > 0 && <div className={styles.missionShortlist}>{[...shortlist].sort((a, b) => Number(submittedCandidateIds.includes(a.candidate_id)) - Number(submittedCandidateIds.includes(b.candidate_id))).map((candidate) => {
+      const submitted = submittedCandidateIds.includes(candidate.candidate_id);
+      const genericSource = isGenericMarketplaceSource(candidate.source_url);
+      const sourceUrl = genericSource ? mercadoLivreSearchUrl(candidate.product_name) : candidate.source_url;
+      return <div className={`${styles.shortlistCandidate} ${submitted ? styles.shortlistCandidateDone : ""}`} key={candidate.candidate_id}>
       {candidate.image_url ? <Image unoptimized src={candidate.image_url} alt="" width={48} height={48} /> : <span className={styles.shortlistImage}><ShoppingBag size={17} /></span>}
-      <span><strong>{candidate.product_name}</strong><small>R$ {candidate.current_price.toFixed(2).replace(".", ",")} · score {candidate.score_total}</small><em>Link monetizado: aguardando você</em></span>
-      <div className={styles.shortlistActions}><button type="button" onClick={() => onSelectCandidate(candidate)}><Check size={13} /> Escolher produto</button><a href={candidate.source_url} target="_blank" rel="noreferrer">Abrir fonte <ExternalLink size={12} /></a></div>
-    </div>)}</div>}
+      <span><strong>{candidate.product_name}</strong><small>R$ {candidate.current_price.toFixed(2).replace(".", ",")} · score {candidate.score_total}</small><em>{submitted ? "Enviado para análise · nada publicado" : genericSource ? "Fonte genérica · escolha um anúncio exato" : "Link monetizado: aguardando você"}</em></span>
+      <div className={styles.shortlistActions}><button type="button" disabled={submitted} onClick={() => onSelectCandidate(candidate)}>{submitted ? <><Check size={13} /> Enviado</> : <><Check size={13} /> Escolher produto</>}</button><a href={sourceUrl} target="_blank" rel="noreferrer">{genericSource ? "Buscar produto" : "Abrir fonte"} <ExternalLink size={12} /></a></div>
+    </div>; })}</div>}
     <footer><span>Provider: não chamado</span><span>Publicação: bloqueada</span></footer>
   </article>;
 }
@@ -1230,6 +1276,22 @@ function isMeliShortUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+function isGenericMarketplaceSource(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname.replace(/\/+$/, "");
+    return (host === "mercadolivre.com.br" || host === "www.mercadolivre.com.br") && path === "";
+  } catch {
+    return true;
+  }
+}
+
+function mercadoLivreSearchUrl(productName: string) {
+  const query = productName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
+  return `https://lista.mercadolivre.com.br/${query}`;
 }
 
 function Status({ status }: { status: OpportunityStatus }) {

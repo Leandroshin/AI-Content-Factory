@@ -1,4 +1,4 @@
-import { createResearchMission, researchMissionState } from "./store";
+import { archiveResearchMission, createResearchMission, researchMissionState } from "./store";
 
 const MARKETPLACES = new Set(["mercado_livre", "amazon", "shopee"]);
 const TIMEFRAMES = new Set(["today", "week", "evergreen"]);
@@ -22,6 +22,16 @@ export async function POST(request: Request) {
     const targetChannel = member(body.targetChannel, CHANNELS, "Canal");
     const category = optionalText(body.category, "Categoria", 80);
     return Response.json(await createResearchMission({ goal, marketplaces, category, maxPrice, timeframe, resultLimit, targetChannel }), { status: 202 });
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "Dados inválidos" }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const body = await request.json() as Record<string, unknown>;
+    const missionId = text(body.missionId, "Pesquisa", 80);
+    return Response.json(await archiveResearchMission(missionId));
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Dados inválidos" }, { status: 400 });
   }
