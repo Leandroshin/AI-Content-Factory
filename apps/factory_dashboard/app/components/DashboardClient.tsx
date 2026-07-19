@@ -157,6 +157,13 @@ const viewMeta: Record<View, { title: string; eyebrow: string; description: stri
   settings: { title: "Configurações", eyebrow: "CONTROLE DO OWNER", description: "Aparência, providers, orçamento e proteções da operação." },
 };
 
+function greetingForHour(hour: number) {
+  if (hour < 5) return "Boa madrugada";
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
 export function DashboardClient({ operator, authenticated }: { operator: string; authenticated: boolean }) {
   const [data, setData] = useState<DashboardPayload>(fallback);
   const [products, setProducts] = useState<ProductIntakeItem[]>([]);
@@ -174,7 +181,15 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [mobileNav, setMobileNav] = useState(false);
+  const [greeting, setGreeting] = useState("Olá");
   const globalSearchInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const updateGreeting = () => setGreeting(greetingForHour(new Date().getHours()));
+    updateGreeting();
+    const timer = window.setInterval(updateGreeting, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const themeFrame = window.requestAnimationFrame(() => {
@@ -638,7 +653,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
         <button className={styles.sideStatus} onClick={() => changeView("activity")} title="Verificações automáticas que protegem a arquitetura da fábrica">
           <span><i className={styles.pulse} /> Operação segura</span>
           <strong>Fábrica estável</strong>
-          <small>117 demonstrações técnicas aprovadas</small>
+          <small>119 demonstrações técnicas aprovadas</small>
         </button>
         <NavButton className={styles.settingsButton} active={view === "settings"} icon={<Settings2 />} label="Configurações" onClick={() => changeView("settings")} />
       </aside>
@@ -648,7 +663,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
           <button className={styles.mobileMenu} aria-label="Abrir menu" onClick={() => setMobileNav(true)}><Menu size={20} /></button>
           <div>
             <p className={styles.eyebrow}>{viewMeta[view].eyebrow}</p>
-            <h1>{view === "central" ? `Bom dia, ${operator.split(" ")[0]}.` : viewMeta[view].title}</h1>
+            <h1>{view === "central" ? `${greeting}, ${operator.split(" ")[0]}.` : viewMeta[view].title}</h1>
             <p>{viewMeta[view].description}</p>
           </div>
           <div className={styles.headerTools}>
@@ -1135,7 +1150,7 @@ function ChannelsView({ publications, busy, onPrepareEditorial, onApprove, onRet
 function ActivityView({ activity }: { activity: DashboardPayload["activity"] }) {
   return <section className={styles.historyLayout}>
     <div className={styles.activityPanel}><SectionHead kicker="REGISTRO OPERACIONAL" title="Atividade recente" />{activity.map((item) => <div className={styles.activityRow} key={item.id}><span className={`${styles.activityDot} ${styles[item.tone]}`} /><div><strong>{item.label}</strong><small>{item.detail}</small></div><time>{item.time}</time></div>)}</div>
-    <div className={styles.healthPanel}><SectionHead kicker="SAÚDE TÉCNICA" title="Por que existem 117 demonstrações?" /><div className={styles.healthValue}>117/117</div><p>São cenários automáticos do sistema, não trabalhos dos funcionários. Juntos, eles executaram 1.884 verificações explícitas sobre departamentos, aprovações, custos e adapters.</p><span><Check size={16} /> Nenhuma falha na última regressão</span></div>
+    <div className={styles.healthPanel}><SectionHead kicker="SAÚDE TÉCNICA" title="Por que existem 119 demonstrações?" /><div className={styles.healthValue}>119/119</div><p>São cenários automáticos do sistema, não trabalhos dos funcionários. Juntos, eles executaram 1.935 verificações explícitas sobre departamentos, aprovações, custos e adapters.</p><span><Check size={16} /> Nenhuma falha na última regressão</span></div>
   </section>;
 }
 

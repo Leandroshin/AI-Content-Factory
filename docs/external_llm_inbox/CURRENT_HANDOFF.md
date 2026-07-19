@@ -11,7 +11,7 @@ Atualizado em: 2026-07-18
 - Transcricao nao vira Organizational Memory, instrucao de funcionario, experimento ou publicacao automaticamente.
 - Market Intelligence & Learning entra por missoes pequenas. O gate de evidencia e as duas primeiras alegacoes parciais estao integrados e testados.
 - Offer Intelligence continua primeiro como modulo interno; o SaaS separado e os 12 projetos de monetizacao continuam propostas.
-- Telegram possui capacidade REAL controlada, mas o candidato editorial atual continua apenas aguardando decisao humana.
+- Telegram possui capacidade REAL controlada e concluiu a primeira publicacao editorial aprovada pelo owner.
 - Day Trade esta autorizado somente como laboratorio `PAPER_OFFLINE`, importacao de relatorios e analise de conta demonstrativa. Execucao real e proibida.
 
 ## Alegacoes integradas
@@ -38,15 +38,13 @@ Atualizado em: 2026-07-18
 ## Telegram
 
 - Capacidade REAL controlada implementada.
-- Existe um candidato editorial de boas-vindas para `@achadosbaratosBrasil`.
-- Status atual: `pending_approval`.
-- Criar o candidato nao publica e nao o coloca na fila.
-- Decisao humana, entrada na fila e execucao do worker sao tres acoes separadas.
-- O worker exige opt-in explicito.
-- A reserva `queued -> publishing` e atomica e idempotente.
-- Concorrencia, duplicidade e expiracao foram testadas.
-- Candidatos expirados nao sao reservados.
-- Nenhuma mensagem foi enviada nesta consolidacao.
+- A mensagem editorial de boas-vindas foi aprovada por Leandro e publicada em `@achadosbaratosBrasil`.
+- Resultado confirmado: status `sent`, `message_id=4`, sem erro e com somente um item processado pelo worker.
+- Preparacao, aprovacao, fila e execucao permaneceram acoes separadas.
+- O worker foi executado com opt-in explicito e processou `received=1`, `sent=1`, `failed=0`.
+- A reserva `queued -> publishing` continua atomica e idempotente.
+- Concorrencia, duplicidade e expiracao permanecem protegidas e testadas.
+- Nenhuma outra publicacao foi executada nessa operacao.
 
 ## Seguranca
 
@@ -72,14 +70,14 @@ Atualizado em: 2026-07-18
 - Meta Ads aguarda token `ads_read` valido; nenhuma escrita e permitida.
 - Digistore24/PayPal e outras redes aguardam onboarding financeiro.
 - Nenhuma alegacao parcial pode ser promovida sem corroboracao, experimento e aprovacao humana.
-- Telegram aguarda decisao humana sobre o candidato editorial.
+- A primeira oferta comercial ainda precisa de pesquisa atual, preco reconfirmado, link monetizado e aprovacao humana antes de entrar na fila.
 
 ## Proximas missoes oficiais
 
-1. **Decisao humana sobre o candidato Telegram:** aprovar, solicitar edicao ou rejeitar.
-2. **Se aprovado, colocar na fila em acao separada:** confirmar o estado `queued`, ainda sem executar o worker.
-3. **Execucao REAL controlada:** somente com autorizacao explicita de Leandro e opt-in do worker; confirmar envio, `message_id` e auditoria.
-4. **Depois da primeira publicacao:** retomar producao, distribuicao, metricas reais e a primeira vertical operacional.
+1. **Primeira vertical operacional de ofertas:** pesquisar candidatos atuais sem provider pago e devolver shortlist auditavel.
+2. **Preparar um pacote comercial:** confirmar preco, disponibilidade, link monetizado, criativo e copy sem publicar.
+3. **Decisao humana separada:** Leandro aprova, solicita edicao ou rejeita o pacote.
+4. **Distribuicao e metricas:** somente depois de nova autorizacao explicita, publicar um item e registrar clique, venda, comissao, custo e ROI.
 
 ## Base de verificacao
 

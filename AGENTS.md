@@ -128,7 +128,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Provider Panel UI:** `core/tools/provider_panel.py` — renderer HTML interativo alimentado por `ProviderControlCenter.dashboard_state()`, com chaves mascaradas, MOCK/REAL, busca, filtros, seleção de provider, budgets, aprovação e usage/custo
 - **ElevenLabs REAL controlado:** `ElevenLabsAdapter` aceita `set_budget_guard()`; em REAL, `synthesize` só chama HTTP se owner approval + limites de requests/unidades/custo permitirem; erros HTTP reais viram `AdapterExecutionResult(success=False)` em vez de traceback
 - **Telegram Publishing Adapter:** `core/tools/adapters/telegram_adapter.py` + `TelegramProvider` — `get_me`, `send_message` e `send_photo` em MOCK/REAL; envio REAL exige `bot_token`, `chat_id`, `approved=True` e budget guard; teste REAL enviou mensagem técnica para `@achadosbaratosBrasil` com `message_id=2`
-- **Telegram Publication Queue:** o painel mostra a copy exata, exige confirmação comercial e uma aprovação final separada, fixa o destino em `@achadosbaratosBrasil` e registra status, horário e `message_id`; o candidato editorial atual esta `pending_approval`; entrada na fila e worker sao ações separadas; a reserva `queued -> publishing` e atomica, idempotente, rejeita expirados e foi testada sob concorrencia; WhatsApp permanece fora desta fase
+- **Telegram Publication Queue:** o painel mostra a copy exata, exige confirmação comercial e uma aprovação final separada, fixa o destino em `@achadosbaratosBrasil` e registra status, horário e `message_id`; a primeira mensagem editorial foi enviada com `message_id=4`; entrada na fila e worker continuam ações separadas; a reserva `queued -> publishing` e atomica, idempotente, rejeita expirados e foi testada sob concorrencia; WhatsApp permanece fora desta fase
 - **HTTP secret redaction:** `RealHttpClient` mascara URLs do Telegram no formato `/bot<TOKEN>/...` antes de publicar eventos HTTP
 - **Observability Snapshots:** ProductionSnapshot (genérico) + Video/Audio/Image/Script/AffiliateDeals production + department/detail snapshots — todos declarados em `core/observability.py`
 - **Stage Counts in Snapshots:** `ProductionStageAdvanced` carrega `stages_completed`/`stages_failed`; handlers no ObservabilityProjector propagam para production snapshots genérico + departamental
@@ -183,10 +183,10 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - 0 dependências circulares, 0 violações core→engines
 
 ## Next Steps
-1. **Decisao humana do candidato Telegram** — aprovar, solicitar edicao ou rejeitar; nenhuma dessas opcoes executa o worker automaticamente
-2. **Fila Telegram separada** — caso aprovado, colocar o candidato na fila em acao distinta e confirmar `queued`, ainda sem envio
-3. **Primeira execucao REAL controlada** — somente com autorizacao explicita de Leandro e opt-in do worker; registrar `message_id`, horario e resultado
-4. **Retomada operacional** — depois da primeira publicacao, retomar producao, distribuicao, metricas reais e a primeira vertical operacional
+1. **Primeira vertical operacional de ofertas** — pesquisar candidatos atuais sem provider pago e devolver shortlist auditavel
+2. **Primeiro pacote comercial real** — confirmar preco, disponibilidade, link monetizado, criativo e copy, ainda sem publicar
+3. **Decisao humana separada** — aprovar, solicitar edicao ou rejeitar o pacote; nenhuma dessas opcoes executa o worker automaticamente
+4. **Distribuicao e metricas** — somente com nova autorizacao explicita, publicar um item e registrar clique, venda, comissao, custo e ROI
 5. **Affiliate portfolio validation** — comparar Digistore24, Braip e ClickBank por comissao, conversao, cookie, restricoes, payout e evidencia
 6. **Meta Ads REAL authorization** — recuperar/gerar token `ads_read`, salvar fora do Git e executar o smoke de tres leituras; nenhuma permissao `ads_management`
 7. **Gateway LLM oficial** — manter OmniRoute isolado e integrar somente providers com API/OAuth autorizado

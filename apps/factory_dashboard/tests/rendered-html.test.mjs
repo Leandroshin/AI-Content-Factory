@@ -24,9 +24,13 @@ test("factory dashboard source exposes the operational cockpit", async () => {
   assert.match(client, /Digistore24/);
   assert.match(client, /Braip/);
   assert.match(client, /Enviar para análise/);
-  assert.match(client, /117 demonstrações técnicas aprovadas/);
-  assert.match(client, /117\/117/);
-  assert.match(client, /1\.884 verificações explícitas/);
+  assert.match(client, /greetingForHour/);
+  assert.match(client, /Boa madrugada/);
+  assert.match(client, /Boa tarde/);
+  assert.match(client, /Boa noite/);
+  assert.match(client, /119 demonstrações técnicas aprovadas/);
+  assert.match(client, /119\/119/);
+  assert.match(client, /1\.935 verificações explícitas/);
   assert.doesNotMatch(client, /window\.print/);
 });
 
