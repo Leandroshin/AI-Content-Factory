@@ -24,6 +24,40 @@ type CandidateMetadata = {
 const MAX_PACKAGE_AGE_MS = 2 * 60 * 60 * 1000;
 const MAX_PHOTO_CAPTION_LENGTH = 1024;
 
+const ATOMIC_TELEGRAM_CLAIM_SQL = `
+UPDATE telegram_publication_requests
+SET status = 'publishing', claimed_at = ?, updated_at = ?
+WHERE id = (
+  SELECT id
+  FROM telegram_publication_requests
+  WHERE status = 'queued'
+    AND owner_approved = 1
+    AND approved_at >= ?
+    AND approved_at <= ?
+    AND json_extract(
+      CASE WHEN json_valid(candidate_metadata) THEN candidate_metadata ELSE '{}' END,
+      '$.validUntil'
+    ) >= ?
+  ORDER BY created_at ASC, id ASC
+  LIMIT 1
+)
+  AND status = 'queued'
+RETURNING id, product_id, chat_id, message_text, affiliate_url, image_url,
+  link_preview_enabled, owner_approved, approved_at
+`;
+
+type ClaimedTelegramPublication = {
+  id: string;
+  product_id: string;
+  chat_id: string;
+  message_text: string;
+  affiliate_url: string;
+  image_url: string;
+  link_preview_enabled: number;
+  owner_approved: number;
+  approved_at: string;
+};
+
 export async function telegramPublicationState() {
   await ensureTelegramPublicationSchema();
   const rows = await getDb().select().from(telegramPublicationRequests)
@@ -131,31 +165,19 @@ export async function approveTelegramPublication(requestId: string) {
 
 export async function claimTelegramPublication() {
   await ensureTelegramPublicationSchema();
-  const db = getDb();
-  const rows = await db.select().from(telegramPublicationRequests)
-    .where(eq(telegramPublicationRequests.status, "queued"))
-    .orderBy(asc(telegramPublicationRequests.createdAt)).limit(100);
-  let item: typeof telegramPublicationRequests.$inferSelect | undefined;
-  for (const candidate of rows) {
-    const metadata = parseMetadata(candidate.candidateMetadata);
-    const approvedAt = Date.parse(candidate.approvedAt);
-    const freshApproval = candidate.ownerApproved === 1 && Number.isFinite(approvedAt)
-      && Date.now() - approvedAt >= -5 * 60 * 1000 && Date.now() - approvedAt <= MAX_PACKAGE_AGE_MS;
-    const validCandidate = Boolean(metadata.validUntil) && Date.parse(metadata.validUntil) >= Date.now();
-    if (freshApproval && validCandidate) { item = candidate; break; }
-    await db.update(telegramPublicationRequests).set({
-      status: "failed", error: "Aprovação ausente ou candidato expirado. Revise antes de tentar novamente",
-      updatedAt: new Date().toISOString(),
-    }).where(eq(telegramPublicationRequests.id, candidate.id));
-  }
-  if (!item) return { items: [] };
+  const { env } = await import("cloudflare:workers");
   const now = new Date().toISOString();
-  await db.update(telegramPublicationRequests).set({ status: "publishing", claimedAt: now, updatedAt: now })
-    .where(eq(telegramPublicationRequests.id, item.id));
+  const earliestApproval = new Date(Date.now() - MAX_PACKAGE_AGE_MS).toISOString();
+  const latestApproval = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+  const result = await env.DB.prepare(ATOMIC_TELEGRAM_CLAIM_SQL)
+    .bind(now, now, earliestApproval, latestApproval, now)
+    .all<ClaimedTelegramPublication>();
+  const item = result.results[0];
+  if (!item) return { items: [] };
   return { items: [{
-    id: item.id, productId: item.productId, chatId: item.chatId, messageText: item.messageText,
-    affiliateUrl: item.affiliateUrl, imageUrl: item.imageUrl,
-    linkPreviewEnabled: Boolean(item.linkPreviewEnabled), ownerApproved: Boolean(item.ownerApproved), approvedAt: item.approvedAt,
+    id: item.id, productId: item.product_id, chatId: item.chat_id, messageText: item.message_text,
+    affiliateUrl: item.affiliate_url, imageUrl: item.image_url,
+    linkPreviewEnabled: Boolean(item.link_preview_enabled), ownerApproved: Boolean(item.owner_approved), approvedAt: item.approved_at,
   }] };
 }
 

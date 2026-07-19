@@ -11,7 +11,7 @@ do fluxo automático nesta fase.
 4. A fábrica registra um candidato com status `PENDING HUMAN APPROVAL`; nada entra na fila de envio.
 5. Em uma ação separada, o owner confere conteúdo, destino, validade e riscos e então coloca o candidato na fila local.
 6. O pacote comercial expira após duas horas para evitar publicar preço antigo.
-7. Somente com opt-in explícito, o worker local reserva uma única mensagem, publica pelo bot e devolve
+7. Somente com opt-in explícito, o worker local reserva atomicamente uma única mensagem, publica pelo bot e devolve
    `message_id`, horário e resultado ao painel.
 
 Preparar pacote nunca publica. Aprovar uma oportunidade nunca publica. Somente a

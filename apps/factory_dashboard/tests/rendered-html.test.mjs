@@ -231,12 +231,15 @@ test("Telegram candidate preparation stays separate from approval and delivery",
   assert.match(store, /status: "pending_approval"/);
   assert.match(store, /ownerApproved: 0/);
   assert.match(store, /approveTelegramPublication/);
-  assert.match(store, /ownerApproved: Boolean\(item\.ownerApproved\)/);
+  assert.match(store, /ownerApproved: Boolean\(item\.owner_approved\)/);
   assert.match(store, /telegramMessageId/);
   assert.match(store, /ACTIVE_STATUSES/);
   assert.match(store, /MAX_PACKAGE_AGE_MS/);
   assert.match(store, /MAX_PHOTO_CAPTION_LENGTH/);
-  assert.match(store, /imageUrl: item\.imageUrl/);
+  assert.match(store, /imageUrl: item\.image_url/);
+  assert.match(store, /ATOMIC_TELEGRAM_CLAIM_SQL/);
+  assert.match(store, /AND status = 'queued'/);
+  assert.match(store, /RETURNING id, product_id/);
   assert.match(store, /message\.includes\("#publi"\)/);
   assert.match(store, /candidateMetadata/);
   assert.match(store, /idempotencyKey/);
