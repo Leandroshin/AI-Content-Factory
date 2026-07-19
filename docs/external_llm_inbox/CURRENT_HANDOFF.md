@@ -1,18 +1,62 @@
 # Handoff Atual da AI Content Factory
 
-Atualizado em: 2026-07-17
+Atualizado em: 2026-07-18
 
 ## Estado oficial
 
 - A fabrica possui departamentos reais de Script, Audio, Imagem, Video, Strategy Intelligence, Product Research, Creative Review e Affiliate Deals.
 - O painel oficial e `apps/factory_dashboard/`; prototipos em `prototypes/external_llm/` nao sao produto integrado.
-- Telegram possui publicacao REAL controlada por aprovacao final, destino fixo, budget e auditoria.
 - A Caixa de Aprendizado aceita URL do YouTube e transcricao fornecida pelo owner sem custo de provider.
-- Uma alegacao pode ser ligada a um trecho exato da transcricao, mas nasce `PARTIAL` e o Knowledge Card permanece candidato.
-- Transcricao nao vira Organizational Memory, instrucao de funcionario ou experimento automaticamente.
-- Market Intelligence & Learning esta sendo integrado em missoes pequenas. A primeira missao, o gate de evidencia por transcricao, ja esta integrada ao painel oficial.
-- Offer Intelligence continua primeiro como modulo interno; o SaaS separado continua proposta.
+- O `TranscriptEvidenceAuditWorkflow` preserva fonte, hash, trecho exato e auditoria; uma alegacao nasce parcial e seu Knowledge Card permanece candidato.
+- Transcricao nao vira Organizational Memory, instrucao de funcionario, experimento ou publicacao automaticamente.
+- Market Intelligence & Learning entra por missoes pequenas. O gate de evidencia e as duas primeiras alegacoes parciais estao integrados e testados.
+- Offer Intelligence continua primeiro como modulo interno; o SaaS separado e os 12 projetos de monetizacao continuam propostas.
+- Telegram possui capacidade REAL controlada, mas o candidato editorial atual continua apenas aguardando decisao humana.
 - Day Trade esta autorizado somente como laboratorio `PAPER_OFFLINE`, importacao de relatorios e analise de conta demonstrativa. Execucao real e proibida.
+
+## Alegacoes integradas
+
+### Low-Ticket
+
+> Uma entrega inicial simples pode reduzir o tempo e o custo de preparacao antes de validar a demanda, dependendo do tipo de produto e do mercado.
+
+- Status: `AUDITORIA PARCIAL - FALTA CORROBORACAO`.
+- Confianca: `0.58`.
+- `KnowledgeCardDraft`: `PENDING_AUDIT`.
+- Nenhuma promocao para Organizational Memory ou instrucoes de funcionarios.
+
+### Ethical Offer Intelligence
+
+> Registrar anuncios e repetir a observacao em datas diferentes pode demonstrar persistencia da atividade publicitaria durante o periodo observado.
+
+- Status: `AUDITORIA PARCIAL - FALTA CORROBORACAO`.
+- Confianca: `0.58`.
+- `KnowledgeCardDraft`: `PENDING_AUDIT`.
+- Persistencia nao representa escala, venda, receita ou lucro.
+- Nenhuma promocao para Organizational Memory ou instrucoes de funcionarios.
+
+## Telegram
+
+- Capacidade REAL controlada implementada.
+- Existe um candidato editorial de boas-vindas para `@achadosbaratosBrasil`.
+- Status atual: `pending_approval`.
+- Criar o candidato nao publica e nao o coloca na fila.
+- Decisao humana, entrada na fila e execucao do worker sao tres acoes separadas.
+- O worker exige opt-in explicito.
+- A reserva `queued -> publishing` e atomica e idempotente.
+- Concorrencia, duplicidade e expiracao foram testadas.
+- Candidatos expirados nao sao reservados.
+- Nenhuma mensagem foi enviada nesta consolidacao.
+
+## Seguranca
+
+- Nenhum provider pago foi acionado.
+- Nenhum gasto ocorreu.
+- Nenhuma Organizational Memory foi atualizada.
+- Nenhuma instrucao de funcionario foi alterada.
+- Nenhuma publicacao externa foi realizada.
+- A pasta `youtube/` permanece local, nao rastreada e sem autoridade oficial.
+- Prototipos do DeepSeek continuam isolados quando nao integrados pelo Codex.
 
 ## Diferenca de status
 
@@ -24,17 +68,26 @@ Atualizado em: 2026-07-17
 
 ## Bloqueios atuais
 
-- Providers pagos de voz/imagem/video aguardam decisao e orcamento.
+- Providers pagos de voz, imagem e video aguardam decisao e orcamento.
 - Meta Ads aguarda token `ads_read` valido; nenhuma escrita e permitida.
 - Digistore24/PayPal e outras redes aguardam onboarding financeiro.
-- Nenhum conhecimento novo pode ser promovido sem corroboracao, experimento e aprovacao humana.
+- Nenhuma alegacao parcial pode ser promovida sem corroboracao, experimento e aprovacao humana.
+- Telegram aguarda decisao humana sobre o candidato editorial.
 
-## Proximas tres missoes
+## Proximas missoes oficiais
 
-1. Validar a Caixa de Aprendizado com outra transcricao real e comparar duas alegacoes auditadas.
-2. Criar corroboracao/experimento local sem provider antes de Knowledge Card oficial.
-3. Importar relatorios de estrategia Day Trade em modo somente leitura, depois de especificar a estrategia e os limites de risco.
+1. **Decisao humana sobre o candidato Telegram:** aprovar, solicitar edicao ou rejeitar.
+2. **Se aprovado, colocar na fila em acao separada:** confirmar o estado `queued`, ainda sem executar o worker.
+3. **Execucao REAL controlada:** somente com autorizacao explicita de Leandro e opt-in do worker; confirmar envio, `message_id` e auditoria.
+4. **Depois da primeira publicacao:** retomar producao, distribuicao, metricas reais e a primeira vertical operacional.
 
 ## Base de verificacao
 
-Ultima verificacao local: `117/117` demonstracoes, `1884` verificacoes explicitas e `12/12` testes do dashboard, sem falhas. Antes de aceitar numeros futuros, leia `AGENTS.md` e rode `python scripts/run_all_demos.py`. Os totais no GitHub so sao oficiais depois do ultimo checkpoint registrado.
+Verificacao local de 2026-07-18:
+
+- `python -m compileall -q core`: passou.
+- `python scripts/run_all_demos.py`: `119/119` demonstracoes, `1935` assertions explicitas, `0` falhas.
+- Dashboard: build e `16/16` testes Node passaram, incluindo quatro testes de reserva atomica concorrente.
+- Telegram: worker `27/27`, adapter `40/40` e HITL `35/35` passaram sem chamada externa.
+
+Antes de aceitar numeros futuros, leia `AGENTS.md` e execute novamente a regressao. Os totais no GitHub so sao oficiais depois do ultimo checkpoint registrado.

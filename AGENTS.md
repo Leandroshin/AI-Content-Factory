@@ -128,7 +128,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Provider Panel UI:** `core/tools/provider_panel.py` — renderer HTML interativo alimentado por `ProviderControlCenter.dashboard_state()`, com chaves mascaradas, MOCK/REAL, busca, filtros, seleção de provider, budgets, aprovação e usage/custo
 - **ElevenLabs REAL controlado:** `ElevenLabsAdapter` aceita `set_budget_guard()`; em REAL, `synthesize` só chama HTTP se owner approval + limites de requests/unidades/custo permitirem; erros HTTP reais viram `AdapterExecutionResult(success=False)` em vez de traceback
 - **Telegram Publishing Adapter:** `core/tools/adapters/telegram_adapter.py` + `TelegramProvider` — `get_me`, `send_message` e `send_photo` em MOCK/REAL; envio REAL exige `bot_token`, `chat_id`, `approved=True` e budget guard; teste REAL enviou mensagem técnica para `@achadosbaratosBrasil` com `message_id=2`
-- **Telegram Publication Queue:** o painel mostra a copy exata, exige confirmação comercial e uma aprovação final separada, fixa o destino em `@achadosbaratosBrasil` e registra status, horário e `message_id`; usa foto oficial quando a URL pública passa na validação, exige `#publi`, expira preço/pacote em duas horas, bloqueia link duplicado e publica no máximo um item aprovado por execução; WhatsApp permanece fora desta fase
+- **Telegram Publication Queue:** o painel mostra a copy exata, exige confirmação comercial e uma aprovação final separada, fixa o destino em `@achadosbaratosBrasil` e registra status, horário e `message_id`; o candidato editorial atual esta `pending_approval`; entrada na fila e worker sao ações separadas; a reserva `queued -> publishing` e atomica, idempotente, rejeita expirados e foi testada sob concorrencia; WhatsApp permanece fora desta fase
 - **HTTP secret redaction:** `RealHttpClient` mascara URLs do Telegram no formato `/bot<TOKEN>/...` antes de publicar eventos HTTP
 - **Observability Snapshots:** ProductionSnapshot (genérico) + Video/Audio/Image/Script/AffiliateDeals production + department/detail snapshots — todos declarados em `core/observability.py`
 - **Stage Counts in Snapshots:** `ProductionStageAdvanced` carrega `stages_completed`/`stages_failed`; handlers no ObservabilityProjector propagam para production snapshots genérico + departamental
@@ -155,10 +155,11 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Affiliate Network Portfolio:** Strategy Intelligence separa redes digitais/CPA de alta comissao de marketplaces fisicos complementares; Digistore24 e o primeiro onboarding, seguido de Braip e ClickBank, sem excluir Amazon/Mercado Livre dos testes organicos
 - **Learning Source Inbox:** area `Aprendizado` no dashboard recebe uma URL do YouTube e transcricao opcional, preserva custo zero, mostra `Fonte -> Transcricao -> Evidencias -> Auditoria -> Conhecimento` e bloqueia provider, publicacao e promocao automatica
 - **Transcript Evidence Audit Gate:** `TranscriptEvidenceAuditWorkflow` transforma somente trechos exatos aprovados da transcricao em EvidenceRef, SourceArtifact, ClaimRecord, ClaimAudit parcial e KnowledgeCardDraft pendente; hash de conteudo invalida auditorias antigas quando a transcricao muda
+- **Primeiras Alegacoes Parciais:** Low-Ticket e Ethical Offer Intelligence registram uma alegacao auditada cada, ambas `PARTIAL` com confianca `0.58` e `KnowledgeCardDraft` `PENDING_AUDIT`; nenhuma promocao para Organizational Memory, funcionarios, experimento ou publicacao
 - **Archify Visual Documentation Candidate:** transcricao e repositorio oficial auditados; candidato somente a camada explicativa/auditoria visual, com experimento isolado e sem substituir contratos, dashboard ou execucao
 - **External LLM Continuity Handoff:** GPT Web e DeepSeek leem `CURRENT_HANDOFF.md`, `DECISION_LEDGER.md` e `STATUS_TAXONOMY.md`; DeepSeek carrega o estado em toda sessao e produz handoff isolado, sem editar a arquitetura oficial
 - **Day Trade Paper Lab:** arquitetura documental somente para simulacao, importacao de relatorios e avaliacao walk-forward; nenhuma credencial de corretora, `order_send`, Expert Advisor, clique automatizado ou operacao REAL e permitida
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **117/117 demos, 0 falhas** em 2026-07-17; 59 demos reportaram numericamente 1884 assertions, 58 nao emitem total comparavel
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **119/119 demos, 0 falhas** em 2026-07-18; 61 demos reportaram numericamente 1935 assertions, 58 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -182,24 +183,24 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - 0 dependências circulares, 0 violações core→engines
 
 ## Next Steps
-1. **Digistore24 Affiliate onboarding** — criar a conta oficial, configurar recebimento e selecionar uma oferta verificavel; nenhum anuncio pago antes de validar termos, pagina, geografia, reembolso e link de promocao
-2. **Affiliate portfolio validation** — comparar Digistore24, Braip e ClickBank por comissao, conversao, cookie, restricoes, payout e evidencia; MaxWeb, MediaScalers e BuyGoods entram depois da candidatura/aprovacao
-3. **Meta Ads REAL authorization** — recuperar/gerar token `ads_read`, salvar fora do Git e executar o smoke de tres leituras; nenhuma permissao `ads_management`
-4. **Gateway LLM oficial** — manter OmniRoute isolado e integrar somente providers com API/OAuth autorizado; OpenCode Free, cookies de sessao, anti-ban e pooling de contas ficam proibidos
-5. **Metricas de negocio** — cliques, vendas, comissao, custo e ROI alimentando aprendizado aprovado
-6. **Landing page e compliance** — dominio, privacidade, termos, disclosure e eventos de conversao
-7. **Aprovar voz editorial** — Kokoro local e gratuito e o baseline atual; ElevenLabs permanece opcional apos regularizar `payment_issue` e comparar qualidade/custo
-8. **Imagem provider real** — escolher por custo, qualidade e licenca antes de texto-para-video
-9. **Market Intelligence manual** — testar uma transcricao real no novo gate, auditar alegacoes e promover somente evidencias aprovadas
-10. **Day Trade Paper Lab** — implementar primeiro o importador read-only de relatorios Strategy Tester/CSV e scorecard fora da amostra; nenhuma execucao de ordens
-11. **2.5D operacional** — visualizar uma operacao real ja funcional, sem substituir o dashboard
+1. **Decisao humana do candidato Telegram** — aprovar, solicitar edicao ou rejeitar; nenhuma dessas opcoes executa o worker automaticamente
+2. **Fila Telegram separada** — caso aprovado, colocar o candidato na fila em acao distinta e confirmar `queued`, ainda sem envio
+3. **Primeira execucao REAL controlada** — somente com autorizacao explicita de Leandro e opt-in do worker; registrar `message_id`, horario e resultado
+4. **Retomada operacional** — depois da primeira publicacao, retomar producao, distribuicao, metricas reais e a primeira vertical operacional
+5. **Affiliate portfolio validation** — comparar Digistore24, Braip e ClickBank por comissao, conversao, cookie, restricoes, payout e evidencia
+6. **Meta Ads REAL authorization** — recuperar/gerar token `ads_read`, salvar fora do Git e executar o smoke de tres leituras; nenhuma permissao `ads_management`
+7. **Gateway LLM oficial** — manter OmniRoute isolado e integrar somente providers com API/OAuth autorizado
+8. **Market Intelligence manual** — corroborar e experimentar as alegacoes parciais antes de qualquer promocao de conhecimento
+9. **Day Trade Paper Lab** — importar relatorios Strategy Tester/CSV em modo read-only; nenhuma execucao de ordens
+10. **2.5D operacional** — visualizar uma operacao real ja funcional, sem substituir o dashboard
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual**: **117/117 demos, 0 falhas**; 1884 assertions explicitamente reportadas por 59 demos
+- **Regressão atual (2026-07-18)**: **119/119 demos, 0 falhas**; 1935 assertions explicitamente reportadas por 61 demos
+- **Primeiras alegacoes auditadas:** `demo_low_ticket_partial_claim.py` valida 25 assertions e `demo_ethical_offer_persistence_partial_claim.py` valida 26; ambas permanecem `PARTIAL`/`0.58`, com Knowledge Card pendente e sem provider, memoria, funcionarios ou publicacao
 - **Prova do gate de transcricao:** `demo_transcript_evidence_audit.py` valida 13 assertions: hash/excerto exato, IDs deterministicos, auditoria parcial, Knowledge Card pendente e ausencia de provider, experimento, memoria ou publicacao
 - **Prova da fila de producao:** `demo_dashboard_production_worker.py` valida 20 assertions: opt-in, autenticacao, modo MOCK, evidencia preservada, Script Department real, rascunho para revisao e ausencia de chamadas de audio, video ou publicacao
-- **Prova do dashboard**: lint, build vinext, teste Node, D1 local, GET da API, sincronizacao, filtros, menu mobile e QA visual em 1440x900 e 390x844 passaram; Sites privado, D1 hospedado e intake secreto foram publicados em 2026-07-13
+- **Prova do dashboard**: build vinext e **16/16** testes Node passaram em 2026-07-18, incluindo quatro cenarios concorrentes da reserva atomica; D1 local, GET da API, sincronizacao, filtros, menu mobile e QA visual anteriores tambem passaram
 - **RealHttpClient** com urllib — sem requests/httpx, sem dependências externas
 - **RateLimiter** com token-bucket, exponential backoff + jitter, thread-safe
 - **Base Layer comprovada**: ProductionEmployee + ProductionPipeline + StageResult como template; Video, Audio, Image e Script funcionando
@@ -218,7 +219,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Prova REAL opt-in ElevenLabs**: `demo_elevenlabs_real_smoke.py` roda seco na regressão; o smoke antigo registrou 401 sem expor a chave. A chave restrita atual valida leitura de vozes, mas TTS retorna `payment_issue` ate a fatura ser regularizada
 - **Prova Affiliate Deals**: `demo_affiliate_deals_department.py` valida 79 assertions: oferta forte `post_now` pendente de aprovacao, oferta fraca `skip`/rejeitada, oferta sem affiliate URL bloqueada por compliance, funil Facebook warmup -> Telegram e observability `deal_metrics`
 - **Prova Telegram REAL controlado**: `demo_telegram_publishing_adapter.py` valida 40 assertions em MOCK/MockHttpClient; smoke REAL local validou `@achados_baratos_br_bot` via `getMe` e enviou mensagem técnica para `@achadosbaratosBrasil` (`message_id=2`) com token fora do Git
-- **Prova da fila Telegram**: `demo_telegram_publication_worker.py` valida 23 assertions: opt-in, intake autenticado, destino allowlisted, copy curta com `#publi`, foto oficial, callback `sent` com `message_id`, bloqueio de canal desconhecido e rejeicao de oferta expirada antes da API; nenhum envio REAL ocorre na regressao
+- **Prova da fila Telegram**: `demo_telegram_publication_worker.py` valida 27 assertions: opt-in, intake autenticado, destino allowlisted, copy curta com `#publi`, foto oficial, callback `sent` com `message_id`, bloqueio de destino desconhecido, expiracao, aprovacao humana e mensagem editorial sem afiliacao; nenhum envio REAL ocorre na regressao
+- **Prova de reserva atomica Telegram:** 4/4 testes concorrentes confirmam claim unico, IDs distintos para dois itens, rejeicao de expirados/nao enfileirados e bloqueio de repeticao por idempotency key
 - **Correção Conversation/Memory**: `demo_conversation_memory_integration.py` valida timestamp preservado sem depender de igualdade acidental de `time.time()`
 - 0 dependências circulares; nenhuma classe existente foi modificada (exceto adições aditivas em domain_events.py, base/employee.py, observability.py)
 
