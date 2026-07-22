@@ -2,11 +2,12 @@ import { requireDashboardIntake } from "../_shared";
 import { applyProductWorkerResult, productWorkerQueue, type ProductWorkerResult } from "../../products/store";
 
 const MAX_BODY_BYTES = 24_000;
+const DYNAMIC_RESPONSE = { headers: { "Cache-Control": "no-store" } };
 
 export async function GET(request: Request) {
   const unauthorized = await requireDashboardIntake(request, "Product worker");
   if (unauthorized) return unauthorized;
-  return Response.json(await productWorkerQueue());
+  return Response.json(await productWorkerQueue(), DYNAMIC_RESPONSE);
 }
 
 export async function POST(request: Request) {
@@ -16,7 +17,10 @@ export async function POST(request: Request) {
   if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return Response.json({ error: "Payload too large" }, { status: 413 });
   try {
     const input = validateResult(JSON.parse(raw) as unknown);
-    return Response.json({ accepted: true, state: await applyProductWorkerResult(input) }, { status: 202 });
+    return Response.json(
+      { accepted: true, state: await applyProductWorkerResult(input) },
+      { status: 202, ...DYNAMIC_RESPONSE },
+    );
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Invalid payload" }, { status: 400 });
   }

@@ -147,6 +147,9 @@ test("product intake separates owner input from the authenticated worker", async
   const client = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/components/DashboardClient.tsx", import.meta.url), "utf8"));
   const ownerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/route.ts", import.meta.url), "utf8"));
   const workerRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/intake/products/route.ts", import.meta.url), "utf8"));
+  assert.match(workerRoute, /Cache-Control["']:\s*["']no-store["']/, "product worker queue disables response caching");
+  const productsRoute = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/route.ts", import.meta.url), "utf8"));
+  assert.match(productsRoute, /Cache-Control["']:\s*["']no-store["']/, "product dashboard state disables response caching");
   const store = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/api/products/store.ts", import.meta.url), "utf8"));
   assert.match(ownerRoute, /Amazon Brasil/);
   assert.match(ownerRoute, /Mercado Livre/);

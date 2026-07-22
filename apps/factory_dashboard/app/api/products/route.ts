@@ -13,9 +13,10 @@ const MARKETPLACES = [
 const LANGUAGES = new Set(["pt-BR", "en", "es", "unknown"]);
 const SOURCE_KINDS = new Set(["product_page", "sales_page"]);
 const TARGET_CHANNELS = new Set(["telegram_public", "whatsapp_public", "instagram_public"]);
+const DYNAMIC_RESPONSE = { headers: { "Cache-Control": "no-store" } };
 
 export async function GET() {
-  return Response.json(await productIntakeState());
+  return Response.json(await productIntakeState(), DYNAMIC_RESPONSE);
 }
 
 export async function POST(request: Request) {
