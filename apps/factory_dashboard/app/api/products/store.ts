@@ -23,6 +23,9 @@ export type ProductWorkerResult = {
   commissionNotes?: string;
   funnelSuggestion?: string;
   affiliateReadiness?: string;
+  affiliateLinkVerified: boolean;
+  officialImageVerified: boolean;
+  availabilityState: "in_stock" | "out_of_stock" | "unknown";
 };
 
 export type ProductIntakeInput = {
@@ -316,8 +319,17 @@ export async function applyProductWorkerResult(input: ProductWorkerResult) {
   const existing = await db.select().from(productIntakeRequests).where(eq(productIntakeRequests.id, input.requestId)).limit(1);
   if (!existing[0]) throw new Error("Product intake request was not found");
   const now = new Date().toISOString();
+  const resolvedMissing = input.missingFields.filter((field) => {
+    if (input.affiliateLinkVerified && ["link_afiliado", "comissao_confirmada"].includes(field)) return false;
+    if (input.officialImageVerified && field === "revisao_criativa_da_imagem") return false;
+    if (input.availabilityState === "in_stock" && field === "disponibilidade_confirmada") return false;
+    return true;
+  });
+  const finalStatus: ProductWorkerResult["status"] = input.status === "blocked" || input.availabilityState === "out_of_stock"
+    ? "blocked"
+    : resolvedMissing.length ? "needs_input" : "completed";
   await db.update(productIntakeRequests).set({
-    status: input.status,
+    status: finalStatus,
     productName: input.title,
     imageUrl: input.imageUrl,
     currentPriceCents: Math.round(input.currentPrice * 100),
@@ -328,11 +340,13 @@ export async function applyProductWorkerResult(input: ProductWorkerResult) {
     commissionNotes: input.commissionNotes ?? "",
     funnelSuggestion: input.funnelSuggestion ?? "",
     affiliateReadiness: input.affiliateReadiness ?? "",
+    commissionConfirmed: input.affiliateLinkVerified ? 1 : existing[0].commissionConfirmed,
+    creativeReviewStatus: input.officialImageVerified ? "official_link_preview" : existing[0].creativeReviewStatus,
     campaignPackage: null,
-    missingFields: JSON.stringify(input.missingFields),
+    missingFields: JSON.stringify(resolvedMissing),
     updatedAt: now,
   }).where(eq(productIntakeRequests.id, input.requestId));
-  const ready = input.status === "completed";
+  const ready = finalStatus === "completed";
   await upsertOpportunity({
     id: `product-intake-${input.requestId}`,
     title: input.title,
@@ -340,7 +354,7 @@ export async function applyProductWorkerResult(input: ProductWorkerResult) {
     channel: "Achados Baratos BR",
     category: ready ? "Produto analisado" : "Produto para completar",
     summary: input.analysisSummary,
-    priority: input.status === "blocked" ? "low" : input.score >= 80 ? "high" : "medium",
+    priority: finalStatus === "blocked" ? "low" : input.score >= 80 ? "high" : "medium",
     score: input.score,
     confidence: input.confidence,
     risk: input.risk,
@@ -348,6 +362,9 @@ export async function applyProductWorkerResult(input: ProductWorkerResult) {
     updatedAt: now,
     sources: [{ id: `product-intake-${input.requestId}-source-1`, label: `Página do produto em ${existing[0].marketplace}`, url: existing[0].productUrl, sourceType: "marketplace", publishedAt: null }],
   });
+  if (ready && existing[0].channelRegistered && existing[0].targetChannel === "telegram_public") {
+    return prepareCampaignPackage(input.requestId);
+  }
   return productIntakeState();
 }
 

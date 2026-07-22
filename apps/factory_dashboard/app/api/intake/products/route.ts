@@ -17,8 +17,16 @@ export async function POST(request: Request) {
   if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return Response.json({ error: "Payload too large" }, { status: 413 });
   try {
     const input = validateResult(JSON.parse(raw) as unknown);
+    const state = await applyProductWorkerResult(input);
+    const product = state.items.find((item) => item.id === input.requestId);
+    let telegramCandidatePrepared = false;
+    if (product?.campaignPackage?.status === "draft_ready" && product.targetChannel === "telegram_public") {
+      const { queueTelegramPublication } = await import("../../telegram-publications/store");
+      await queueTelegramPublication(input.requestId);
+      telegramCandidatePrepared = true;
+    }
     return Response.json(
-      { accepted: true, state: await applyProductWorkerResult(input) },
+      { accepted: true, state, telegramCandidatePrepared },
       { status: 202, ...DYNAMIC_RESPONSE },
     );
   } catch (error) {
@@ -38,7 +46,7 @@ function validateResult(value: unknown): ProductWorkerResult {
     status: status as ProductWorkerResult["status"],
     title: text(item.title, "title", 180),
     imageUrl: optionalHttps(item.imageUrl),
-    currentPrice: positiveMoney(item.currentPrice, "currentPrice"),
+    currentPrice: status === "blocked" ? nonNegativeMoney(item.currentPrice, "currentPrice") : positiveMoney(item.currentPrice, "currentPrice"),
     oldPrice: item.oldPrice == null ? null : positiveMoney(item.oldPrice, "oldPrice"),
     analysisSummary: text(item.analysisSummary, "analysisSummary", 600),
     missingFields: missing,
@@ -51,6 +59,9 @@ function validateResult(value: unknown): ProductWorkerResult {
     commissionNotes: optionalText(item.commissionNotes, "commissionNotes", 500),
     funnelSuggestion: optionalText(item.funnelSuggestion, "funnelSuggestion", 500),
     affiliateReadiness: optionalText(item.affiliateReadiness, "affiliateReadiness", 300),
+    affiliateLinkVerified: boolean(item.affiliateLinkVerified, "affiliateLinkVerified"),
+    officialImageVerified: boolean(item.officialImageVerified, "officialImageVerified"),
+    availabilityState: availability(item.availabilityState),
   };
 }
 
@@ -74,6 +85,23 @@ function positiveMoney(value: unknown, name: string) {
     throw new Error(`${name} is invalid`);
   }
   return value;
+}
+
+function nonNegativeMoney(value: unknown, name: string) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 10_000_000) {
+    throw new Error(`${name} is invalid`);
+  }
+  return value;
+}
+
+function boolean(value: unknown, name: string) {
+  if (typeof value !== "boolean") throw new Error(`${name} is invalid`);
+  return value;
+}
+
+function availability(value: unknown): ProductWorkerResult["availabilityState"] {
+  if (!["in_stock", "out_of_stock", "unknown"].includes(String(value))) throw new Error("availabilityState is invalid");
+  return value as ProductWorkerResult["availabilityState"];
 }
 
 function optionalHttps(value: unknown) {

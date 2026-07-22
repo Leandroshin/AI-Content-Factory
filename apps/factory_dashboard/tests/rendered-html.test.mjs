@@ -168,10 +168,17 @@ test("product intake separates owner input from the authenticated worker", async
   assert.match(client, /Reanalisar página/);
   assert.match(workerRoute, /requireDashboardIntake/);
   assert.match(workerRoute, /completed.*needs_input.*blocked/s);
+  assert.match(workerRoute, /telegramCandidatePrepared/);
+  assert.match(workerRoute, /queueTelegramPublication/);
+  assert.match(workerRoute, /affiliateLinkVerified/);
+  assert.match(workerRoute, /officialImageVerified/);
+  assert.match(workerRoute, /availabilityState/);
   assert.match(store, /product_intake_requests/);
   assert.match(store, /evidence_url/);
   assert.match(store, /owner_notes/);
   assert.match(store, /nenhuma publicação está autorizada/);
+  assert.match(store, /official_link_preview/);
+  assert.match(store, /prepareCampaignPackage\(input\.requestId\)/);
   assert.doesNotMatch(`${ownerRoute}\n${workerRoute}\n${store}`, /console\.(log|error)/);
 });
 

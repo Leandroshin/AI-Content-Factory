@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlparse
 
 from core.content_factory.product_url_intake import ProductUrlIntake, ProductUrlIntakeStatus
 from core.tools.http.client import HttpClient
@@ -20,6 +21,8 @@ class ProductDashboardWorkItem:
     language: str = ""
     source_kind: str = "product_page"
     owner_notes: str = ""
+    target_channel: str = "telegram_public"
+    channel_registered: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -137,6 +140,8 @@ class ProductDashboardWorker:
             language=str(value.get("language", "")).strip(),
             source_kind=source_kind,
             owner_notes=str(value.get("ownerNotes", "")).strip(),
+            target_channel=str(value.get("targetChannel", "telegram_public")).strip(),
+            channel_registered=bool(value.get("channelRegistered", False)),
         )
 
     @staticmethod
@@ -169,6 +174,8 @@ class ProductDashboardWorker:
                 "status": "blocked",
                 "title": item.marketplace or "Produto bloqueado",
                 "imageUrl": "",
+                "currentPrice": 0.0,
+                "oldPrice": None,
                 "analysisSummary": intake_result.error or "A página não pôde ser coletada com segurança.",
                 "missingFields": ["coleta_do_produto"],
                 "score": 0,
@@ -180,6 +187,9 @@ class ProductDashboardWorker:
                 "commissionNotes": "Comissão não confirmada.",
                 "funnelSuggestion": "Reenviar uma URL pública HTTPS ou completar manualmente produto, preço, imagem e link afiliado.",
                 "affiliateReadiness": "Bloqueado para AffiliateCommerceWorkflow.",
+                "affiliateLinkVerified": False,
+                "officialImageVerified": False,
+                "availabilityState": "unknown",
             }
 
         missing = list(intake_result.manual_fields)
@@ -187,6 +197,22 @@ class ProductDashboardWorker:
             missing.append("link_afiliado")
         preview = self._workflow_preview(item, candidate)
         missing.extend(preview["missingFields"])
+        affiliate_link_verified = self._official_affiliate_link(item)
+        official_image_verified = (
+            bool(candidate.image_url)
+            and str(candidate.image_url).startswith("https://")
+            and str(candidate.metadata.get("evidence_extractor", ""))
+            in {"json_ld_product", "open_graph", "mercado_livre_page_data"}
+        )
+        availability_state = self._availability_state(str(candidate.metadata.get("availability", "")))
+        if affiliate_link_verified:
+            missing = [field for field in missing if field not in {"link_afiliado", "comissao_confirmada"}]
+        if official_image_verified:
+            missing = [field for field in missing if field != "revisao_criativa_da_imagem"]
+        if availability_state == "unknown":
+            missing.append("disponibilidade_confirmada")
+        elif availability_state == "out_of_stock":
+            missing.append("produto_sem_estoque")
         score = round(min(
             100.0,
             candidate.marketplace_trust * 65.0
@@ -198,7 +224,7 @@ class ProductDashboardWorker:
         price = f"R$ {candidate.current_price:.2f}".replace(".", ",")
         return {
             "requestId": item.request_id,
-            "status": "needs_input" if missing else "completed",
+            "status": "blocked" if availability_state == "out_of_stock" else ("needs_input" if missing else "completed"),
             "title": candidate.product_name or f"Produto em {item.marketplace}",
             "imageUrl": candidate.image_url,
             "currentPrice": candidate.current_price,
@@ -221,7 +247,29 @@ class ProductDashboardWorker:
             "commissionNotes": preview["commissionNotes"],
             "funnelSuggestion": preview["funnelSuggestion"],
             "affiliateReadiness": preview["affiliateReadiness"],
+            "affiliateLinkVerified": affiliate_link_verified,
+            "officialImageVerified": official_image_verified,
+            "availabilityState": availability_state,
         }
+
+    @staticmethod
+    def _official_affiliate_link(item: ProductDashboardWorkItem) -> bool:
+        if item.marketplace != "Mercado Livre" or not item.affiliate_url:
+            return False
+        try:
+            parsed = urlparse(item.affiliate_url)
+        except ValueError:
+            return False
+        return parsed.scheme == "https" and (parsed.hostname or "").lower() in {"meli.la", "www.meli.la"}
+
+    @staticmethod
+    def _availability_state(value: str) -> str:
+        normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
+        if normalized in {"instock", "in_stock", "available", "disponivel"}:
+            return "in_stock"
+        if normalized in {"outofstock", "out_of_stock", "soldout", "sold_out", "indisponivel"}:
+            return "out_of_stock"
+        return "unknown"
 
     @staticmethod
     def _workflow_preview(item: ProductDashboardWorkItem, candidate: Any) -> dict[str, Any]:

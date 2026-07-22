@@ -31,6 +31,24 @@ comercial da recomendação.
 O comportamento de outros canais serve como referência visual, não como prova
 de conformidade. Preço, estoque, cupom e urgência nunca são inventados.
 
+## Entrada automática de produtos verificados
+
+O worker de produtos pode eliminar confirmações manuais redundantes somente
+quando a própria coleta fornece todas as provas abaixo:
+
+- marketplace identificado como Mercado Livre;
+- link monetizado HTTPS no domínio oficial `meli.la`;
+- preço atual positivo extraído da página;
+- disponibilidade estruturada como `in_stock`;
+- imagem HTTPS extraída de JSON-LD, Open Graph ou dados oficiais da página;
+- Telegram previamente cadastrado como canal público da conta de afiliado.
+
+Nesse caso, a análise prepara o pacote comercial sem custo e cria um candidato
+Telegram com estado `pending_approval`. Criar esse candidato não publica: a
+aprovação delegada, a reserva atômica e a chamada externa continuam em ciclos
+posteriores e independentes. Link de terceiro, estoque desconhecido, produto
+indisponível, preço ausente ou imagem sem proveniência mantêm o item bloqueado.
+
 ## Segredos locais
 
 `secrets/dashboard.env`:
