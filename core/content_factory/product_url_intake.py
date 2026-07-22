@@ -15,6 +15,7 @@ import time
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
+from html import unescape as html_unescape
 from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import urljoin, urlsplit, urlunsplit
@@ -584,22 +585,65 @@ def _extract_mercado_livre_page_data(html: str, base_url: str) -> dict[str, str]
         r'"current_price"\s*:\s*\{\s*"value"\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*,\s*"currency"\s*:\s*"([A-Z]{3})"',
         html,
     )
-    if not current:
+    if current:
+        previous = re.search(
+            r'"previous_price"\s*:\s*\{\s*"value"\s*:\s*([0-9]+(?:\.[0-9]+)?)',
+            html,
+        )
+        sku = re.search(r'"(?:id|item_id)"\s*:\s*"(MLB[0-9]{6,20})"', html)
+        values = {
+            "current_price": current.group(1),
+            "currency": current.group(2),
+        }
+        if previous:
+            values["old_price"] = previous.group(1)
+        if sku:
+            values["sku"] = sku.group(1)
+        return values
+
+    # Affiliate short links currently render the selected product as the first
+    # highlighted card. Its public markup carries price and item identity even
+    # when Open Graph exposes only title and image.
+    featured_at = html.find('class="rl-card-featured"')
+    if featured_at < 0:
         return {}
-    previous = re.search(
-        r'"previous_price"\s*:\s*\{\s*"value"\s*:\s*([0-9]+(?:\.[0-9]+)?)',
-        html,
+    featured = html[featured_at : featured_at + 50_000]
+    current_label = re.search(r'aria-label="Agora:\s*([^"]+)"', featured)
+    if not current_label:
+        return {}
+    current_price = _mercado_livre_aria_price(current_label.group(1))
+    if not current_price:
+        return {}
+
+    previous_label = re.search(r'aria-label="Antes:\s*([^"]+)"', featured)
+    item = re.search(
+        r'(?:pdp_filters=item_id%3A|[?&amp;]wid=)(MLB[0-9]{6,20})',
+        featured,
     )
-    sku = re.search(r'"(?:id|item_id)"\s*:\s*"(MLB[0-9]{6,20})"', html)
-    values = {
-        "current_price": current.group(1),
-        "currency": current.group(2),
-    }
-    if previous:
-        values["old_price"] = previous.group(1)
-    if sku:
-        values["sku"] = sku.group(1)
+    seller = re.search(
+        r'class="poly-component__seller"[^>]*>\s*Por\s+([^<]+)',
+        featured,
+    )
+    values = {"current_price": current_price, "currency": "BRL"}
+    if previous_label:
+        previous_price = _mercado_livre_aria_price(previous_label.group(1))
+        if previous_price:
+            values["old_price"] = previous_price
+    if item:
+        values["sku"] = item.group(1)
+    if seller:
+        values["seller"] = html_unescape(seller.group(1)).strip()
     return values
+
+
+def _mercado_livre_aria_price(label: str) -> str:
+    normalized = html_unescape(label).lower()
+    reais = re.search(r'([0-9][0-9.]*)\s+reais?', normalized)
+    if not reais:
+        return ""
+    whole = re.sub(r"\D", "", reais.group(1))
+    cents = re.search(r'([0-9]{1,2})\s+centavos?', normalized)
+    return f"{int(whole)}.{int(cents.group(1)) if cents else 0:02d}"
 
 
 def _find_json_ld_product(documents: Iterable[str]) -> dict[str, Any]:

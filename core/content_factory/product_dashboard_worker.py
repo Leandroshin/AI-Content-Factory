@@ -201,6 +201,12 @@ class ProductDashboardWorker:
             "status": "needs_input" if missing else "completed",
             "title": candidate.product_name or f"Produto em {item.marketplace}",
             "imageUrl": candidate.image_url,
+            "currentPrice": candidate.current_price,
+            "oldPrice": (
+                candidate.old_price
+                if candidate.old_price is not None and candidate.old_price > candidate.current_price
+                else None
+            ),
             "analysisSummary": (
                 f"Dados comerciais coletados. Preço observado: {price}. "
                 f"{preview['promiseReview']} {preview['creativeRecommendation']}"

@@ -72,6 +72,8 @@ def main() -> None:
     check(payload["requestId"] == "request-1", "Request identity is preserved")
     check(payload["title"] == "Controle Gamer Pro", "Structured product name is extracted")
     check(payload["imageUrl"].startswith("https://"), "Structured image is preserved")
+    check(payload["currentPrice"] == 299.90, "Collected current price is returned as structured data")
+    check(payload["oldPrice"] is None, "Absent previous price remains explicit")
     check(payload["status"] == "needs_input", "Item waits for remaining gates")
     check("link_afiliado" in payload["missingFields"], "Missing affiliate link is explicit")
     check("revisao_criativa_da_imagem" in payload["missingFields"], "Creative image review remains pending")

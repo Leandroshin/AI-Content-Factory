@@ -10,6 +10,8 @@ export type ProductWorkerResult = {
   status: Exclude<ProductIntakeStatus, "queued" | "analyzing">;
   title: string;
   imageUrl: string;
+  currentPrice: number;
+  oldPrice: number | null;
   analysisSummary: string;
   missingFields: string[];
   score: number;
@@ -318,6 +320,8 @@ export async function applyProductWorkerResult(input: ProductWorkerResult) {
     status: input.status,
     productName: input.title,
     imageUrl: input.imageUrl,
+    currentPriceCents: Math.round(input.currentPrice * 100),
+    oldPriceCents: input.oldPrice == null ? null : Math.round(input.oldPrice * 100),
     analysisSummary: input.analysisSummary,
     promiseReview: input.promiseReview ?? "",
     creativeRecommendation: input.creativeRecommendation ?? "",

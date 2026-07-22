@@ -34,6 +34,8 @@ function validateResult(value: unknown): ProductWorkerResult {
     status: status as ProductWorkerResult["status"],
     title: text(item.title, "title", 180),
     imageUrl: optionalHttps(item.imageUrl),
+    currentPrice: positiveMoney(item.currentPrice, "currentPrice"),
+    oldPrice: item.oldPrice == null ? null : positiveMoney(item.oldPrice, "oldPrice"),
     analysisSummary: text(item.analysisSummary, "analysisSummary", 600),
     missingFields: missing,
     score: integer(item.score, "score"),
@@ -61,6 +63,13 @@ function optionalText(value: unknown, name: string, max: number) {
 function integer(value: unknown, name: string) {
   if (!Number.isInteger(value) || (value as number) < 0 || (value as number) > 100) throw new Error(`${name} is invalid`);
   return value as number;
+}
+
+function positiveMoney(value: unknown, name: string) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0 || value > 10_000_000) {
+    throw new Error(`${name} is invalid`);
+  }
+  return value;
 }
 
 function optionalHttps(value: unknown) {

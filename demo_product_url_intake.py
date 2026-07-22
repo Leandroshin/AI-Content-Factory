@@ -77,6 +77,23 @@ def _mercado_livre_short_link_html() -> str:
     """
 
 
+def _mercado_livre_affiliate_card_html() -> str:
+    return """
+    <!doctype html><html><head>
+      <meta property="og:title" content="Jogo de Panelas Ceramica 10 Pecas">
+      <meta property="og:image" content="https://http2.mlstatic.com/panelas.webp">
+    </head><body>
+      <section class="rl-card-featured">
+        <a href="https://www.mercadolivre.com.br/panelas/up/MLBU123?pdp_filters=item_id%3AMLB5768690226&amp;wid=MLB5768690226"
+           class="poly-component__title">Jogo de Panelas Ceramica 10 Pecas</a>
+        <span class="poly-component__seller">Por Loja Oficial Mimo</span>
+        <s aria-label="Antes: 645 reais"></s>
+        <span class="poly-price__current" aria-label="Agora: 499 reais com 99 centavos"></span>
+      </section>
+    </body></html>
+    """
+
+
 def _employees(
     company: CompanyRuntime, event_bus: EventBus
 ) -> AffiliateFactoryEmployees:
@@ -192,6 +209,18 @@ def main() -> None:
     _check(short_link.evidence.old_price == 408.0, "Embedded Mercado Livre previous price is extracted")
     _check(short_link.evidence.sku == "MLB3535284749", "Embedded Mercado Livre item ID is preserved")
     _check(short_link.evidence.extractor == "mercado_livre_page_data", "Short link extractor remains auditable")
+
+    print("\nStep 1c: read the highlighted card rendered by a Mercado Livre affiliate link")
+    card_intake = ProductUrlIntake(
+        MockHttpClient(default_response=HttpResponse(status_code=200, body=_mercado_livre_affiliate_card_html()))
+    )
+    card = card_intake.intake("https://meli.la/21HvzyE")
+    _check(card.status == ProductUrlIntakeStatus.READY, "Highlighted affiliate card yields ready evidence")
+    _check(card.evidence.current_price == 499.99, "Portuguese current price label is normalized")
+    _check(card.evidence.old_price == 645.0, "Portuguese previous price label is normalized")
+    _check(card.evidence.sku == "MLB5768690226", "Highlighted card item ID is preserved")
+    _check(card.evidence.seller == "Loja Oficial Mimo", "Highlighted card seller is preserved")
+    _check(card.evidence.extractor == "mercado_livre_page_data", "Highlighted card extractor remains auditable")
 
     print("\nStep 2: block unsafe and unsupported URLs before HTTP")
     before = len(http.sent_requests)
