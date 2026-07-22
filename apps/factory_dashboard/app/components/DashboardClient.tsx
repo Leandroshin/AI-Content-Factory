@@ -20,6 +20,8 @@ import {
   Newspaper,
   Palette,
   PackagePlus,
+  Pause,
+  Play,
   Radio,
   RefreshCw,
   Search,
@@ -32,7 +34,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { DashboardPayload, LearningSourceItem, LearningSourcePayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductResearchCandidate, ProductResearchMissionItem, ProductResearchMissionPayload, ProductionRequest, TelegramPublication, TelegramPublicationPayload } from "./types";
+import type { DashboardPayload, LearningSourceItem, LearningSourcePayload, Opportunity, OpportunityStatus, ProductIntakeItem, ProductIntakePayload, ProductResearchCandidate, ProductResearchMissionItem, ProductResearchMissionPayload, ProductionRequest, TelegramAutopilotPolicy, TelegramPublication, TelegramPublicationPayload } from "./types";
 import { LearningInboxView, type LearningAuditForm, type LearningSourceForm } from "./LearningInboxView";
 import styles from "./dashboard.module.css";
 
@@ -170,6 +172,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
   const [learningSources, setLearningSources] = useState<LearningSourceItem[]>([]);
   const [researchMissions, setResearchMissions] = useState<ProductResearchMissionItem[]>([]);
   const [telegramPublications, setTelegramPublications] = useState<TelegramPublication[]>([]);
+  const [telegramAutopilot, setTelegramAutopilot] = useState<TelegramAutopilotPolicy | null>(null);
   const [view, setView] = useState<View>("central");
   const [theme, setTheme] = useState<Theme>("operational");
   const [selectedId, setSelectedId] = useState(fallback.opportunities[0].id);
@@ -219,7 +222,10 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
       .catch(() => undefined);
     fetch("/api/telegram-publications")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
-      .then((payload: TelegramPublicationPayload) => setTelegramPublications(payload.publications ?? []))
+      .then((payload: TelegramPublicationPayload) => {
+        setTelegramPublications(payload.publications ?? []);
+        setTelegramAutopilot(payload.autopilot ?? null);
+      })
       .catch(() => undefined);
     return () => window.cancelAnimationFrame(themeFrame);
   }, []);
@@ -597,7 +603,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
       });
       const payload = await response.json() as TelegramPublicationPayload & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Não foi possível preparar o candidato");
-      setTelegramPublications(payload.publications ?? []);
+      applyTelegramPayload(payload);
       setNotice("Candidato preparado para sua aprovação. Nada foi publicado ou colocado na fila de envio.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Não foi possível preparar o candidato.");
@@ -612,7 +618,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
       const response = await fetch("/api/telegram-publications", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "prepare_editorial", confirmation: "PREPARAR CANDIDATO" }) });
       const payload = await response.json() as TelegramPublicationPayload & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Não foi possível preparar o candidato editorial");
-      setTelegramPublications(payload.publications ?? []);
+      applyTelegramPayload(payload);
       setNotice("Candidato editorial preparado. PUBLICAÇÃO: NÃO EXECUTADA.");
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível preparar o candidato editorial."); }
     finally { setBusy(null); }
@@ -624,7 +630,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
       const response = await fetch("/api/telegram-publications", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "approve", requestId, confirmation: "APROVAR PUBLICACAO TELEGRAM" }) });
       const payload = await response.json() as TelegramPublicationPayload & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Não foi possível aprovar o candidato");
-      setTelegramPublications(payload.publications ?? []);
+      applyTelegramPayload(payload);
       setNotice("Candidato aprovado e colocado na fila local. Nenhum envio foi executado.");
     } catch (error) { setNotice(error instanceof Error ? error.message : "Não foi possível aprovar o candidato."); }
     finally { setBusy(null); }
@@ -637,14 +643,45 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
       const response = await fetch("/api/telegram-publications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId }),
+        body: JSON.stringify({ action: "retry", requestId }),
       });
       const payload = await response.json() as TelegramPublicationPayload & { error?: string };
       if (!response.ok) throw new Error(payload.error || "Não foi possível reenviar para a fila");
-      setTelegramPublications(payload.publications ?? []);
+      applyTelegramPayload(payload);
       setNotice("Publicação devolvida à fila. Não haverá duplicação de uma mensagem já enviada.");
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Não foi possível reenviar para a fila.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function applyTelegramPayload(payload: TelegramPublicationPayload) {
+    setTelegramPublications(payload.publications ?? []);
+    setTelegramAutopilot(payload.autopilot ?? null);
+  }
+
+  async function updateTelegramAutopilot(action: "activate_autopilot" | "pause_autopilot") {
+    const activating = action === "activate_autopilot";
+    setBusy(`telegram-autopilot-${activating ? "activate" : "pause"}`);
+    setNotice("");
+    try {
+      const response = await fetch("/api/telegram-publications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          confirmation: activating ? "ATIVAR AUTOPILOTO TELEGRAM" : "PAUSAR AUTOPILOTO TELEGRAM",
+        }),
+      });
+      const payload = await response.json() as TelegramPublicationPayload & { error?: string };
+      if (!response.ok) throw new Error(payload.error || `Não foi possível ${activating ? "ativar" : "pausar"} o autopiloto`);
+      applyTelegramPayload(payload);
+      setNotice(activating
+        ? "Autopiloto Telegram ativado. A operação continua diariamente dentro do teto e da cadência configurados."
+        : "Autopiloto Telegram pausado. Candidatos manuais, contadores e histórico foram preservados.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : `Não foi possível ${activating ? "ativar" : "pausar"} o autopiloto.`);
     } finally {
       setBusy(null);
     }
@@ -714,7 +751,7 @@ export function DashboardClient({ operator, authenticated }: { operator: string;
           onDecide={decide}
         />}
         {view === "production" && <ProductionView productions={data.productions} busy={busy} onDiscard={discardProduction} onApproveMedia={approveMediaProduction} onSelectProviderPlan={selectProviderPlan} />}
-        {view === "channels" && <ChannelsView publications={telegramPublications} busy={busy} onPrepareEditorial={prepareEditorialTelegramCandidate} onApprove={approveTelegramPublication} onRetry={retryTelegramPublication} />}
+        {view === "channels" && <ChannelsView publications={telegramPublications} autopilot={telegramAutopilot} busy={busy} onPrepareEditorial={prepareEditorialTelegramCandidate} onApprove={approveTelegramPublication} onRetry={retryTelegramPublication} onAutopilot={updateTelegramAutopilot} />}
         {view === "activity" && <ActivityView activity={data.activity} />}
         {view === "settings" && <SettingsView theme={theme} onTheme={changeTheme} />}
       </main>
@@ -1209,14 +1246,56 @@ function productionStage(status: ProductionRequest["status"]) {
   return { progress: 0, department: "Produção bloqueada", note: "Requer correção" };
 }
 
-function ChannelsView({ publications, busy, onPrepareEditorial, onApprove, onRetry }: { publications: TelegramPublication[]; busy: string | null; onPrepareEditorial: () => void; onApprove: (requestId: string) => void; onRetry: (requestId: string) => void }) {
+function formatTelegramDate(value?: string | null) {
+  if (!value) return "Aguardando ativação";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(date);
+}
+
+function ChannelsView({ publications, autopilot, busy, onPrepareEditorial, onApprove, onRetry, onAutopilot }: { publications: TelegramPublication[]; autopilot: TelegramAutopilotPolicy | null; busy: string | null; onPrepareEditorial: () => void; onApprove: (requestId: string) => void; onRetry: (requestId: string) => void; onAutopilot: (action: "activate_autopilot" | "pause_autopilot") => void }) {
+  const active = autopilot?.status === "active";
+  const revoked = autopilot?.status === "revoked";
+  const maxPerDay = autopilot?.maxPublicationsPerDay ?? 48;
+  const intervalMinutes = autopilot?.minIntervalMinutes ?? 30;
+  const maxPerHour = Math.min(2, Math.max(1, Math.floor(60 / intervalMinutes)));
+  const autopilotBusy = busy === "telegram-autopilot-activate" || busy === "telegram-autopilot-pause";
+  const destination = autopilot?.chatId || "@achadosbaratosBrasil";
+  const marketplaces = autopilot?.allowedMarketplaces?.length ? autopilot.allowedMarketplaces.join(", ") : "Marketplaces autorizados";
+
   return <section className={styles.pageSection}>
     <SectionHead kicker="MARCAS E DESTINOS" title="Canais da fábrica" />
     <div className={styles.channelGrid}>
       <Channel image="/brands/fase-nova-games.png" name="Fase Nova Games" meta="TikTok + YouTube" state="Preparando conteúdo" tone="cyan" description="Notícias, lançamentos e oportunidades editoriais de games." />
       <Channel image="/brands/achados-baratos.png" name="Achados Baratos BR" meta="Facebook + Instagram" state="Orgânico conectado" tone="green" description="Curadoria de produtos, ofertas e links afiliados aprovados." />
-      <Channel name="Telegram" meta="@achadosbaratosBrasil" state="Publicação controlada" tone="green" description="Primeiro canal real: prévia exata, aprovação humana, envio único e confirmação por message_id." />
+      <Channel name="Telegram" meta={destination} state={active ? "Operação contínua" : "Publicação controlada"} tone="green" description={active ? "Ciclos automáticos ativos dentro da cadência, teto diário e marketplaces autorizados." : "Candidatos manuais preservados; a operação contínua pode ser ativada separadamente."} />
       <Channel name="Shopee Afiliados" meta="Cadastro pendente" state="Aguardando telefone" tone="amber" description="Pesquisa pública é possível; comissão depende do onboarding." />
+    </div>
+    <div className={styles.autopilotPanel}>
+      <div className={styles.autopilotHeader}>
+        <div className={styles.autopilotIdentity}>
+          <span className={`${styles.autopilotSignal} ${active ? styles.autopilotSignalActive : ""}`}><Radio size={19} /></span>
+          <div><p className={styles.kicker}>AUTOPILOTO TELEGRAM</p><h2>Operação contínua, sem data final</h2><p>Ao atingir o teto diário, a fábrica aguarda a renovação do dia e retoma. Sem pacote válido, o ciclo apenas espera.</p></div>
+        </div>
+        <div className={styles.autopilotActions}>
+          <span className={`${styles.autopilotStatus} ${active ? styles.autopilotStatusActive : revoked ? styles.autopilotStatusRevoked : ""}`}>{active ? "Ativo" : revoked ? "Revogado" : "Pausado"}</span>
+          <button className={styles.autopilotControl} disabled={autopilotBusy || revoked} onClick={() => onAutopilot(active ? "pause_autopilot" : "activate_autopilot")}>
+            {active ? <Pause size={15} /> : <Play size={15} />}
+            {autopilotBusy ? "Atualizando..." : revoked ? "Política revogada" : active ? "Pausar operação" : "Ativar operação"}
+          </button>
+        </div>
+      </div>
+      <div className={styles.autopilotMetrics}>
+        <div className={styles.autopilotMetric}><span>Publicados hoje</span><strong>{autopilot?.sentToday ?? 0}<small> / {maxPerDay}</small></strong><p>Teto renovável a cada dia</p></div>
+        <div className={styles.autopilotMetric}><span>Cadência máxima</span><strong>Até {maxPerHour}/h</strong><p>Intervalo mínimo de {intervalMinutes} min</p></div>
+        <div className={styles.autopilotMetric}><span>Reservados e falhas</span><strong>{autopilot?.reservedToday ?? 0}<small> / {autopilot?.failedToday ?? 0}</small></strong><p>Reservados / falhas de hoje</p></div>
+        <div className={styles.autopilotMetric}><span>Próximo ciclo</span><strong className={styles.autopilotDate}>{formatTelegramDate(autopilot?.nextRunAt)}</strong><p>Último envio: {formatTelegramDate(autopilot?.lastSentAt)}</p></div>
+      </div>
+      <div className={styles.autopilotFooter}>
+        <span><ShieldCheck size={14} /> Destino fixo <b>{destination}</b></span>
+        <span><ShoppingBag size={14} /> {marketplaces}</span>
+        <span><Clock3 size={14} /> Ciclo diário {autopilot?.dayKey || "ainda não iniciado"}</span>
+      </div>
     </div>
     <div className={styles.channelPublicationPanel}>
       <SectionHead kicker="PUBLICAÇÃO CONTROLADA" title="Candidatos do Telegram" action={<button className={styles.prepareCampaign} disabled={busy === "telegram-editorial"} onClick={onPrepareEditorial}><PackagePlus size={15} /> {busy === "telegram-editorial" ? "Preparando..." : "Preparar boas-vindas"}</button>} />

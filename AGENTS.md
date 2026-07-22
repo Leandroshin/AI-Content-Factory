@@ -129,6 +129,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **ElevenLabs REAL controlado:** `ElevenLabsAdapter` aceita `set_budget_guard()`; em REAL, `synthesize` só chama HTTP se owner approval + limites de requests/unidades/custo permitirem; erros HTTP reais viram `AdapterExecutionResult(success=False)` em vez de traceback
 - **Telegram Publishing Adapter:** `core/tools/adapters/telegram_adapter.py` + `TelegramProvider` — `get_me`, `send_message` e `send_photo` em MOCK/REAL; envio REAL exige `bot_token`, `chat_id`, `approved=True` e budget guard; teste REAL enviou mensagem técnica para `@achadosbaratosBrasil` com `message_id=2`
 - **Telegram Publication Queue:** o painel mostra a copy exata, exige confirmação comercial e uma aprovação final separada, fixa o destino em `@achadosbaratosBrasil` e registra status, horário e `message_id`; a primeira mensagem editorial foi enviada com `message_id=4`; entrada na fila e worker continuam ações separadas; a reserva `queued -> publishing` e atomica, idempotente, rejeita expirados e foi testada sob concorrencia; WhatsApp permanece fora desta fase
+- **Telegram Continuous Autopilot:** autorizacao delegada renovavel e revogavel para `@achadosbaratosBrasil`; opera sem data final ate pausa explicita, com teto de 48 reservas por dia, intervalo minimo de 30 minutos, no maximo um pacote por ciclo e prioridade para itens manuais ja enfileirados; somente pacotes comerciais completos, atuais, validados e idempotentes do Mercado Livre podem ser delegados; fila vazia encerra silenciosamente e nunca fabrica oferta, preco, imagem ou link monetizado
 - **HTTP secret redaction:** `RealHttpClient` mascara URLs do Telegram no formato `/bot<TOKEN>/...` antes de publicar eventos HTTP
 - **Observability Snapshots:** ProductionSnapshot (genérico) + Video/Audio/Image/Script/AffiliateDeals production + department/detail snapshots — todos declarados em `core/observability.py`
 - **Stage Counts in Snapshots:** `ProductionStageAdvanced` carrega `stages_completed`/`stages_failed`; handlers no ObservabilityProjector propagam para production snapshots genérico + departamental
@@ -159,7 +160,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Archify Visual Documentation Candidate:** transcricao e repositorio oficial auditados; candidato somente a camada explicativa/auditoria visual, com experimento isolado e sem substituir contratos, dashboard ou execucao
 - **External LLM Continuity Handoff:** GPT Web e DeepSeek leem `CURRENT_HANDOFF.md`, `DECISION_LEDGER.md` e `STATUS_TAXONOMY.md`; DeepSeek carrega o estado em toda sessao e produz handoff isolado, sem editar a arquitetura oficial
 - **Day Trade Paper Lab:** arquitetura documental somente para simulacao, importacao de relatorios e avaliacao walk-forward; nenhuma credencial de corretora, `order_send`, Expert Advisor, clique automatizado ou operacao REAL e permitida
-- **Regressão padronizada:** `python scripts/run_all_demos.py`; **119/119 demos, 0 falhas** em 2026-07-18; 61 demos reportaram numericamente 1935 assertions, 58 nao emitem total comparavel
+- **Regressão padronizada:** `python scripts/run_all_demos.py`; **119/119 demos, 0 falhas** em 2026-07-22; 61 demos reportaram numericamente 1944 assertions, 58 nao emitem total comparavel
 
 ## Key Decisions
 - **Adapter lifecycle ≠ Tool lifecycle**: AdapterStatus independente de ToolStatus — complementares
@@ -196,7 +197,7 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 
 ## Critical Context
 - **compileall**: ✅ (core/ compila sem erros)
-- **Regressão atual (2026-07-18)**: **119/119 demos, 0 falhas**; 1935 assertions explicitamente reportadas por 61 demos
+- **Regressão atual (2026-07-22)**: **119/119 demos, 0 falhas**; 1944 assertions explicitamente reportadas por 61 demos
 - **Primeiras alegacoes auditadas:** `demo_low_ticket_partial_claim.py` valida 25 assertions e `demo_ethical_offer_persistence_partial_claim.py` valida 26; ambas permanecem `PARTIAL`/`0.58`, com Knowledge Card pendente e sem provider, memoria, funcionarios ou publicacao
 - **Prova do gate de transcricao:** `demo_transcript_evidence_audit.py` valida 13 assertions: hash/excerto exato, IDs deterministicos, auditoria parcial, Knowledge Card pendente e ausencia de provider, experimento, memoria ou publicacao
 - **Prova da fila de producao:** `demo_dashboard_production_worker.py` valida 20 assertions: opt-in, autenticacao, modo MOCK, evidencia preservada, Script Department real, rascunho para revisao e ausencia de chamadas de audio, video ou publicacao
@@ -219,8 +220,8 @@ ProductionSnapshot                  (genérico: task_id, stages, quality, durati
 - **Prova REAL opt-in ElevenLabs**: `demo_elevenlabs_real_smoke.py` roda seco na regressão; o smoke antigo registrou 401 sem expor a chave. A chave restrita atual valida leitura de vozes, mas TTS retorna `payment_issue` ate a fatura ser regularizada
 - **Prova Affiliate Deals**: `demo_affiliate_deals_department.py` valida 79 assertions: oferta forte `post_now` pendente de aprovacao, oferta fraca `skip`/rejeitada, oferta sem affiliate URL bloqueada por compliance, funil Facebook warmup -> Telegram e observability `deal_metrics`
 - **Prova Telegram REAL controlado**: `demo_telegram_publishing_adapter.py` valida 40 assertions em MOCK/MockHttpClient; smoke REAL local validou `@achados_baratos_br_bot` via `getMe` e enviou mensagem técnica para `@achadosbaratosBrasil` (`message_id=2`) com token fora do Git
-- **Prova da fila Telegram**: `demo_telegram_publication_worker.py` valida 27 assertions: opt-in, intake autenticado, destino allowlisted, copy curta com `#publi`, foto oficial, callback `sent` com `message_id`, bloqueio de destino desconhecido, expiracao, aprovacao humana e mensagem editorial sem afiliacao; nenhum envio REAL ocorre na regressao
-- **Prova de reserva atomica Telegram:** 4/4 testes concorrentes confirmam claim unico, IDs distintos para dois itens, rejeicao de expirados/nao enfileirados e bloqueio de repeticao por idempotency key
+- **Prova da fila Telegram**: `demo_telegram_publication_worker.py` valida 28 assertions: opt-in, intake autenticado, destino allowlisted, copy curta com `#publi`, foto oficial, callback `sent` com `message_id`, bloqueio de destino desconhecido, expiracao, autorizacao manual ou delegada valida e mensagem editorial sem afiliacao; nenhum envio REAL ocorre na regressao
+- **Prova de reserva atomica Telegram:** 5/5 testes confirmam claim unico, IDs distintos para dois itens, rejeicao de expirados/nao enfileirados, bloqueio de repeticao por idempotency key e prioridade da fila manual sobre delegacao automatica
 - **Correção Conversation/Memory**: `demo_conversation_memory_integration.py` valida timestamp preservado sem depender de igualdade acidental de `time.time()`
 - 0 dependências circulares; nenhuma classe existente foi modificada (exceto adições aditivas em domain_events.py, base/employee.py, observability.py)
 

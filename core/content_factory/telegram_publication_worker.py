@@ -26,6 +26,11 @@ class TelegramPublicationWorkItem:
     link_preview_enabled: bool = True
     owner_approved: bool = False
     approved_at: str = ""
+    authorization_kind: str = "manual"
+    policy_id: str = ""
+    policy_version: int = 0
+    lease_token: str = ""
+    lease_expires_at: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,6 +96,7 @@ class TelegramPublicationWorker:
         if validation_error:
             self._report(
                 item.request_id,
+                lease_token=item.lease_token,
                 status="failed",
                 message_id=None,
                 error=validation_error,
@@ -126,6 +132,7 @@ class TelegramPublicationWorker:
         error = "" if status == "sent" else (result.error or result.summary or "telegram_send_failed")
         reported = self._report(
             item.request_id,
+            lease_token=item.lease_token,
             status=status,
             message_id=message_id,
             error=error,
@@ -152,6 +159,12 @@ class TelegramPublicationWorker:
     def _validation_error(self, item: TelegramPublicationWorkItem) -> str:
         if not item.owner_approved:
             return "owner_approval_missing"
+        if item.authorization_kind not in {"manual", "autopilot_policy"}:
+            return "telegram_authorization_invalid"
+        if item.authorization_kind == "autopilot_policy" and item.policy_id != "telegram-continuous-v1":
+            return "telegram_policy_not_allowlisted"
+        if not item.lease_token or not self._lease_is_fresh(item.lease_expires_at):
+            return "telegram_lease_invalid"
         if item.chat_id not in self._allowed_chat_ids:
             return "telegram_destination_not_allowlisted"
         max_length = 1024 if item.image_url else 4096
@@ -169,6 +182,7 @@ class TelegramPublicationWorker:
         self,
         request_id: str,
         *,
+        lease_token: str,
         status: str,
         message_id: int | None,
         error: str,
@@ -185,6 +199,7 @@ class TelegramPublicationWorker:
                 ),
                 body={
                     "requestId": request_id,
+                    "leaseToken": lease_token,
                     "status": status,
                     "messageId": message_id,
                     "error": error[:500],
@@ -229,7 +244,23 @@ class TelegramPublicationWorker:
             link_preview_enabled=bool(value.get("linkPreviewEnabled", True)),
             owner_approved=bool(value.get("ownerApproved", False)),
             approved_at=str(value.get("approvedAt", "")).strip(),
+            authorization_kind=str(value.get("authorizationKind", "manual")).strip(),
+            policy_id=str(value.get("policyId", "")).strip(),
+            policy_version=int(value.get("policyVersion", 0) or 0),
+            lease_token=str(value.get("leaseToken", "")).strip(),
+            lease_expires_at=str(value.get("leaseExpiresAt", "")).strip(),
         )
+
+    @staticmethod
+    def _lease_is_fresh(value: str) -> bool:
+        try:
+            expires_at = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return False
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        remaining = expires_at.astimezone(timezone.utc) - datetime.now(timezone.utc)
+        return timedelta(seconds=0) <= remaining <= timedelta(minutes=10)
 
     @staticmethod
     def _approval_is_fresh(value: str) -> bool:

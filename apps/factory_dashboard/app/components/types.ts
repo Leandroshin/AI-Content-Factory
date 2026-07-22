@@ -171,7 +171,27 @@ export type TelegramPublication = {
   };
 };
 
-export type TelegramPublicationPayload = { publications: TelegramPublication[] };
+export type TelegramAutopilotPolicy = {
+  id: string;
+  status: "active" | "paused" | "revoked";
+  version: number;
+  chatId: string;
+  maxPublicationsPerDay: number;
+  sentToday: number;
+  failedToday: number;
+  reservedToday: number;
+  dayKey: string;
+  minIntervalMinutes: number;
+  nextRunAt: string;
+  lastSentAt: string | null;
+  allowedMarketplaces: string[];
+  continuous: true;
+};
+
+export type TelegramPublicationPayload = {
+  publications: TelegramPublication[];
+  autopilot: TelegramAutopilotPolicy | null;
+};
 
 export type ProductIntakePayload = { items: ProductIntakeItem[] };
 

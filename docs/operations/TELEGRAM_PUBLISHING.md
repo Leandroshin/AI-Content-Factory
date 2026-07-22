@@ -1,9 +1,10 @@
-# Publicação controlada no Telegram
+# Publicação contínua e controlada no Telegram
 
 O Telegram é o primeiro canal operacional de ofertas. WhatsApp permanece fora
-do fluxo automático nesta fase.
+do fluxo automático nesta fase. A operação pode permanecer ativa continuamente,
+sem data final, até o owner pausá-la no painel.
 
-## Fluxo
+## Fluxo manual
 
 1. O produto entra no painel e passa pela coleta e análise.
 2. O owner confirma preço, origem oficial do link afiliado, canal e revisão visual.
@@ -57,3 +58,36 @@ python scripts/run_telegram_publication_worker.py
 
 Cada execução consome no máximo uma publicação aprovada. Se ocorrer falha, o
 painel registra o erro e exige uma ação explícita de reenviar.
+
+## Política contínua delegada
+
+O owner pode autorizar uma política permanente e revogável com a confirmação
+`ATIVAR AUTOPILOTO TELEGRAM`. Essa autorização não aprova qualquer texto: ela
+permite ao worker selecionar somente pacotes comerciais que já passaram pelas
+validações determinísticas da fábrica.
+
+Limites iniciais:
+
+- destino fixo: `@achadosbaratosBrasil`;
+- operação sem data final, até `PAUSAR AUTOPILOTO TELEGRAM`;
+- no máximo 48 reservas por dia, renovadas diariamente no fuso de São Paulo;
+- intervalo mínimo de 30 minutos, equivalente a no máximo duas tentativas por hora;
+- nesta versão, somente pacotes completos do Mercado Livre;
+- URL afiliada, preço confirmado, imagem pública, hash do conteúdo, hash da
+  validação, validade e chave de idempotência obrigatórios;
+- se não houver pacote elegível, nenhum post é criado ou improvisado;
+- a fila manual tem prioridade sobre a delegação automática;
+- cada ciclo do worker reserva e processa no máximo uma publicação.
+
+O teto de 48 é diário, não vitalício. Ao mudar o dia, os contadores são zerados e
+a operação continua. Ele serve como proteção inicial contra rajadas, repetição e
+banimento enquanto ainda não existem métricas suficientes para escolher uma
+cadência maior com segurança.
+
+## Automação local
+
+A automação Codex `Publicar ofertas Telegram` acorda o worker a cada 30 minutos.
+Ela não fabrica links afiliados, não usa provider pago e termina silenciosamente
+quando a fila não possui um pacote válido. Pesquisa e geração oficial de links
+monetizados continuam etapas independentes: a operação só distribui o que pode
+ser comprovado.

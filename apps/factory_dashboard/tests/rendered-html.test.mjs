@@ -263,7 +263,12 @@ test("Telegram candidate preparation stays separate from approval and delivery",
   assert.match(store, /message\.includes\("#publi"\)/);
   assert.match(store, /candidateMetadata/);
   assert.match(store, /idempotencyKey/);
-  assert.match(store, /REAL CONTROLADO - OPT-IN E APROVACAO/);
+  assert.match(store, /REAL CONTROLADO - MANUAL OU POLITICA DELEGADA/);
+  assert.match(store, /AUTOPILOT_DAILY_LIMIT = 48/);
+  assert.match(store, /AUTOPILOT_INTERVAL_MINUTES = 30/);
+  assert.match(store, /status = 'active'/);
+  assert.match(store, /status = 'paused'/);
+  assert.match(workerRoute, /leaseToken/);
   assert.match(store, /Conteúdo editorial original/);
   assert.match(store, /Este link afiliado já foi publicado no Telegram/);
   assert.match(store, /publicHttpsImageUrl/);

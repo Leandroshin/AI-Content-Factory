@@ -51,6 +51,11 @@ class RoutingHttpClient(HttpClient):
                 "linkPreviewEnabled": True,
                 "ownerApproved": True,
                 "approvedAt": datetime.now(timezone.utc).isoformat(),
+                "authorizationKind": "manual",
+                "policyId": "",
+                "policyVersion": 0,
+                "leaseToken": "lease-token-telegram-worker",
+                "leaseExpiresAt": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat(),
             }]})
         if request.url == _ENDPOINT and request.method == HttpMethod.POST:
             return HttpResponse(status_code=202, body={"accepted": True})
@@ -115,6 +120,7 @@ def main() -> None:
     _check("#publi" in send_request.body["caption"], "Compact affiliate disclosure is present")
     callback = client.requests[2]
     _check(callback.body["status"] == "sent", "Dashboard receives sent status")
+    _check(callback.body["leaseToken"] == "lease-token-telegram-worker", "Callback returns the atomic lease token")
     _check(callback.body["messageId"] == 778, "Dashboard receives the Telegram message_id")
     _check(callback.headers["Authorization"] == "Bearer queue-token", "Queue callback is authenticated")
     _check("OAI-Sites-Authorization" in callback.headers, "Private Sites authorization is included")

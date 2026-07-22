@@ -24,6 +24,14 @@ const TABLE_SQL = `CREATE TABLE telegram_publication_requests (
   claimed_at TEXT,
   sent_at TEXT,
   candidate_metadata TEXT NOT NULL DEFAULT '{}',
+  authorization_kind TEXT NOT NULL DEFAULT 'manual',
+  policy_id TEXT NOT NULL DEFAULT '',
+  policy_version INTEGER NOT NULL DEFAULT 0,
+  idempotency_key TEXT NOT NULL DEFAULT '',
+  content_hash TEXT NOT NULL DEFAULT '',
+  validation_snapshot_hash TEXT NOT NULL DEFAULT '',
+  lease_token TEXT NOT NULL DEFAULT '',
+  lease_expires_at TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 )`;
@@ -105,11 +113,17 @@ if (!isMainThread && workerData?.telegramClaimWorker) {
 
   async function concurrentClaims(dbPath, workerCount = 2) {
     const time = timestamps();
-    const params = [time.now, time.now, time.earliest, time.latest, time.now];
+    const leaseExpires = new Date(Date.now() + 5 * 60 * 1000).toISOString();
     const shared = new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * 2);
     const control = new Int32Array(shared);
-    const workers = Array.from({ length: workerCount }, () => new Worker(new URL(import.meta.url), {
-      workerData: { telegramClaimWorker: true, dbPath, sql: claimSql, params, control: shared },
+    const workers = Array.from({ length: workerCount }, (_, index) => new Worker(new URL(import.meta.url), {
+      workerData: {
+        telegramClaimWorker: true,
+        dbPath,
+        sql: claimSql,
+        params: [time.now, `lease-${index}`, leaseExpires, time.now, time.earliest, time.latest, time.now],
+        control: shared,
+      },
     }));
     const results = workers.map((worker) => new Promise((resolve, reject) => {
       worker.once("message", resolve);
@@ -184,5 +198,16 @@ if (!isMainThread && workerData?.telegramClaimWorker) {
       assert.equal(second.flat().length, 0);
       assert.equal(inspect(dbPath, "SELECT count(*) AS total FROM telegram_publication_requests")[0].total, 1);
     });
+  });
+
+  test("manual queued publications keep priority over autopilot delegation", () => {
+    const match = source.match(/export async function claimTelegramPublication\(\) \{([\s\S]*?)\n\}/);
+    assert.ok(match, "The public claim function must remain directly inspectable");
+    const body = match[1];
+    const existingQueueClaim = body.indexOf("claimNextQueuedPublication()");
+    const delegation = body.indexOf("delegateOneAutopilotCandidate()");
+    assert.ok(existingQueueClaim >= 0, "The worker checks the existing queue");
+    assert.ok(delegation > existingQueueClaim, "Autopilot only delegates after the manual queue is empty");
+    assert.match(body, /if \(existing\.items\.length\) return existing/);
   });
 }

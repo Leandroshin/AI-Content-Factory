@@ -1,4 +1,12 @@
-import { approveTelegramPublication, prepareEditorialTelegramCandidate, queueTelegramPublication, retryTelegramPublication, telegramPublicationState } from "./store";
+import {
+  activateTelegramAutopilot,
+  approveTelegramPublication,
+  pauseTelegramAutopilot,
+  prepareEditorialTelegramCandidate,
+  queueTelegramPublication,
+  retryTelegramPublication,
+  telegramPublicationState,
+} from "./store";
 
 export async function GET() {
   return Response.json(await telegramPublicationState());
@@ -21,6 +29,12 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json() as Record<string, unknown>;
+    if (body.action === "activate_autopilot") {
+      return Response.json(await activateTelegramAutopilot(String(body.confirmation ?? "")));
+    }
+    if (body.action === "pause_autopilot") {
+      return Response.json(await pauseTelegramAutopilot(String(body.confirmation ?? "")));
+    }
     if (typeof body.requestId !== "string" || !body.requestId.trim()) throw new Error("Solicitação inválida");
     if (body.action === "approve") {
       if (body.confirmation !== "APROVAR PUBLICACAO TELEGRAM") throw new Error("A aprovação final exige confirmação explícita");

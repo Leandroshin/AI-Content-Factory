@@ -64,6 +64,13 @@
       "when": 1784426400000,
       "tag": "0008_telegram_candidate_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1784692800000,
+      "tag": "0009_telegram_continuous_autopilot",
+      "breakpoints": true
     }
   ]
 }

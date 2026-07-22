@@ -1,6 +1,6 @@
 # Handoff Atual da AI Content Factory
 
-Atualizado em: 2026-07-18
+Atualizado em: 2026-07-22
 
 ## Estado oficial
 
@@ -44,7 +44,10 @@ Atualizado em: 2026-07-18
 - O worker foi executado com opt-in explicito e processou `received=1`, `sent=1`, `failed=0`.
 - A reserva `queued -> publishing` continua atomica e idempotente.
 - Concorrencia, duplicidade e expiracao permanecem protegidas e testadas.
-- Nenhuma outra publicacao foi executada nessa operacao.
+- Leandro autorizou a operacao continua do canal: sem data final ate pausa explicita, teto renovavel de 48 reservas por dia, intervalo minimo de 30 minutos e no maximo um pacote por ciclo.
+- A autorizacao delegada aceita somente pacotes comerciais completos, atuais, com link monetizado, preco confirmado, imagem publica, hashes validos, destino fixo e chave de idempotencia.
+- Itens manuais ja enfileirados tem prioridade; sem pacote elegivel o ciclo encerra silenciosamente.
+- O teto de 48 e diario, nao vitalicio, e pode ser revisto somente depois de metricas reais; WhatsApp continua fora desta fase.
 
 ## Seguranca
 
@@ -52,7 +55,7 @@ Atualizado em: 2026-07-18
 - Nenhum gasto ocorreu.
 - Nenhuma Organizational Memory foi atualizada.
 - Nenhuma instrucao de funcionario foi alterada.
-- Nenhuma publicacao externa foi realizada.
+- A regressao e os testes do painel nao realizam publicacao externa; execucao REAL continua exclusiva do worker opt-in.
 - A pasta `youtube/` permanece local, nao rastreada e sem autoridade oficial.
 - Prototipos do DeepSeek continuam isolados quando nao integrados pelo Codex.
 
@@ -70,7 +73,7 @@ Atualizado em: 2026-07-18
 - Meta Ads aguarda token `ads_read` valido; nenhuma escrita e permitida.
 - Digistore24/PayPal e outras redes aguardam onboarding financeiro.
 - Nenhuma alegacao parcial pode ser promovida sem corroboracao, experimento e aprovacao humana.
-- A primeira oferta comercial ainda precisa de pesquisa atual, preco reconfirmado, link monetizado e aprovacao humana antes de entrar na fila.
+- A operacao continua depende de estoque de pacotes completos; a fabrica nao cria link monetizado, preco, imagem ou oferta quando faltarem evidencias.
 
 ## Proximas missoes oficiais
 
@@ -81,11 +84,11 @@ Atualizado em: 2026-07-18
 
 ## Base de verificacao
 
-Verificacao local de 2026-07-18:
+Verificacao local de 2026-07-22:
 
 - `python -m compileall -q core`: passou.
-- `python scripts/run_all_demos.py`: `119/119` demonstracoes, `1935` assertions explicitas, `0` falhas.
-- Dashboard: build e `16/16` testes Node passaram, incluindo quatro testes de reserva atomica concorrente.
-- Telegram: worker `27/27`, adapter `40/40` e HITL `35/35` passaram sem chamada externa.
+- `python scripts/run_all_demos.py`: `119/119` demonstracoes, `1944` assertions explicitas, `0` falhas.
+- Dashboard: build e `17/17` testes Node passaram, incluindo reserva atomica, idempotencia e prioridade da fila manual sobre o autopiloto.
+- Telegram: worker `28/28`, adapter `40/40` e HITL `35/35` passaram sem chamada externa.
 
 Antes de aceitar numeros futuros, leia `AGENTS.md` e execute novamente a regressao. Os totais no GitHub so sao oficiais depois do ultimo checkpoint registrado.

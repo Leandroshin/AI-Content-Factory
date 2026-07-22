@@ -15,12 +15,14 @@ export async function POST(request: Request) {
     if (new TextEncoder().encode(raw).byteLength > 4_000) return Response.json({ error: "Payload too large" }, { status: 413 });
     const body = JSON.parse(raw) as Record<string, unknown>;
     if (typeof body.requestId !== "string" || !body.requestId.trim()) throw new Error("requestId inválido");
+    if (typeof body.leaseToken !== "string" || !body.leaseToken.trim()) throw new Error("leaseToken inválido");
     if (body.status !== "sent" && body.status !== "failed") throw new Error("status inválido");
     const messageId = body.messageId == null ? null : Number(body.messageId);
     if (messageId != null && (!Number.isInteger(messageId) || messageId <= 0)) throw new Error("messageId inválido");
     const error = typeof body.error === "string" ? body.error : "";
     return Response.json(await applyTelegramPublicationResult({
-      requestId: body.requestId.trim(), status: body.status, messageId, error,
+      requestId: body.requestId.trim(), leaseToken: body.leaseToken.trim(),
+      status: body.status, messageId, error,
     }), { status: 202 });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Dados inválidos" }, { status: 400 });
